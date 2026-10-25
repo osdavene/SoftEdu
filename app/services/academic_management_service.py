@@ -933,6 +933,8 @@ class AcademicManagementService:
                 global_attendance_percentage=Decimal("100.00"),
                 risk_distribution={},
                 classroom_groups=[],
+                course_offerings=[],
+                teachers=[],
                 enrolled_students=[],
                 recent_attendances=[],
                 institutional_directory=[],
@@ -1126,6 +1128,8 @@ class AcademicManagementService:
         school_groups = await self.list_classroom_groups(
             school_id=active_school.id if active_school else None
         )
+        all_offerings = await self.list_course_offerings()
+        all_teachers = await self.list_teachers()
 
         return InstitutionalOverviewResponse(
             active_school=active_school,
@@ -1145,6 +1149,8 @@ class AcademicManagementService:
             global_attendance_percentage=global_att,
             risk_distribution=risk_counts,
             classroom_groups=school_groups,
+            course_offerings=all_offerings,
+            teachers=all_teachers,
             enrolled_students=roster,
             recent_attendances=all_attendance_logs[:40],
             institutional_directory=directory,
@@ -1457,6 +1463,104 @@ class AcademicManagementService:
                 )
             )
         return items
+
+    async def add_schedule_block(
+        self, offering_id: uuid.UUID, block: ScheduleBlockSchema
+    ) -> CourseOfferingResponse:
+        """
+        Agrega un nuevo bloque de clase semanal a una oferta académica validando cruces
+        de horario tanto para el docente como para el salón de clases.
+        """
+        stmt = (
+            select(CourseOffering)
+            .options(
+                joinedload(CourseOffering.subject),
+                joinedload(CourseOffering.teacher).joinedload(Teacher.user),
+                joinedload(CourseOffering.academic_period),
+                selectinload(CourseOffering.enrollments),
+            )
+            .where(CourseOffering.id == offering_id)
+        )
+        offering = (await self._session.execute(stmt)).scalars().first()
+        if offering is None:
+            raise EntityNotFoundError("CourseOffering", offering_id)
+
+        new_block_dict = block.model_dump(mode="json")
+
+        # Validar cruces de horario del docente
+        teacher_offerings_stmt = (
+            select(CourseOffering)
+            .options(joinedload(CourseOffering.subject))
+            .where(
+                CourseOffering.teacher_id == offering.teacher_id,
+                CourseOffering.academic_period_id == offering.academic_period_id,
+                CourseOffering.is_active.is_(True),
+            )
+        )
+        teacher_offerings = (await self._session.execute(teacher_offerings_stmt)).scalars().all()
+        for t_off in teacher_offerings:
+            conflict = self._detect_schedule_conflict([new_block_dict], t_off.schedule_blocks)
+            if conflict is not None:
+                raise BusinessRuleViolationError(
+                    message=(
+                        f"Choque de horario para el docente {offering.teacher.user.full_name}: "
+                        f"ya tiene clase de '{t_off.subject.name}' ({t_off.group_code}) el día "
+                        f"{conflict['day']} ({conflict['start_time']} - {conflict['end_time']})."
+                    ),
+                    rule_code="TEACHER_SCHEDULE_CONFLICT",
+                    details=conflict,
+                )
+
+        # Validar cruces de horario para el salón/grupo
+        group_offerings_stmt = (
+            select(CourseOffering)
+            .options(joinedload(CourseOffering.subject))
+            .where(
+                CourseOffering.group_code == offering.group_code,
+                CourseOffering.academic_period_id == offering.academic_period_id,
+                CourseOffering.is_active.is_(True),
+            )
+        )
+        group_offerings = (await self._session.execute(group_offerings_stmt)).scalars().all()
+        for g_off in group_offerings:
+            conflict = self._detect_schedule_conflict([new_block_dict], g_off.schedule_blocks)
+            if conflict is not None:
+                raise BusinessRuleViolationError(
+                    message=(
+                        f"El salón/grupo '{offering.group_code}' ya tiene asignada la clase de "
+                        f"'{g_off.subject.name}' el día {conflict['day']} ({conflict['start_time']} - {conflict['end_time']})."
+                    ),
+                    rule_code="GROUP_SCHEDULE_CONFLICT",
+                    details=conflict,
+                )
+
+        current_blocks = list(offering.schedule_blocks or [])
+        current_blocks.append(new_block_dict)
+        offering.schedule_blocks = current_blocks
+        await self._session.commit()
+        await self._session.refresh(offering)
+
+        g_code = offering.grade_level_code or "GRADO_11"
+        g_meta = GRADES_MAP_BY_CODE.get(g_code, GRADES_MAP_BY_CODE["GRADO_11"])
+        return CourseOfferingResponse(
+            id=offering.id,
+            subject_id=offering.subject.id,
+            subject_code=offering.subject.code,
+            subject_name=offering.subject.name,
+            teacher_id=offering.teacher.id,
+            teacher_full_name=offering.teacher.user.full_name,
+            academic_period_id=offering.academic_period.id,
+            academic_period_code=offering.academic_period.code,
+            group_code=offering.group_code,
+            grade_level_code=g_code,
+            grade_level_label=g_meta["short_name"],
+            max_capacity=offering.max_capacity,
+            enrolled_count=sum(
+                1 for e in offering.enrollments if e.is_active and e.status == EnrollmentStatus.ACTIVE
+            ),
+            total_planned_sessions=offering.total_planned_sessions,
+            schedule_blocks=[ScheduleBlockSchema.model_validate(b) for b in offering.schedule_blocks],
+        )
 
     # =================================================================
     # 4. ALUMNOS POR GRADO (MATERNAL A 11°), MATRÍCULAS Y ASISTENCIA

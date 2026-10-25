@@ -27,6 +27,7 @@ from app.schemas.management import (
     ClassroomGroupResponse,
     CourseOfferingCreateRequest,
     CourseOfferingResponse,
+    ScheduleBlockSchema,
     InstitutionalOverviewResponse,
     SchoolAssignRectorRequest,
     SchoolCreateWithRectorRequest,
@@ -314,6 +315,23 @@ async def list_course_offerings(
     _current_user: Annotated[User, Depends(get_current_active_user)],
 ) -> list[CourseOfferingResponse]:
     return await service.list_course_offerings()
+
+
+@router.post(
+    "/course-offerings/{offering_id}/schedule-blocks",
+    response_model=CourseOfferingResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Agregar un bloque de clase semanal a una oferta escolar validando cruces de horario",
+)
+async def add_schedule_block_to_offering(
+    offering_id: uuid.UUID,
+    payload: ScheduleBlockSchema,
+    service: Annotated[AcademicManagementService, Depends(get_management_service)],
+    _current_user: Annotated[
+        User, Depends(require_roles(UserRole.ADMIN, UserRole.RECTOR, UserRole.COORDINADOR))
+    ],
+) -> CourseOfferingResponse:
+    return await service.add_schedule_block(offering_id=offering_id, block=payload)
 
 
 # =====================================================================

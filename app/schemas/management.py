@@ -9,7 +9,7 @@ from decimal import Decimal
 from typing import Any, Literal
 import uuid
 
-from pydantic import BaseModel, ConfigDict, EmailStr, Field, model_validator
+from pydantic import AliasChoices, BaseModel, ConfigDict, EmailStr, Field, model_validator
 
 from app.models.academic import AttendanceStatus, RiskLevel, UserRole
 
@@ -216,7 +216,11 @@ class ScheduleBlockSchema(BaseModel):
         "JUEVES",
         "VIERNES",
         "SABADO",
-    ] = Field(..., description="Día de la semana del bloque de clase.")
+    ] = Field(
+        ...,
+        validation_alias=AliasChoices("day", "day_of_week"),
+        description="Día de la semana del bloque de clase.",
+    )
     start_time: str = Field(
         ...,
         pattern=r"^([01]\d|2[0-3]):[0-5]\d$",
@@ -630,6 +634,8 @@ class InstitutionalOverviewResponse(BaseModel):
     global_attendance_percentage: Decimal
     risk_distribution: dict[str, int]
     classroom_groups: list[ClassroomGroupResponse] = Field(default_factory=list)
+    course_offerings: list[CourseOfferingResponse] = Field(default_factory=list)
+    teachers: list[TeacherResponse] = Field(default_factory=list)
     enrolled_students: list[EnrolledStudentSummaryItem]
     recent_attendances: list[AttendanceLogItemResponse]
     institutional_directory: list[UserProfileResponse]

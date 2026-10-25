@@ -419,6 +419,39 @@ async def _seed_institutional_records(session: AsyncSession) -> None:
         session.add(teacher_prof_2)
         await session.flush()
 
+    # Docente 3: Lic. Carlos Andrés Martínez Gómez (Ciencias Sociales, Inglés y Filosofía)
+    docente_user_3 = await _upsert_user(
+        session=session,
+        email="carlos.martinez@gimnasiosanangel.edu.co",
+        document_number="79340801",
+        defaults={
+            "school_id": school_1.id,
+            "hashed_password": hash_password("SoftEdu2026*"),
+            "first_name": "Lic. Carlos Andrés",
+            "last_name": "Martínez Gómez",
+            "role": UserRole.DOCENTE,
+            "job_title": "Docente de Ciencias Sociales y Filosofía",
+            "department_area": "Área de Ciencias Sociales e Historia",
+            "phone_number": "+57 312 888 1234",
+        },
+    )
+    teacher_prof_3 = (
+        await session.execute(
+            select(Teacher).where(Teacher.user_id == docente_user_3.id)
+        )
+    ).scalars().first()
+    if teacher_prof_3 is None:
+        teacher_prof_3 = Teacher(
+            user_id=docente_user_3.id,
+            employee_code="DOC-COL-003",
+            department="Área de Ciencias Sociales",
+            specialization="Licenciatura en Ciencias Sociales e Historia",
+            academic_degree="Especialista en Pedagogía",
+            max_weekly_hours=32,
+        )
+        session.add(teacher_prof_3)
+        await session.flush()
+
     # 4. Período Lectivo Escolar (Calendario A)
     period = (
         await session.execute(
@@ -550,54 +583,157 @@ async def _seed_institutional_records(session: AsyncSession) -> None:
             await session.flush()
         created_groups[g_data["code"]] = grp
 
-    # 6. Oferta de Curso / Horario Escolar Semanal (Grado 11-1)
-    grp_11_1 = created_groups.get("11-1")
-    course_off = (
-        await session.execute(
-            select(CourseOffering).where(
-                CourseOffering.subject_id == subject_mat.id,
-                CourseOffering.academic_period_id == period.id,
-                CourseOffering.group_code.in_(["11-1", "11°A"]),
+    # 5.6 Catálogo de Asignaturas del Plan de Estudios
+    subjects_seed_data = [
+        ("MAT-11", "Matemáticas y Cálculo Diferencial — Grado 11°", "Cálculo diferencial, funciones y preparación Saber 11.", 4, 5),
+        ("ESP-11", "Lengua Castellana y Literatura — Grado 11°", "Literatura universal, ensayo argumentativo y análisis textual crítico.", 4, 4),
+        ("FIS-11", "Física Clásica y de Fluidos — Grado 11°", "Mecánica vectorial, termodinámica, ondas y laboratorio experimental.", 3, 4),
+        ("ING-11", "Idioma Extranjero: Inglés Avanzado — Grado 11°", "Competencias comunicativas nivel B2/C1, debate y preparación Saber 11.", 3, 3),
+        ("QUI-11", "Química Orgánica y Experimental — Grado 11°", "Estructura molecular, hidrocarburos, biomoléculas y laboratorio.", 3, 3),
+        ("FIL-11", "Filosofía y Pensamiento Crítico — Grado 11°", "Epistemología, ética, filosofía política y pensamiento contemporáneo.", 3, 3),
+        ("MAT-06", "Matemáticas Básicas y Geometría — Grado 6°", "Aritmética en enteros, fracciones, razones, proporciones y geometría.", 4, 5),
+        ("ESP-06", "Lengua Castellana y Comprensión — Grado 6°", "Tipología textual, ortografía, redacción y literatura juvenil.", 4, 5),
+        ("CN-06", "Ciencias Naturales y Biología — Grado 6°", "La célula, ecosistemas, reinos biológicos y método científico.", 3, 4),
+        ("CS-06", "Ciencias Sociales e Historia — Grado 6°", "Geografía física y humana, civilizaciones antiguas y democracia escolar.", 3, 4),
+        ("ING-06", "Idioma Extranjero: Inglés Básico — Grado 6°", "Gramática elemental, vocabulario escolar y comprensión auditiva A1/A2.", 3, 3),
+    ]
+    all_subjects_map = {"MAT-11": subject_mat}
+    for code, name, desc, creds, hours in subjects_seed_data:
+        if code == "MAT-11":
+            continue
+        sb = (await session.execute(select(Subject).where(Subject.code == code))).scalars().first()
+        if sb is None:
+            sb = Subject(
+                code=code,
+                name=name,
+                description=desc,
+                credits=creds,
+                weekly_hours=hours,
+                minimum_passing_grade=Decimal("3.00"),
             )
-        )
-    ).scalars().first()
-    if course_off is None:
-        course_off = CourseOffering(
-            subject_id=subject_mat.id,
-            teacher_id=teacher_prof.id,
-            academic_period_id=period.id,
-            classroom_group_id=grp_11_1.id if grp_11_1 else None,
-            group_code="11-1",
-            grade_level_code="GRADO_11",
-            max_capacity=30,
-            total_planned_sessions=36,
-            schedule_blocks=[
-                {
-                    "day": "LUNES",
-                    "start_time": "07:00",
-                    "end_time": "08:30",
-                    "classroom": "Salón 11-1 (Bloque B-201)",
-                },
-                {
-                    "day": "MIERCOLES",
-                    "start_time": "08:30",
-                    "end_time": "10:00",
-                    "classroom": "Salón 11-1 (Bloque B-201)",
-                },
-                {
-                    "day": "VIERNES",
-                    "start_time": "10:30",
-                    "end_time": "12:00",
-                    "classroom": "Laboratorio de Ciencias y Matemáticas",
-                },
-            ],
-        )
-        session.add(course_off)
-        await session.flush()
-    else:
-        if grp_11_1 and not course_off.classroom_group_id:
-            course_off.classroom_group_id = grp_11_1.id
-            course_off.group_code = "11-1"
+            session.add(sb)
+            await session.flush()
+        all_subjects_map[code] = sb
+
+    # 6. Ofertas de Cursos y Malla Horaria Semanal (Lunes a Viernes)
+    grp_11_1 = created_groups.get("11-1")
+    grp_6_1 = created_groups.get("6-1")
+    grp_6_2 = created_groups.get("6-2")
+
+    offerings_definitions = [
+        # --- GRUPO 11-1 ---
+        ("MAT-11", teacher_prof.id, grp_11_1, "11-1", "GRADO_11", [
+            {"day": "LUNES", "start_time": "07:00", "end_time": "08:30", "classroom": "Salón 11-1 (Bloque B-201)"},
+            {"day": "MIERCOLES", "start_time": "08:30", "end_time": "10:00", "classroom": "Salón 11-1 (Bloque B-201)"},
+            {"day": "VIERNES", "start_time": "10:30", "end_time": "12:00", "classroom": "Laboratorio de Ciencias y Matemáticas"},
+        ]),
+        ("ESP-11", teacher_prof_2.id, grp_11_1, "11-1", "GRADO_11", [
+            {"day": "LUNES", "start_time": "08:30", "end_time": "10:00", "classroom": "Salón 11-1 (Bloque B-201)"},
+            {"day": "MARTES", "start_time": "07:00", "end_time": "08:30", "classroom": "Salón 11-1 (Bloque B-201)"},
+            {"day": "JUEVES", "start_time": "10:30", "end_time": "12:00", "classroom": "Salón 11-1 (Bloque B-201)"},
+        ]),
+        ("FIS-11", teacher_prof.id, grp_11_1, "11-1", "GRADO_11", [
+            {"day": "MARTES", "start_time": "08:30", "end_time": "10:00", "classroom": "Laboratorio de Física"},
+            {"day": "JUEVES", "start_time": "07:00", "end_time": "08:30", "classroom": "Laboratorio de Física"},
+        ]),
+        ("ING-11", teacher_prof_2.id, grp_11_1, "11-1", "GRADO_11", [
+            {"day": "MIERCOLES", "start_time": "07:00", "end_time": "08:30", "classroom": "Salón 11-1 (Bloque B-201)"},
+            {"day": "VIERNES", "start_time": "07:00", "end_time": "08:30", "classroom": "Salón 11-1 (Bloque B-201)"},
+        ]),
+        ("QUI-11", teacher_prof.id, grp_11_1, "11-1", "GRADO_11", [
+            {"day": "LUNES", "start_time": "10:30", "end_time": "12:00", "classroom": "Laboratorio de Química"},
+            {"day": "JUEVES", "start_time": "08:30", "end_time": "10:00", "classroom": "Laboratorio de Química"},
+        ]),
+        ("FIL-11", teacher_prof_3.id, grp_11_1, "11-1", "GRADO_11", [
+            {"day": "MIERCOLES", "start_time": "10:30", "end_time": "12:00", "classroom": "Salón 11-1 (Bloque B-201)"},
+            {"day": "VIERNES", "start_time": "08:30", "end_time": "10:00", "classroom": "Salón 11-1 (Bloque B-201)"},
+        ]),
+
+        # --- GRUPO 6-1 ---
+        ("MAT-06", teacher_prof.id, grp_6_1, "6-1", "GRADO_6", [
+            {"day": "LUNES", "start_time": "08:30", "end_time": "10:00", "classroom": "Salón 201 (Bloque A)"},
+            {"day": "MIERCOLES", "start_time": "07:00", "end_time": "08:30", "classroom": "Salón 201 (Bloque A)"},
+            {"day": "VIERNES", "start_time": "07:00", "end_time": "08:30", "classroom": "Salón 201 (Bloque A)"},
+        ]),
+        ("ESP-06", teacher_prof_2.id, grp_6_1, "6-1", "GRADO_6", [
+            {"day": "LUNES", "start_time": "07:00", "end_time": "08:30", "classroom": "Salón 201 (Bloque A)"},
+            {"day": "MARTES", "start_time": "08:30", "end_time": "10:00", "classroom": "Salón 201 (Bloque A)"},
+            {"day": "JUEVES", "start_time": "07:00", "end_time": "08:30", "classroom": "Salón 201 (Bloque A)"},
+        ]),
+        ("CN-06", teacher_prof_2.id, grp_6_1, "6-1", "GRADO_6", [
+            {"day": "MARTES", "start_time": "07:00", "end_time": "08:30", "classroom": "Laboratorio de Ciencias y Matemáticas"},
+            {"day": "MIERCOLES", "start_time": "08:30", "end_time": "10:00", "classroom": "Laboratorio de Ciencias y Matemáticas"},
+        ]),
+        ("CS-06", teacher_prof_3.id, grp_6_1, "6-1", "GRADO_6", [
+            {"day": "LUNES", "start_time": "10:30", "end_time": "12:00", "classroom": "Salón 201 (Bloque A)"},
+            {"day": "JUEVES", "start_time": "08:30", "end_time": "10:00", "classroom": "Salón 201 (Bloque A)"},
+        ]),
+        ("ING-06", teacher_prof_3.id, grp_6_1, "6-1", "GRADO_6", [
+            {"day": "MARTES", "start_time": "10:30", "end_time": "12:00", "classroom": "Salón 201 (Bloque A)"},
+            {"day": "VIERNES", "start_time": "08:30", "end_time": "10:00", "classroom": "Salón 201 (Bloque A)"},
+        ]),
+
+        # --- GRUPO 6-2 ---
+        ("MAT-06", teacher_prof.id, grp_6_2, "6-2", "GRADO_6", [
+            {"day": "LUNES", "start_time": "10:30", "end_time": "12:00", "classroom": "Salón 202 (Bloque A)"},
+            {"day": "MARTES", "start_time": "07:00", "end_time": "08:30", "classroom": "Salón 202 (Bloque A)"},
+            {"day": "JUEVES", "start_time": "08:30", "end_time": "10:00", "classroom": "Salón 202 (Bloque A)"},
+        ]),
+        ("ESP-06", teacher_prof_2.id, grp_6_2, "6-2", "GRADO_6", [
+            {"day": "LUNES", "start_time": "13:00", "end_time": "14:30", "classroom": "Salón 202 (Bloque A)"},
+            {"day": "MIERCOLES", "start_time": "10:30", "end_time": "12:00", "classroom": "Salón 202 (Bloque A)"},
+            {"day": "VIERNES", "start_time": "08:30", "end_time": "10:00", "classroom": "Salón 202 (Bloque A)"},
+        ]),
+        ("CN-06", teacher_prof_2.id, grp_6_2, "6-2", "GRADO_6", [
+            {"day": "MARTES", "start_time": "10:30", "end_time": "12:00", "classroom": "Salón 202 (Bloque A)"},
+            {"day": "JUEVES", "start_time": "13:00", "end_time": "14:30", "classroom": "Salón 202 (Bloque A)"},
+        ]),
+        ("CS-06", teacher_prof_3.id, grp_6_2, "6-2", "GRADO_6", [
+            {"day": "MIERCOLES", "start_time": "07:00", "end_time": "08:30", "classroom": "Salón 202 (Bloque A)"},
+            {"day": "VIERNES", "start_time": "10:30", "end_time": "12:00", "classroom": "Salón 202 (Bloque A)"},
+        ]),
+        ("ING-06", teacher_prof_3.id, grp_6_2, "6-2", "GRADO_6", [
+            {"day": "LUNES", "start_time": "07:00", "end_time": "08:30", "classroom": "Salón 202 (Bloque A)"},
+            {"day": "JUEVES", "start_time": "10:30", "end_time": "12:00", "classroom": "Salón 202 (Bloque A)"},
+        ]),
+    ]
+
+    course_off = None
+    for s_code, t_id, grp_obj, g_code_str, grade_lvl, blocks in offerings_definitions:
+        sb_target = all_subjects_map.get(s_code)
+        if not sb_target:
+            continue
+        off_inst = (
+            await session.execute(
+                select(CourseOffering).where(
+                    CourseOffering.subject_id == sb_target.id,
+                    CourseOffering.academic_period_id == period.id,
+                    CourseOffering.group_code.in_([g_code_str, "11°A"] if g_code_str == "11-1" else [g_code_str]),
+                )
+            )
+        ).scalars().first()
+        if off_inst is None:
+            off_inst = CourseOffering(
+                subject_id=sb_target.id,
+                teacher_id=t_id,
+                academic_period_id=period.id,
+                classroom_group_id=grp_obj.id if grp_obj else None,
+                group_code=g_code_str,
+                grade_level_code=grade_lvl,
+                max_capacity=35,
+                total_planned_sessions=len(blocks) * 12,
+                schedule_blocks=blocks,
+            )
+            session.add(off_inst)
+            await session.flush()
+        else:
+            off_inst.schedule_blocks = blocks
+            off_inst.teacher_id = t_id
+            if grp_obj:
+                off_inst.classroom_group_id = grp_obj.id
+            off_inst.group_code = g_code_str
+        if s_code == "MAT-11" and g_code_str == "11-1":
+            course_off = off_inst
 
     # 7. Estudiantes de Demostración
     # Estudiante 1: Laura Sofía Rodríguez (Grado 11°A — Desempeño Superior, Riesgo BAJO)

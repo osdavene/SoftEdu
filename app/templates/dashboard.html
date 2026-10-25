@@ -904,18 +904,105 @@
     }
 
     /* HORARIO ESCOLAR (GRILLA SEMANAL LUNES A VIERNES) */
+    .schedule-toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 14px;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 16px;
+      padding: 12px 16px;
+      background: #0b1120;
+      border: 1px solid #1e293b;
+      border-radius: 12px;
+    }
+
+    .schedule-view-pill {
+      background: #1e293b;
+      color: #94a3b8;
+      border: 1px solid #334155;
+      padding: 8px 14px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      transition: all 0.2s ease;
+    }
+
+    .schedule-view-pill:hover {
+      background: #273549;
+      color: #e2e8f0;
+      border-color: #475569;
+    }
+
+    .schedule-view-pill.active {
+      background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+      color: #ffffff;
+      border-color: #3b82f6;
+      box-shadow: 0 4px 12px rgba(37, 99, 235, 0.35);
+    }
+
+    .schedule-info-banner {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 12px;
+      background: linear-gradient(90deg, rgba(30, 41, 59, 0.8) 0%, rgba(15, 23, 42, 0.95) 100%);
+      border: 1px solid #334155;
+      border-left: 4px solid #3b82f6;
+      padding: 12px 18px;
+      border-radius: 10px;
+      margin-bottom: 16px;
+    }
+
+    .schedule-info-title {
+      font-size: 15px;
+      font-weight: 700;
+      color: #f8fafc;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .schedule-info-chips {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .schedule-chip {
+      background: rgba(59, 130, 246, 0.15);
+      border: 1px solid rgba(59, 130, 246, 0.3);
+      color: #93c5fd;
+      padding: 4px 10px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 600;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+    }
+
     .schedule-grid-table {
       width: 100%;
       border-collapse: separate;
       border-spacing: 6px;
+      table-layout: fixed;
     }
 
     .schedule-grid-table th {
       background: #0d1527;
       text-align: center;
-      padding: 10px;
+      padding: 12px 10px;
       border-radius: 8px;
-      font-size: 13px;
+      font-size: 13.5px;
+      font-weight: 700;
+      color: #cbd5e1;
+      border: 1px solid #1e293b;
     }
 
     .schedule-time-cell {
@@ -928,41 +1015,149 @@
       border-radius: 8px;
       width: 130px;
       white-space: nowrap;
+      border: 1px solid #1e293b;
+      vertical-align: middle;
+    }
+
+    .schedule-time-cell small {
+      display: block;
+      font-size: 10.5px;
+      color: #64748b;
+      font-weight: 500;
+      margin-top: 3px;
     }
 
     .schedule-class-cell {
-      background: #131e36;
-      border: 1px solid #233152;
+      background: #111a2e;
+      border: 1px solid #202e4d;
       border-radius: 8px;
       padding: 10px 12px;
       vertical-align: top;
-      min-width: 160px;
+      min-height: 96px;
+      transition: all 0.2s ease;
+    }
+
+    .schedule-class-cell:hover {
+      border-color: #3b82f6;
+      background: #14213d;
     }
 
     .schedule-class-cell.break {
-      background: rgba(245, 158, 11, 0.1);
-      border: 1px dashed rgba(245, 158, 11, 0.4);
+      background: rgba(245, 158, 11, 0.08);
+      border: 1px dashed rgba(245, 158, 11, 0.35);
       color: #fcd34d;
       text-align: center;
       font-weight: 700;
-      font-size: 12.5px;
+      font-size: 13px;
+      padding: 10px;
+      border-radius: 8px;
+      vertical-align: middle;
+    }
+
+    .schedule-slot-card {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      height: 100%;
+    }
+
+    .schedule-slot-badge {
+      display: inline-block;
+      font-size: 10px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      padding: 2px 7px;
+      border-radius: 4px;
+      width: fit-content;
+      margin-bottom: 2px;
     }
 
     .schedule-class-name {
       font-weight: 700;
-      color: #fff;
+      color: #f8fafc;
       font-size: 13px;
-      margin-bottom: 3px;
+      line-height: 1.3;
     }
-    .schedule-class-grade {
+
+    .schedule-class-detail {
       font-size: 11.5px;
-      color: #818cf8;
+      color: #94a3b8;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      margin-top: 2px;
+    }
+
+    .schedule-class-room {
+      font-size: 11px;
       font-weight: 600;
-    }
-    .schedule-class-teacher {
-      font-size: 11.5px;
-      color: var(--text-muted);
+      color: #38bdf8;
+      background: rgba(56, 189, 248, 0.12);
+      border: 1px solid rgba(56, 189, 248, 0.25);
+      padding: 2px 6px;
+      border-radius: 4px;
+      width: fit-content;
       margin-top: 4px;
+    }
+
+    .schedule-empty-cell {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 100%;
+      min-height: 70px;
+      color: #475569;
+      font-size: 12px;
+      font-style: italic;
+      border: 1px dashed #1e293b;
+      border-radius: 6px;
+      background: rgba(15, 23, 42, 0.3);
+    }
+
+    @media print {
+      body {
+        background: #ffffff !important;
+        color: #000000 !important;
+      }
+      .app-sidebar, .workspace-topbar, .schedule-toolbar, .btn-primary, .btn-secondary, #toast-notification, .modal-backdrop {
+        display: none !important;
+      }
+      .app-workspace, .workspace-content, .tab-content {
+        padding: 0 !important;
+        margin: 0 !important;
+        width: 100% !important;
+      }
+      .schedule-grid-table th {
+        background: #f1f5f9 !important;
+        color: #0f172a !important;
+        border: 1px solid #cbd5e1 !important;
+      }
+      .schedule-time-cell {
+        background: #f8fafc !important;
+        color: #0f172a !important;
+        border: 1px solid #cbd5e1 !important;
+      }
+      .schedule-class-cell {
+        background: #ffffff !important;
+        border: 1px solid #cbd5e1 !important;
+        color: #0f172a !important;
+      }
+      .schedule-class-name {
+        color: #0f172a !important;
+      }
+      .schedule-class-detail {
+        color: #334155 !important;
+      }
+      .schedule-info-banner {
+        background: #f8fafc !important;
+        border: 1px solid #cbd5e1 !important;
+        border-left: 4px solid #2563eb !important;
+        color: #0f172a !important;
+      }
+      .schedule-info-title {
+        color: #0f172a !important;
+      }
     }
 
     /* ALERTA / TOAST NOTIFICATION */
@@ -1641,29 +1836,90 @@
          ------------------------------------------------------------- -->
     <div id="tab-horarios" class="tab-content">
       <div class="card">
-        <div class="card-header">
+        <div class="card-header" style="flex-wrap: wrap; gap: 12px;">
           <div>
             <div class="card-title">
-              <i class="fa-solid fa-calendar-week" style="color: #7dd3fc;"></i>
-              Malla Horaria Semanal Escolar (Lunes a Viernes)
+              <i class="fa-solid fa-calendar-week" style="color: #38bdf8;"></i>
+              Malla Horaria Semanal Escolar e Inspección Pedagógica
             </div>
             <div style="font-size: 13px; color: var(--text-muted); margin-top: 3px;">
-              Distribución de bloques de clase, descansos y aulas pedagógicas sin choques de horario.
+              Consulte horarios dinámicos por Salón/Grupo (6-1, 6-2, 11-1...), Carga Horaria por Docente u Ocupación de Aulas sin colisiones.
             </div>
           </div>
-          <div style="display: flex; gap: 8px;">
-            <select id="schedule-filter-grade" class="form-control" style="width: auto;" onchange="renderWeeklyScheduleGrid()">
-              <option value="ALL">-- Ver Todos los Grados --</option>
-            </select>
+          <div style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center;">
+            <button class="btn-primary" onclick="openAddScheduleModal()" style="background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);">
+              <i class="fa-solid fa-plus-circle"></i> + Programar Bloque de Clase
+            </button>
+            <button class="btn-secondary" onclick="window.print()">
+              <i class="fa-solid fa-print"></i> Imprimir Horario
+            </button>
           </div>
         </div>
 
-        <!-- Grilla Semanal Visual -->
-        <div class="table-container">
+        <!-- Barra de Modos de Inspección: Salón vs Docente vs Aula -->
+        <div class="schedule-toolbar">
+          <div style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center;">
+            <span style="font-size: 12px; font-weight: 700; color: #94a3b8; margin-right: 4px;">Modo de Visualización:</span>
+            <button id="sched-mode-btn-group" class="schedule-view-pill active" onclick="changeScheduleMode('GROUP')">
+              <i class="fa-solid fa-users-rectangle"></i> Por Salón / Grupo (ej: 11-1, 6-1)
+            </button>
+            <button id="sched-mode-btn-teacher" class="schedule-view-pill" onclick="changeScheduleMode('TEACHER')">
+              <i class="fa-solid fa-chalkboard-user"></i> Por Docente Titular
+            </button>
+            <button id="sched-mode-btn-room" class="schedule-view-pill" onclick="changeScheduleMode('ROOM')">
+              <i class="fa-solid fa-door-open"></i> Por Aula Física / Laboratorio
+            </button>
+          </div>
+
+          <!-- Selectores Contextuales según Modo -->
+          <div style="display: flex; gap: 10px; align-items: center;">
+            <!-- Selector para GRUPO -->
+            <div id="sched-select-container-group" style="display: flex; align-items: center; gap: 6px;">
+              <label style="font-size: 12.5px; font-weight: 600; color: #cbd5e1;">Seleccionar Salón:</label>
+              <select id="schedule-select-group" class="form-control" style="width: auto; min-width: 200px; padding: 7px 12px;" onchange="onScheduleSelectionChange()">
+                <!-- Poblado dinámicamente con 11-1, 6-1, 6-2... -->
+              </select>
+            </div>
+
+            <!-- Selector para DOCENTE -->
+            <div id="sched-select-container-teacher" style="display: none; align-items: center; gap: 6px;">
+              <label style="font-size: 12.5px; font-weight: 600; color: #cbd5e1;">Seleccionar Docente:</label>
+              <select id="schedule-select-teacher" class="form-control" style="width: auto; min-width: 250px; padding: 7px 12px;" onchange="onScheduleSelectionChange()">
+                <!-- Poblado dinámicamente con docentes -->
+              </select>
+            </div>
+
+            <!-- Selector para AULA -->
+            <div id="sched-select-container-room" style="display: none; align-items: center; gap: 6px;">
+              <label style="font-size: 12.5px; font-weight: 600; color: #cbd5e1;">Seleccionar Aula:</label>
+              <select id="schedule-select-room" class="form-control" style="width: auto; min-width: 220px; padding: 7px 12px;" onchange="onScheduleSelectionChange()">
+                <!-- Poblado dinámicamente con aulas -->
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <!-- Banner de Información y Resumen del Horario Seleccionado -->
+        <div id="schedule-info-banner" class="schedule-info-banner">
+          <div>
+            <div id="schedule-info-title" class="schedule-info-title">
+              <i class="fa-solid fa-shapes" style="color: #60a5fa;"></i> Horario Oficial del Salón 11-1
+            </div>
+            <div id="schedule-info-subtitle" style="font-size: 12.5px; color: #94a3b8; margin-top: 3px;">
+              Grado 11° — Educación Media Técnica | Calendario A
+            </div>
+          </div>
+          <div id="schedule-info-chips" class="schedule-info-chips">
+            <!-- Chips informativos dinámicos -->
+          </div>
+        </div>
+
+        <!-- Grilla Semanal Visual (Lunes a Viernes) -->
+        <div class="table-container" style="overflow-x: auto;">
           <table class="schedule-grid-table">
             <thead>
               <tr>
-                <th style="width: 140px;">Franja Horaria</th>
+                <th style="width: 130px;">Franja Horaria</th>
                 <th>Lunes</th>
                 <th>Martes</th>
                 <th>Miércoles</th>
@@ -1672,7 +1928,7 @@
               </tr>
             </thead>
             <tbody id="weekly-schedule-grid-body">
-              <!-- Renderizado dinámicamente con los bloques -->
+              <!-- Renderizado dinámicamente según selección -->
             </tbody>
           </table>
         </div>
@@ -1931,6 +2187,65 @@
     </div>
   </div>
 
+  <!-- MODAL: PROGRAMAR BLOQUE DE CLASE EN HORARIO (RECTOR / COORDINADOR) -->
+  <div id="modal-add-schedule-block" style="display: none; position: fixed; inset: 0; z-index: 99999; background: rgba(0,0,0,0.8); backdrop-filter: blur(8px); align-items: center; justify-content: center; padding: 20px;">
+    <div style="background: #0f172a; border: 1px solid #3b82f6; border-radius: 16px; max-width: 580px; width: 100%; padding: 26px; box-shadow: 0 25px 60px -15px rgba(0,0,0,0.9);">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px;">
+        <h4 style="color: #fff; font-size: 17px; font-weight: 700; display: flex; align-items: center; gap: 9px;">
+          <i class="fa-solid fa-calendar-plus" style="color: #38bdf8;"></i> Programar Bloque de Clase Escolar
+        </h4>
+        <button class="btn-secondary" style="padding: 4px 8px;" onclick="closeModal('modal-add-schedule-block')"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+
+      <div style="font-size: 13px; color: #94a3b8; margin-bottom: 18px; line-height: 1.5;">
+        Asigne un bloque semanal para la asignatura seleccionada. El sistema validará automáticamente que ni el docente ni el grupo escolar tengan cruces de horario.
+      </div>
+
+      <form onsubmit="submitAddScheduleBlock(event)">
+        <div class="form-group" style="margin-bottom: 14px;">
+          <label class="form-label">Asignatura y Docente Asignado *</label>
+          <select id="modal-sched-offering-id" class="form-control" required>
+            <!-- Poblado con las ofertas de curso activas -->
+          </select>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px;">
+          <div class="form-group">
+            <label class="form-label">Día de la Semana *</label>
+            <select id="modal-sched-day" class="form-control" required>
+              <option value="LUNES">Lunes</option>
+              <option value="MARTES">Martes</option>
+              <option value="MIERCOLES">Miércoles</option>
+              <option value="JUEVES">Jueves</option>
+              <option value="VIERNES">Viernes</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Franja Horaria *</label>
+            <select id="modal-sched-timeslot" class="form-control" required>
+              <option value="07:00|08:30">07:00 - 08:30 (Bloque 1)</option>
+              <option value="08:30|10:00">08:30 - 10:00 (Bloque 2)</option>
+              <option value="10:30|12:00">10:30 - 12:00 (Bloque 3)</option>
+              <option value="13:00|14:30">13:00 - 14:30 (Bloque 4)</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-group" style="margin-bottom: 20px;">
+          <label class="form-label">Aula Física / Espacio Asignado *</label>
+          <input type="text" id="modal-sched-classroom" class="form-control" placeholder="Ej. Salón 11-1 B201 o Lab de Física 202" required />
+        </div>
+
+        <div style="display: flex; justify-content: flex-end; gap: 10px;">
+          <button type="button" class="btn-secondary" onclick="closeModal('modal-add-schedule-block')">Cancelar</button>
+          <button type="submit" class="btn-primary" style="background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);">
+            <i class="fa-solid fa-calendar-check"></i> Guardar en Malla Horaria
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
   <!-- MODAL: GESTIONAR GRADOS DE UN COLEGIO (SUPERADMIN) -->
   <div id="modal-manage-grades" style="display: none; position: fixed; inset: 0; z-index: 99999; background: rgba(0,0,0,0.75); backdrop-filter: blur(8px); align-items: center; justify-content: center; padding: 20px;">
     <div style="background: #0f172a; border: 1px solid #3b82f6; border-radius: 16px; max-width: 680px; width: 100%; padding: 24px; max-height: 90vh; overflow-y: auto;">
@@ -2139,7 +2454,8 @@
       populateGroupGradeFilterBar();
       // Render KPIs & Tables
       renderKpisAndTables();
-      // Render Weekly Schedule Grid
+      // Render Weekly Schedule Grid & Perspectives (Grupos, Docentes, Aulas)
+      populateScheduleSelectors();
       renderWeeklyScheduleGrid();
     }
 
@@ -2954,9 +3270,200 @@
       }
     }
 
+    // =========================================================================
+    // HORARIOS ESCOLARES: PERSPECTIVA POR SALÓN/GRUPO, POR DOCENTE Y POR AULA
+    // =========================================================================
+    let currentScheduleMode = 'GROUP'; // 'GROUP' | 'TEACHER' | 'ROOM'
+    let selectedScheduleGroup = '';
+    let selectedScheduleTeacherId = '';
+    let selectedScheduleRoom = '';
+
+    const SUBJECT_COLORS = [
+      { bg: 'rgba(59, 130, 246, 0.18)', border: '#3b82f6', text: '#93c5fd', badgeBg: '#1e3a8a' }, // Blue (Matemáticas)
+      { bg: 'rgba(16, 185, 129, 0.18)', border: '#10b981', text: '#a7f3d0', badgeBg: '#064e3b' }, // Green (Ciencias/Biología)
+      { bg: 'rgba(168, 85, 247, 0.18)', border: '#a855f7', text: '#e9d5ff', badgeBg: '#581c87' }, // Purple (Lengua/Español)
+      { bg: 'rgba(245, 158, 11, 0.18)', border: '#f59e0b', text: '#fde68a', badgeBg: '#78350f' }, // Amber (Sociales/Historia)
+      { bg: 'rgba(236, 72, 153, 0.18)', border: '#ec4899', text: '#fbcfe8', badgeBg: '#831843' }, // Pink (Filosofía/Artes)
+      { bg: 'rgba(6, 182, 212, 0.18)', border: '#06b6d4', text: '#a5f3fc', badgeBg: '#164e63' }, // Cyan (Inglés)
+      { bg: 'rgba(234, 88, 12, 0.18)', border: '#ea580c', text: '#fed7aa', badgeBg: '#7c2d12' }  // Orange (Física/Química)
+    ];
+
+    function getSubjectColor(subjectName) {
+      if (!subjectName) return SUBJECT_COLORS[0];
+      let hash = 0;
+      for (let i = 0; i < subjectName.length; i++) {
+        hash = subjectName.charCodeAt(i) + ((hash << 5) - hash);
+      }
+      const idx = Math.abs(hash) % SUBJECT_COLORS.length;
+      return SUBJECT_COLORS[idx];
+    }
+
+    function normalizeDayIndex(dayStr) {
+      if (!dayStr) return -1;
+      const d = String(dayStr).toUpperCase().trim();
+      if (d === 'LUNES' || d === 'MONDAY') return 0;
+      if (d === 'MARTES' || d === 'TUESDAY') return 1;
+      if (d === 'MIERCOLES' || d === 'MIÉRCOLES' || d === 'WEDNESDAY') return 2;
+      if (d === 'JUEVES' || d === 'THURSDAY') return 3;
+      if (d === 'VIERNES' || d === 'FRIDAY') return 4;
+      return -1;
+    }
+
+    function populateScheduleSelectors() {
+      if (!globalOverview) return;
+      const offerings = globalOverview.course_offerings || [];
+      const groups = globalOverview.classroom_groups || [];
+      const teachers = globalOverview.teachers || [];
+
+      // 1. Selector de Salones / Grupos (ej: 11-1, 6-1, 6-2...)
+      const groupSelect = document.getElementById('schedule-select-group');
+      if (groupSelect) {
+        const groupMap = new Map();
+        groups.forEach(g => {
+          groupMap.set(g.group_code, {
+            code: g.group_code,
+            name: g.name,
+            grade_name: g.grade_name || g.grade_level_code,
+            shift: g.shift,
+            classroom_name: g.classroom_name,
+            director_name: g.director_name
+          });
+        });
+        offerings.forEach(o => {
+          if (!groupMap.has(o.group_code)) {
+            groupMap.set(o.group_code, {
+              code: o.group_code,
+              name: `Salón ${o.group_code}`,
+              grade_name: o.grade_level_label || o.grade_level_code,
+              shift: 'Jornada Mañana',
+              classroom_name: '',
+              director_name: ''
+            });
+          }
+        });
+
+        const sortedGroups = Array.from(groupMap.values()).sort((a, b) => a.code.localeCompare(b.code));
+        
+        groupSelect.innerHTML = sortedGroups.map(g => `
+          <option value="${g.code}">Salón ${g.code} (${g.grade_name})</option>
+        `).join('');
+
+        if (sortedGroups.length > 0 && (!selectedScheduleGroup || !groupMap.has(selectedScheduleGroup))) {
+          const pref = sortedGroups.find(g => g.code === '11-1') || sortedGroups[0];
+          selectedScheduleGroup = pref.code;
+          groupSelect.value = selectedScheduleGroup;
+        } else if (selectedScheduleGroup) {
+          groupSelect.value = selectedScheduleGroup;
+        }
+      }
+
+      // 2. Selector de Docentes
+      const teacherSelect = document.getElementById('schedule-select-teacher');
+      if (teacherSelect) {
+        const teacherMap = new Map();
+        teachers.forEach(t => {
+          teacherMap.set(t.id, { id: t.id, name: t.full_name, dept: t.department || t.specialization || 'Docente' });
+        });
+        offerings.forEach(o => {
+          if (!teacherMap.has(o.teacher_id)) {
+            teacherMap.set(o.teacher_id, { id: o.teacher_id, name: o.teacher_full_name, dept: 'Docente Titular' });
+          }
+        });
+
+        const sortedTeachers = Array.from(teacherMap.values()).sort((a, b) => a.name.localeCompare(b.name));
+        teacherSelect.innerHTML = sortedTeachers.map(t => `
+          <option value="${t.id}">${t.name} — ${t.dept}</option>
+        `).join('');
+
+        if (sortedTeachers.length > 0 && (!selectedScheduleTeacherId || !teacherMap.has(selectedScheduleTeacherId))) {
+          selectedScheduleTeacherId = sortedTeachers[0].id;
+          teacherSelect.value = selectedScheduleTeacherId;
+        } else if (selectedScheduleTeacherId) {
+          teacherSelect.value = selectedScheduleTeacherId;
+        }
+      }
+
+      // 3. Selector de Aulas / Laboratorios
+      const roomSelect = document.getElementById('schedule-select-room');
+      if (roomSelect) {
+        const roomsSet = new Set();
+        offerings.forEach(o => {
+          (o.schedule_blocks || []).forEach(b => {
+            if (b.classroom) roomsSet.add(b.classroom.trim());
+          });
+        });
+        groups.forEach(g => {
+          if (g.classroom_name) roomsSet.add(g.classroom_name.trim());
+        });
+
+        const sortedRooms = Array.from(roomsSet).sort();
+        roomSelect.innerHTML = sortedRooms.map(r => `
+          <option value="${r}">${r}</option>
+        `).join('');
+
+        if (sortedRooms.length > 0 && (!selectedScheduleRoom || !roomsSet.has(selectedScheduleRoom))) {
+          selectedScheduleRoom = sortedRooms[0];
+          roomSelect.value = selectedScheduleRoom;
+        } else if (selectedScheduleRoom) {
+          roomSelect.value = selectedScheduleRoom;
+        }
+      }
+    }
+
+    function changeScheduleMode(mode) {
+      currentScheduleMode = mode;
+      
+      const btnGroup = document.getElementById('sched-mode-btn-group');
+      const btnTeacher = document.getElementById('sched-mode-btn-teacher');
+      const btnRoom = document.getElementById('sched-mode-btn-room');
+
+      const contGroup = document.getElementById('sched-select-container-group');
+      const contTeacher = document.getElementById('sched-select-container-teacher');
+      const contRoom = document.getElementById('sched-select-container-room');
+
+      if (btnGroup) btnGroup.classList.toggle('active', mode === 'GROUP');
+      if (btnTeacher) btnTeacher.classList.toggle('active', mode === 'TEACHER');
+      if (btnRoom) btnRoom.classList.toggle('active', mode === 'ROOM');
+
+      if (contGroup) contGroup.style.display = (mode === 'GROUP' ? 'flex' : 'none');
+      if (contTeacher) contTeacher.style.display = (mode === 'TEACHER' ? 'flex' : 'none');
+      if (contRoom) contRoom.style.display = (mode === 'ROOM' ? 'flex' : 'none');
+
+      renderWeeklyScheduleGrid();
+    }
+
+    function onScheduleSelectionChange() {
+      const groupSelect = document.getElementById('schedule-select-group');
+      const teacherSelect = document.getElementById('schedule-select-teacher');
+      const roomSelect = document.getElementById('schedule-select-room');
+
+      if (currentScheduleMode === 'GROUP' && groupSelect) {
+        selectedScheduleGroup = groupSelect.value;
+      } else if (currentScheduleMode === 'TEACHER' && teacherSelect) {
+        selectedScheduleTeacherId = teacherSelect.value;
+      } else if (currentScheduleMode === 'ROOM' && roomSelect) {
+        selectedScheduleRoom = roomSelect.value;
+      }
+
+      renderWeeklyScheduleGrid();
+    }
+
     function renderWeeklyScheduleGrid() {
       const gridBody = document.getElementById('weekly-schedule-grid-body');
       if (!gridBody) return;
+
+      if (!globalOverview) {
+        gridBody.innerHTML = `<tr><td colspan="6" style="text-align:center; padding:30px; color:#94a3b8;">Cargando información horaria institucional...</td></tr>`;
+        return;
+      }
+
+      const allOfferings = globalOverview.course_offerings || [];
+      const groups = globalOverview.classroom_groups || [];
+      const teachers = globalOverview.teachers || [];
+
+      if (!selectedScheduleGroup && groups.length > 0) {
+        selectedScheduleGroup = groups[0].group_code;
+      }
 
       const timeSlots = [
         { start: '07:00', end: '08:30', isBreak: false, name: 'Bloque 1' },
@@ -2967,49 +3474,241 @@
         { start: '13:00', end: '14:30', isBreak: false, name: 'Bloque 4 / Talleres' }
       ];
 
+      const bannerTitle = document.getElementById('schedule-info-title');
+      const bannerSubtitle = document.getElementById('schedule-info-subtitle');
+      const bannerChips = document.getElementById('schedule-info-chips');
+
+      let filteredBlocks = [];
+
+      if (currentScheduleMode === 'GROUP') {
+        const groupObj = groups.find(g => g.group_code === selectedScheduleGroup) || {};
+        const groupOfferings = allOfferings.filter(o => o.group_code === selectedScheduleGroup);
+
+        let totalWeeklyHours = 0;
+        groupOfferings.forEach(off => {
+          (off.schedule_blocks || []).forEach(b => {
+            const dIdx = normalizeDayIndex(b.day_of_week || b.day);
+            if (dIdx >= 0) {
+              filteredBlocks.push({ dayIndex: dIdx, start_time: b.start_time, end_time: b.end_time, offering: off, block: b });
+              totalWeeklyHours += 1.5;
+            }
+          });
+        });
+
+        if (bannerTitle) {
+          bannerTitle.innerHTML = `<i class="fa-solid fa-shapes" style="color: #60a5fa;"></i> Horario Oficial del Salón ${selectedScheduleGroup}`;
+        }
+        if (bannerSubtitle) {
+          const gName = groupObj.grade_name || (groupOfferings[0] ? groupOfferings[0].grade_level_label : 'Educación Básica y Media');
+          bannerSubtitle.textContent = `${gName} — Salón ${selectedScheduleGroup} | Jornada Escolar Regular`;
+        }
+        if (bannerChips) {
+          bannerChips.innerHTML = `
+            <span class="schedule-chip"><i class="fa-solid fa-user-tie"></i> Dir. Grupo: ${groupObj.director_name || 'Por asignar'}</span>
+            <span class="schedule-chip"><i class="fa-solid fa-door-open"></i> Aula Base: ${groupObj.classroom_name || 'Aula Base'}</span>
+            <span class="schedule-chip"><i class="fa-solid fa-clock"></i> Carga: ${totalWeeklyHours}h pedagógicas/sem</span>
+            <span class="schedule-chip"><i class="fa-solid fa-book-open"></i> ${groupOfferings.length} Asignaturas</span>
+          `;
+        }
+
+      } else if (currentScheduleMode === 'TEACHER') {
+        const teacherObj = teachers.find(t => t.id === selectedScheduleTeacherId) || 
+                           allOfferings.find(o => o.teacher_id === selectedScheduleTeacherId) || {};
+        const teacherName = teacherObj.full_name || teacherObj.teacher_full_name || 'Docente Seleccionado';
+        const teacherDept = teacherObj.department || teacherObj.specialization || 'Área Pedagógica';
+
+        const teacherOfferings = allOfferings.filter(o => o.teacher_id === selectedScheduleTeacherId);
+        const assignedGroups = new Set();
+        let totalWeeklyHours = 0;
+
+        teacherOfferings.forEach(off => {
+          assignedGroups.add(off.group_code);
+          (off.schedule_blocks || []).forEach(b => {
+            const dIdx = normalizeDayIndex(b.day_of_week || b.day);
+            if (dIdx >= 0) {
+              filteredBlocks.push({ dayIndex: dIdx, start_time: b.start_time, end_time: b.end_time, offering: off, block: b });
+              totalWeeklyHours += 1.5;
+            }
+          });
+        });
+
+        if (bannerTitle) {
+          bannerTitle.innerHTML = `<i class="fa-solid fa-chalkboard-user" style="color: #38bdf8;"></i> Carga Académica Semanal: ${teacherName}`;
+        }
+        if (bannerSubtitle) {
+          bannerSubtitle.textContent = `Área: ${teacherDept} | Docente Titular Institucional`;
+        }
+        if (bannerChips) {
+          bannerChips.innerHTML = `
+            <span class="schedule-chip"><i class="fa-solid fa-clock"></i> Dictando: ${totalWeeklyHours}h semanales</span>
+            <span class="schedule-chip"><i class="fa-solid fa-users"></i> Salones: ${Array.from(assignedGroups).join(', ') || 'Sin grupos'}</span>
+            <span class="schedule-chip"><i class="fa-solid fa-book"></i> ${teacherOfferings.length} Asignaturas asignadas</span>
+          `;
+        }
+
+      } else if (currentScheduleMode === 'ROOM') {
+        let occupiedCount = 0;
+        allOfferings.forEach(off => {
+          (off.schedule_blocks || []).forEach(b => {
+            if ((b.classroom || '').trim().toLowerCase() === (selectedScheduleRoom || '').trim().toLowerCase()) {
+              const dIdx = normalizeDayIndex(b.day_of_week || b.day);
+              if (dIdx >= 0) {
+                filteredBlocks.push({ dayIndex: dIdx, start_time: b.start_time, end_time: b.end_time, offering: off, block: b });
+                occupiedCount++;
+              }
+            }
+          });
+        });
+
+        if (bannerTitle) {
+          bannerTitle.innerHTML = `<i class="fa-solid fa-door-open" style="color: #a78bfa;"></i> Ocupación del Espacio Físico: ${selectedScheduleRoom}`;
+        }
+        if (bannerSubtitle) {
+          bannerSubtitle.textContent = `Ambiente de Aprendizaje e Infraestructura Escolar | Capacidad: 35 puestos`;
+        }
+        if (bannerChips) {
+          const totalCapacityBlocks = 20;
+          bannerChips.innerHTML = `
+            <span class="schedule-chip"><i class="fa-solid fa-calendar-check"></i> ${occupiedCount} Bloques Ocupados</span>
+            <span class="schedule-chip"><i class="fa-solid fa-battery-half"></i> ${Math.max(0, totalCapacityBlocks - occupiedCount)} Bloques Disponibles</span>
+          `;
+        }
+      }
+
       gridBody.innerHTML = timeSlots.map(slot => {
         if (slot.isBreak) {
           return `
             <tr>
-              <td class="schedule-time-cell">${slot.start} - ${slot.end}</td>
+              <td class="schedule-time-cell">
+                ${slot.start} - ${slot.end}
+                <small>Intermedio</small>
+              </td>
               <td colspan="5" class="schedule-class-cell break">
-                <i class="fa-solid fa-mug-hot"></i> ${slot.name} (${slot.start} - ${slot.end})
+                <i class="fa-solid fa-mug-hot" style="margin-right: 6px;"></i> ${slot.name} (${slot.start} - ${slot.end})
               </td>
             </tr>
           `;
         }
 
+        let dayCellsHtml = '';
+        for (let d = 0; d < 5; d++) {
+          const match = filteredBlocks.find(fb => 
+            fb.dayIndex === d && 
+            (fb.start_time === slot.start || (fb.start_time >= slot.start && fb.start_time < slot.end))
+          );
+
+          if (match) {
+            const off = match.offering;
+            const blk = match.block;
+            const color = getSubjectColor(off.subject_name);
+
+            let firstDetail = '';
+            let secondDetail = '';
+
+            if (currentScheduleMode === 'GROUP') {
+              firstDetail = `<i class="fa-solid fa-chalkboard-user"></i> ${off.teacher_full_name}`;
+              secondDetail = `<div class="schedule-class-room"><i class="fa-solid fa-door-closed"></i> ${blk.classroom || 'Aula Base'}</div>`;
+            } else if (currentScheduleMode === 'TEACHER') {
+              firstDetail = `<span style="font-weight:700; color:#cbd5e1;"><i class="fa-solid fa-shapes"></i> Salón ${off.group_code}</span>`;
+              secondDetail = `<div class="schedule-class-room"><i class="fa-solid fa-door-closed"></i> ${blk.classroom || 'Aula'}</div>`;
+            } else {
+              firstDetail = `<span style="font-weight:700; color:#cbd5e1;"><i class="fa-solid fa-shapes"></i> Salón ${off.group_code}</span>`;
+              secondDetail = `<div class="schedule-class-detail"><i class="fa-solid fa-chalkboard-user"></i> ${off.teacher_full_name}</div>`;
+            }
+
+            dayCellsHtml += `
+              <td class="schedule-class-cell" style="background: ${color.bg}; border-color: ${color.border};">
+                <div class="schedule-slot-card">
+                  <span class="schedule-slot-badge" style="background: ${color.badgeBg}; color: ${color.text}; border: 1px solid ${color.border};">
+                    ${off.subject_code || 'CLASE'}
+                  </span>
+                  <div class="schedule-class-name" style="color: #ffffff;">${off.subject_name}</div>
+                  <div class="schedule-class-detail">${firstDetail}</div>
+                  ${secondDetail}
+                </div>
+              </td>
+            `;
+          } else {
+            dayCellsHtml += `
+              <td class="schedule-class-cell">
+                <div class="schedule-empty-cell">
+                  <i class="fa-regular fa-clock" style="margin-right: 4px; opacity: 0.6;"></i> Disponible
+                </div>
+              </td>
+            `;
+          }
+        }
+
         return `
           <tr>
-            <td class="schedule-time-cell">${slot.start} - ${slot.end}</td>
-            <td class="schedule-class-cell">
-              <div class="schedule-class-name">Matemáticas y Cálculo</div>
-              <div class="schedule-class-grade">Grado 11°A — B201</div>
-              <div class="schedule-class-teacher">Dr. Carlos Mendoza</div>
+            <td class="schedule-time-cell">
+              ${slot.start} - ${slot.end}
+              <small>${slot.name}</small>
             </td>
-            <td class="schedule-class-cell">
-              <div class="schedule-class-name">Lengua Castellana</div>
-              <div class="schedule-class-grade">Grado 11°A — B201</div>
-              <div class="schedule-class-teacher">Mg. Diana Castro</div>
-            </td>
-            <td class="schedule-class-cell">
-              <div class="schedule-class-name">Matemáticas y Cálculo</div>
-              <div class="schedule-class-grade">Grado 11°A — Lab 2</div>
-              <div class="schedule-class-teacher">Dr. Carlos Mendoza</div>
-            </td>
-            <td class="schedule-class-cell">
-              <div class="schedule-class-name">Física Clásica y Cuántica</div>
-              <div class="schedule-class-grade">Grado 11°A — Lab Física</div>
-              <div class="schedule-class-teacher">Dr. Carlos Mendoza</div>
-            </td>
-            <td class="schedule-class-cell">
-              <div class="schedule-class-name">Taller Saber 11 / IA</div>
-              <div class="schedule-class-grade">Grado 11°A — Lab IA</div>
-              <div class="schedule-class-teacher">Docentes Titulares</div>
-            </td>
+            ${dayCellsHtml}
           </tr>
         `;
       }).join('');
+    }
+
+    function openAddScheduleModal() {
+      if (!globalOverview) return;
+      const offerings = globalOverview.course_offerings || [];
+      const sel = document.getElementById('modal-sched-offering-id');
+      if (!sel) return;
+
+      if (offerings.length === 0) {
+        showToast("No hay asignaturas activas registradas para programar.", "warning");
+        return;
+      }
+
+      sel.innerHTML = offerings.map(o => `
+        <option value="${o.id}">[Salón ${o.group_code}] ${o.subject_name} — Docente: ${o.teacher_full_name}</option>
+      `).join('');
+
+      const roomInput = document.getElementById('modal-sched-classroom');
+      if (roomInput && offerings[0]) {
+        roomInput.value = `Salón ${offerings[0].group_code}`;
+      }
+
+      openModal('modal-add-schedule-block');
+    }
+
+    async function submitAddScheduleBlock(event) {
+      event.preventDefault();
+      const offeringId = document.getElementById('modal-sched-offering-id').value;
+      const day = document.getElementById('modal-sched-day').value;
+      const timeslot = document.getElementById('modal-sched-timeslot').value.split('|');
+      const classroom = document.getElementById('modal-sched-classroom').value.trim();
+
+      const payload = {
+        day: day,
+        day_of_week: day,
+        start_time: timeslot[0],
+        end_time: timeslot[1],
+        classroom: classroom
+      };
+
+      try {
+        const resp = await fetch(`${API_BASE}/academic/course-offerings/${offeringId}/schedule-blocks`, {
+          method: 'POST',
+          headers: getAuthHeaders(),
+          body: JSON.stringify(payload)
+        });
+
+        const data = await resp.json();
+        if (!resp.ok) {
+          throw new Error(data.detail || "Error al programar el bloque de clase.");
+        }
+
+        showToast("¡Bloque de clase programado con éxito sin cruces de horario!", "success");
+        closeModal('modal-add-schedule-block');
+
+        // Recargar datos para refrescar la grilla y selectores
+        await loadPlatformData();
+      } catch (err) {
+        alert(err.message);
+      }
     }
 
     function setAllAttendance(val) {
