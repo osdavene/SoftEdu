@@ -3,25 +3,32 @@
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 import logging
+from pathlib import Path
+from typing import Annotated
 
-from fastapi import FastAPI, Request
+from fastapi import Depends, FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import HTMLResponse, JSONResponse
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.v1.routers.academic_router import router as academic_router
 from app.api.v1.routers.auth_router import router as auth_router
 from app.api.v1.routers.grades_router import router as grades_router
 from app.api.v1.routers.syllabus_router import router as syllabus_router
 from app.core.config import settings
-from app.core.database import async_engine
+from app.core.database import async_engine, get_db_session
 from app.core.exceptions import SoftEduError
 from app.core.seed import initialize_database_and_seed
+from app.models.academic import CourseOffering, Enrollment
 
 logging.basicConfig(
     level=logging.DEBUG if settings.DEBUG else logging.INFO,
     format="%(asctime)s | %(levelname)-8s | %(name)s | %(message)s",
 )
 logger = logging.getLogger(__name__)
+
+DASHBOARD_TEMPLATE_PATH = Path(__file__).parent / "templates" / "dashboard.html"
 
 
 @asynccontextmanager
@@ -74,17 +81,35 @@ async def softedu_domain_exception_handler(
     )
 
 
-@app.get("/", tags=["Estado del Sistema"])
-async def root_status() -> dict[str, str]:
-    """Endpoint raíz informativo con acceso rápido a documentación OpenAPI."""
+@app.get("/", response_class=HTMLResponse, include_in_schema=False)
+async def interactive_dashboard() -> HTMLResponse:
+    """Renderiza la Consola Interactiva Web del Sistema Académico y Copiloto IA."""
+    if DASHBOARD_TEMPLATE_PATH.exists():
+        return HTMLResponse(
+            content=DASHBOARD_TEMPLATE_PATH.read_text(encoding="utf-8")
+        )
+    return HTMLResponse(
+        content="<h1>SoftEdu API Activa — Visita <a href='/docs'>/docs</a></h1>"
+    )
+
+
+@app.get(f"{settings.API_V1_STR}/demo-context", tags=["Estado del Sistema"])
+async def get_demo_context(
+    session: Annotated[AsyncSession, Depends(get_db_session)],
+) -> dict[str, str | None]:
+    """Retorna los UUIDs semilla activos para inicializar la consola web interactiva."""
+    stmt = (
+        select(Enrollment.id, CourseOffering.subject_id)
+        .join(CourseOffering, Enrollment.course_offering_id == CourseOffering.id)
+        .where(Enrollment.is_active.is_(True))
+        .limit(1)
+    )
+    row = (await session.execute(stmt)).first()
+    if row is None:
+        return {"enrollment_id": None, "subject_id": None}
     return {
-        "system": settings.PROJECT_NAME,
-        "version": settings.VERSION,
-        "environment": settings.ENVIRONMENT,
-        "ai_provider": f"{settings.AI_PROVIDER}:{settings.AI_MODEL_NAME}",
-        "docs_swagger": "/docs",
-        "docs_redoc": "/redoc",
-        "health_check": f"{settings.API_V1_STR}/health",
+        "enrollment_id": str(row[0]),
+        "subject_id": str(row[1]),
     }
 
 

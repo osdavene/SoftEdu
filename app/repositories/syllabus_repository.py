@@ -2,12 +2,14 @@
 Repositorio Asíncrono para el Sílabo Vectorizado y Búsqueda Semántica (`pgvector`).
 """
 
+import math
 import uuid
 
 from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import joinedload, selectinload
 
+from app.core.database import is_pgvector_enabled
 from app.models.academic import Subject, SyllabusTopic, SyllabusUnit
 
 
@@ -139,37 +141,38 @@ class SyllabusRepository:
     ) -> list[tuple[SyllabusTopic, float]]:
         """
         Ejecuta búsqueda semántica vectorial en PostgreSQL (`pgvector`) usando el
-        operador de distancia coseno (`<=>`).
-        Retorna una lista de tuplas `(SyllabusTopic, cosine_similarity_score)`.
+        operador de distancia coseno (`<=>`). Si el servidor local no tiene la extensión
+        nativa C `vector`, calcula la similitud coseno exacta sobre los vectores almacenados.
         """
-        distance_expr = SyllabusTopic.embedding.cosine_distance(query_embedding)
-        similarity_expr = (1.0 - distance_expr).label("cosine_similarity")
+        if is_pgvector_enabled():
+            distance_expr = SyllabusTopic.embedding.cosine_distance(query_embedding)
+            similarity_expr = (1.0 - distance_expr).label("cosine_similarity")
 
-        stmt = (
-            select(SyllabusTopic, similarity_expr)
-            .join(SyllabusUnit, SyllabusTopic.unit_id == SyllabusUnit.id)
-            .options(joinedload(SyllabusTopic.unit))
-            .where(
-                SyllabusUnit.subject_id == subject_id,
-                SyllabusUnit.is_active.is_(True),
-                SyllabusTopic.is_active.is_(True),
-                SyllabusTopic.embedding.is_not(None),
+            stmt = (
+                select(SyllabusTopic, similarity_expr)
+                .join(SyllabusUnit, SyllabusTopic.unit_id == SyllabusUnit.id)
+                .options(joinedload(SyllabusTopic.unit))
+                .where(
+                    SyllabusUnit.subject_id == subject_id,
+                    SyllabusUnit.is_active.is_(True),
+                    SyllabusTopic.is_active.is_(True),
+                    SyllabusTopic.embedding.is_not(None),
+                )
+                .order_by(distance_expr.asc())
+                .limit(top_k)
             )
-            .order_by(distance_expr.asc())
-            .limit(top_k)
-        )
-        result = await self._session.execute(stmt)
-        rows = result.all()
+            result = await self._session.execute(stmt)
+            rows = result.all()
 
-        matched_with_scores: list[tuple[SyllabusTopic, float]] = []
-        for topic_obj, raw_sim in rows:
-            clamped_sim = max(0.0, min(1.0, float(raw_sim or 0.0)))
-            matched_with_scores.append((topic_obj, round(clamped_sim, 4)))
+            matched_with_scores: list[tuple[SyllabusTopic, float]] = []
+            for topic_obj, raw_sim in rows:
+                clamped_sim = max(0.0, min(1.0, float(raw_sim or 0.0)))
+                matched_with_scores.append((topic_obj, round(clamped_sim, 4)))
 
-        if matched_with_scores:
-            return matched_with_scores
+            if matched_with_scores:
+                return matched_with_scores
 
-        # Contingencia: si aún hay temas sin vectorizar, recupera los primeros temas activos de la materia
+        # Modo híbrido / compatibilidad local: cálculo exacto de similitud coseno
         fallback_stmt = (
             select(SyllabusTopic)
             .join(SyllabusUnit, SyllabusTopic.unit_id == SyllabusUnit.id)
@@ -180,7 +183,25 @@ class SyllabusRepository:
                 SyllabusTopic.is_active.is_(True),
             )
             .order_by(SyllabusUnit.unit_number.asc(), SyllabusTopic.topic_number.asc())
-            .limit(top_k)
         )
-        fallback_res = await self._session.execute(fallback_stmt)
-        return [(topic, 0.50) for topic in fallback_res.scalars().all()]
+        all_topics = list((await self._session.execute(fallback_stmt)).scalars().all())
+        scored: list[tuple[SyllabusTopic, float]] = []
+        for t in all_topics:
+            if t.embedding:
+                sim = self._compute_cosine_similarity(query_embedding, list(t.embedding))
+            else:
+                sim = 0.50
+            scored.append((t, round(max(0.0, min(1.0, sim)), 4)))
+
+        scored.sort(key=lambda item: item[1], reverse=True)
+        return scored[:top_k]
+
+    @staticmethod
+    def _compute_cosine_similarity(vec_a: list[float], vec_b: list[float]) -> float:
+        if not vec_a or not vec_b or len(vec_a) != len(vec_b):
+            return 0.50
+        dot = sum(a * b for a, b in zip(vec_a, vec_b))
+        norm_a = math.sqrt(sum(a * a for a in vec_a)) or 1.0
+        norm_b = math.sqrt(sum(b * b for b in vec_b)) or 1.0
+        raw = dot / (norm_a * norm_b)
+        return (raw + 1.0) / 2.0 if raw < 0 else raw

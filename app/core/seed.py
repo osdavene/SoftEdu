@@ -8,11 +8,18 @@ from decimal import Decimal
 import logging
 
 from sqlalchemy import select
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.ai.ai_service import AcademicAIService
 from app.core.config import settings
-from app.core.database import AsyncSessionLocal, Base, async_engine, init_pgvector_extension
+from app.core.database import (
+    AsyncSessionLocal,
+    Base,
+    async_engine,
+    ensure_database_exists,
+    init_pgvector_extension,
+)
 from app.core.security import hash_password
 from app.models.academic import (
     AcademicPeriod,
@@ -33,11 +40,23 @@ logger = logging.getLogger(__name__)
 
 async def initialize_database_and_seed() -> None:
     """
-    1. Activa la extensión `vector` (`pgvector`) en PostgreSQL.
-    2. Crea todas las tablas del modelo SQLAlchemy 2.0 si no existen.
-    3. Inserta usuarios RBAC y datos académicos semilla de forma idempotente.
+    1. Crea la base de datos `softedu_db` si no existe.
+    2. Activa la extensión `vector` (`pgvector`) en PostgreSQL (o adapta el tipo en local).
+    3. Crea todas las tablas del modelo SQLAlchemy 2.0 si no existen.
+    4. Inserta usuarios RBAC y datos académicos semilla de forma idempotente.
     """
-    await init_pgvector_extension()
+    await ensure_database_exists()
+    has_pgvector = await init_pgvector_extension()
+
+    if not has_pgvector:
+        # En instalaciones locales Windows sin el binario C de pgvector, adaptamos la columna
+        # en memoria a JSONB para permitir pruebas locales transparentes sin fallar en DDL
+        SyllabusTopic.__table__.c.embedding.type = JSONB()
+        SyllabusTopic.__table__.indexes = {
+            idx
+            for idx in SyllabusTopic.__table__.indexes
+            if idx.name != "ix_syllabus_topics_embedding_hnsw"
+        }
 
     async with async_engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
@@ -58,7 +77,6 @@ async def _seed_default_records(session: AsyncSession) -> None:
 
     logger.info("Sembrando usuarios RBAC y catálogo académico inicial en SoftEdu...")
 
-    # 1. Usuarios Base (Admin, Docente, Estudiante)
     admin_user = User(
         email="admin@softedu.edu.co",
         hashed_password=hash_password("admin12345"),
@@ -86,7 +104,6 @@ async def _seed_default_records(session: AsyncSession) -> None:
     session.add_all([admin_user, teacher_user, student_user])
     await session.flush()
 
-    # 2. Perfiles Docente y Estudiante
     teacher = Teacher(
         user_id=teacher_user.id,
         employee_code="DOC-2026-001",
@@ -106,7 +123,6 @@ async def _seed_default_records(session: AsyncSession) -> None:
     session.add_all([teacher, student])
     await session.flush()
 
-    # 3. Período Lectivo y Asignatura
     period = AcademicPeriod(
         code="2026-2",
         name="Segundo Período Académico 2026",
@@ -128,7 +144,6 @@ async def _seed_default_records(session: AsyncSession) -> None:
     session.add_all([period, subject])
     await session.flush()
 
-    # 4. Sílabo Vectorizado (Unidad + Temas con Embeddings)
     unit1 = SyllabusUnit(
         subject_id=subject.id,
         unit_number=1,
@@ -191,7 +206,6 @@ async def _seed_default_records(session: AsyncSession) -> None:
     session.add_all([topic1, topic2])
     await session.flush()
 
-    # 5. Oferta de Curso con Bloques Horarios y Matrícula Activa
     offering = CourseOffering(
         subject_id=subject.id,
         teacher_id=teacher.id,

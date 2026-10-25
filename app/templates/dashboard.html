@@ -1,0 +1,494 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SoftEdu — AI-Powered LMS/SIS | Consola Académica & Copiloto IA</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen font-sans">
+  <!-- Barra Superior -->
+  <header class="border-b border-slate-800 bg-slate-900/90 backdrop-blur sticky top-0 z-30">
+    <div class="max-w-7xl mx-auto px-4 py-3 flex flex-wrap items-center justify-between gap-3">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-indigo-600 flex items-center justify-center shadow-lg shadow-indigo-600/30">
+          <i class="fa-solid fa-graduation-cap text-xl text-white"></i>
+        </div>
+        <div>
+          <h1 class="text-lg font-bold tracking-tight text-white flex items-center gap-2">
+            SoftEdu <span class="text-xs px-2 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">AI-Powered LMS/SIS</span>
+          </h1>
+          <p class="text-xs text-slate-400">FastAPI Async • SQLAlchemy 2.0 • PostgreSQL + pgvector • Copiloto IA</p>
+        </div>
+      </div>
+
+      <div class="flex items-center gap-2 flex-wrap">
+        <span id="authBadge" class="text-xs px-3 py-1.5 rounded-lg bg-slate-800 border border-slate-700 text-slate-300">
+          <i class="fa-solid fa-circle-notch fa-spin mr-1 text-indigo-400"></i> Conectando...
+        </span>
+        <a href="/docs" target="_blank" class="text-xs px-3 py-1.5 rounded-lg bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-300 border border-emerald-500/30 transition flex items-center gap-1.5">
+          <i class="fa-solid fa-book-open"></i> Swagger API (/docs)
+        </a>
+        <a href="/redoc" target="_blank" class="text-xs px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition flex items-center gap-1.5">
+          <i class="fa-solid fa-file-code"></i> ReDoc
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <main class="max-w-7xl mx-auto px-4 py-6 space-y-6">
+    <!-- Selector Rápido de Sesión RBAC + Contexto Semilla -->
+    <section class="bg-slate-900 border border-slate-800 rounded-2xl p-4 flex flex-wrap items-center justify-between gap-4">
+      <div class="space-y-1">
+        <div class="text-xs uppercase tracking-wider text-indigo-400 font-semibold">Control de Acceso Basado en Roles (JWT RBAC)</div>
+        <p class="text-sm text-slate-300">Cambia de rol con un clic para probar los permisos y los 3 módulos del Copiloto de IA en vivo:</p>
+      </div>
+      <div class="flex flex-wrap gap-2">
+        <button onclick="quickLogin('admin@softedu.edu.co', 'admin12345')" class="px-3.5 py-2 rounded-xl text-xs font-semibold bg-purple-600/20 hover:bg-purple-600/30 text-purple-300 border border-purple-500/40 transition">
+          <i class="fa-solid fa-user-shield mr-1"></i> Rol ADMIN
+        </button>
+        <button onclick="quickLogin('docente@softedu.edu.co', 'docente123')" class="px-3.5 py-2 rounded-xl text-xs font-semibold bg-indigo-600 hover:bg-indigo-500 text-white shadow-lg shadow-indigo-600/20 transition">
+          <i class="fa-solid fa-chalkboard-user mr-1"></i> Rol DOCENTE (Titular)
+        </button>
+        <button onclick="quickLogin('estudiante@softedu.edu.co', 'estudiante123')" class="px-3.5 py-2 rounded-xl text-xs font-semibold bg-sky-600/20 hover:bg-sky-600/30 text-sky-300 border border-sky-500/40 transition">
+          <i class="fa-solid fa-user-graduate mr-1"></i> Rol ESTUDIANTE
+        </button>
+      </div>
+    </section>
+
+    <!-- Grid Principal: Boletín + Registro de Notas + Alerta Temprana IA -->
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+      <!-- Columna Izquierda: Formulario de Notas y Asistencia (5 cols) -->
+      <div class="lg:col-span-5 space-y-6">
+        <!-- Card: Registrar Calificación Ponderada -->
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-4">
+          <div class="flex items-center justify-between">
+            <h2 class="text-base font-bold text-white flex items-center gap-2">
+              <i class="fa-solid fa-pen-to-square text-indigo-400"></i>
+              1. Registrar Calificación Ponderada
+            </h2>
+            <span class="text-[11px] px-2 py-0.5 rounded bg-indigo-500/10 text-indigo-300 border border-indigo-500/20">Escala 0.0 - 5.0</span>
+          </div>
+          <p class="text-xs text-slate-400">
+            Valida matrícula activa, calcula el promedio ponderado acumulado y dispara en <code class="text-indigo-300">BackgroundTasks</code> el diagnóstico del Copiloto de IA.
+          </p>
+
+          <form id="gradeForm" onsubmit="submitGrade(event)" class="space-y-3">
+            <div class="grid grid-cols-2 gap-3">
+              <div>
+                <label class="block text-xs text-slate-400 mb-1">Corte Evaluativo</label>
+                <input id="evalCut" type="number" min="1" max="10" value="1" required class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-white focus:border-indigo-500 focus:outline-none" />
+              </div>
+              <div>
+                <label class="block text-xs text-slate-400 mb-1">Peso Porcentual (%)</label>
+                <input id="evalWeight" type="number" step="0.01" min="1" max="100" value="30" required class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-white focus:border-indigo-500 focus:outline-none" />
+              </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-3">
+              <div>
+                <label class="block text-xs text-slate-400 mb-1">Actividad / Evaluación</label>
+                <input id="evalName" type="text" value="Parcial 1 - Arquitectura Async" required class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-white focus:border-indigo-500 focus:outline-none" />
+              </div>
+              <div>
+                <label class="block text-xs text-slate-400 mb-1">Nota (0.00 a 5.00)</label>
+                <input id="evalScore" type="number" step="0.1" min="0" max="5" value="2.4" required class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-amber-300 font-bold focus:border-indigo-500 focus:outline-none" />
+              </div>
+            </div>
+
+            <div>
+              <label class="block text-xs text-slate-400 mb-1">Tema del Sílabo Evaluado (Trazabilidad RAG)</label>
+              <select id="evalTopicSelect" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-white focus:border-indigo-500 focus:outline-none"></select>
+            </div>
+
+            <div>
+              <label class="block text-xs text-slate-400 mb-1">Observaciones del Docente</label>
+              <input id="evalObs" type="text" value="Presenta dificultad en el manejo de sesiones aisladas en BackgroundTasks." class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-white focus:border-indigo-500 focus:outline-none" />
+            </div>
+
+            <button type="submit" id="btnSubmitGrade" class="w-full py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-sm shadow-lg shadow-indigo-600/25 transition flex items-center justify-center gap-2">
+              <i class="fa-solid fa-bolt"></i> Registrar Nota y Disparar Diagnóstico IA
+            </button>
+          </form>
+
+          <!-- Botón rápido de Inasistencia -->
+          <div class="pt-3 border-t border-slate-800 flex items-center justify-between gap-2">
+            <span class="text-xs text-slate-400">¿Simular falla de asistencia hoy?</span>
+            <button onclick="registerQuickAbsence()" class="px-3 py-1.5 rounded-lg bg-rose-500/15 hover:bg-rose-500/25 text-rose-300 border border-rose-500/30 text-xs font-medium transition">
+              <i class="fa-solid fa-user-xmark mr-1"></i> Registrar Inasistencia + Alerta IA
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Columna Derecha: Boletín Académico + Diagnóstico IA en Tiempo Real (7 cols) -->
+      <div class="lg:col-span-7 space-y-6">
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-4">
+          <div class="flex flex-wrap items-center justify-between gap-2">
+            <div>
+              <h2 class="text-base font-bold text-white flex items-center gap-2">
+                <i class="fa-solid fa-chart-pie text-emerald-400"></i>
+                Boletín Académico Integral & Alerta Temprana IA
+              </h2>
+              <p id="studentHeaderInfo" class="text-xs text-slate-400 mt-0.5">Cargando matrícula activa...</p>
+            </div>
+            <button onclick="loadReportCard()" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs text-slate-200 border border-slate-700 transition">
+              <i class="fa-solid fa-rotate mr-1"></i> Actualizar Boletín
+            </button>
+          </div>
+
+          <!-- KPIs del Boletín -->
+          <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <div class="bg-slate-950 border border-slate-800 rounded-xl p-3">
+              <div class="text-[11px] text-slate-400">Promedio Ponderado</div>
+              <div id="kpiWeightedAvg" class="text-xl font-extrabold text-white mt-0.5">--</div>
+              <div class="text-[10px] text-slate-500">Mín. aprobatoria: 3.00</div>
+            </div>
+            <div class="bg-slate-950 border border-slate-800 rounded-xl p-3">
+              <div class="text-[11px] text-slate-400">% Curso Evaluado</div>
+              <div id="kpiEvalWeight" class="text-xl font-extrabold text-indigo-400 mt-0.5">--%</div>
+              <div id="kpiRemWeight" class="text-[10px] text-slate-500">Restante: --%</div>
+            </div>
+            <div class="bg-slate-950 border border-slate-800 rounded-xl p-3">
+              <div class="text-[11px] text-slate-400">Meta en % Restante</div>
+              <div id="kpiNeededScore" class="text-xl font-extrabold text-amber-400 mt-0.5">--</div>
+              <div class="text-[10px] text-slate-500">Para cerrar en 3.00</div>
+            </div>
+            <div class="bg-slate-950 border border-slate-800 rounded-xl p-3">
+              <div class="text-[11px] text-slate-400">% Inasistencias</div>
+              <div id="kpiAbsencePct" class="text-xl font-extrabold text-emerald-400 mt-0.5">--%</div>
+              <div class="text-[10px] text-slate-500">Límite máx: 20.0%</div>
+            </div>
+          </div>
+
+          <!-- Tabla de Calificaciones -->
+          <div class="overflow-x-auto border border-slate-800 rounded-xl">
+            <table class="w-full text-left text-xs">
+              <thead class="bg-slate-950 text-slate-400 border-b border-slate-800">
+                <tr>
+                  <th class="py-2.5 px-3">Corte</th>
+                  <th class="py-2.5 px-3">Evaluación</th>
+                  <th class="py-2.5 px-3">Tema Sílabo</th>
+                  <th class="py-2.5 px-3">Peso</th>
+                  <th class="py-2.5 px-3">Nota</th>
+                  <th class="py-2.5 px-3">Aporte</th>
+                </tr>
+              </thead>
+              <tbody id="gradesTableBody" class="divide-y divide-slate-800/70 text-slate-200">
+                <tr><td colspan="6" class="py-4 text-center text-slate-500">Sin calificaciones registradas aún.</td></tr>
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Tarjeta del Copiloto de IA: StudentAIInsight -->
+          <div id="aiInsightBox" class="bg-gradient-to-br from-indigo-950/60 via-slate-900 to-slate-950 border border-indigo-500/30 rounded-2xl p-4 space-y-3">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-2">
+                <i class="fa-solid fa-robot text-indigo-400"></i>
+                <span class="text-xs font-bold uppercase tracking-wider text-indigo-300">Diagnóstico Vigente del Copiloto IA (AIRiskAssessmentSchema)</span>
+              </div>
+              <span id="aiRiskBadge" class="text-xs font-bold px-2.5 py-0.5 rounded-full bg-slate-800 text-slate-300">SIN DIAGNÓSTICO AÚN</span>
+            </div>
+            <p id="aiExecSummary" class="text-xs text-slate-300 leading-relaxed">
+              Registra una calificación o una inasistencia en el panel izquierdo para disparar el análisis predictivo en segundo plano.
+            </p>
+            <div id="aiActionPlanGrid" class="hidden grid grid-cols-1 md:grid-cols-2 gap-3 pt-2 border-t border-indigo-500/20 text-xs">
+              <div class="bg-slate-950/70 rounded-xl p-3 border border-slate-800">
+                <div class="font-semibold text-indigo-300 mb-1"><i class="fa-solid fa-chalkboard-user mr-1"></i> Plan Sugerido al Docente:</div>
+                <ul id="aiTeacherActions" class="list-disc list-inside text-slate-300 space-y-1"></ul>
+              </div>
+              <div class="bg-slate-950/70 rounded-xl p-3 border border-slate-800">
+                <div class="font-semibold text-emerald-300 mb-1"><i class="fa-solid fa-user-graduate mr-1"></i> Plan Sugerido al Estudiante:</div>
+                <ul id="aiStudentActions" class="list-disc list-inside text-slate-300 space-y-1"></ul>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Grid Inferior: Caso de Uso #2 (Asistente Curricular) y Caso de Uso #3 (Tutor RAG pgvector) -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <!-- Caso de Uso #2: Asistente Curricular para el Docente -->
+      <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-4">
+        <div class="flex items-center justify-between">
+          <h2 class="text-base font-bold text-white flex items-center gap-2">
+            <i class="fa-solid fa-wand-magic-sparkles text-purple-400"></i>
+            2. Asistente Curricular Docente (Generativo)
+          </h2>
+          <span class="text-[11px] px-2 py-0.5 rounded bg-purple-500/10 text-purple-300 border border-purple-500/20">Structured JSON</span>
+        </div>
+        <p class="text-xs text-slate-400">
+          Selecciona un <code class="text-purple-300">SyllabusTopic</code> oficial para generar planeación de sesión en 3 fases, rúbrica analítica y banco de preguntas tipo test (Taxonomía de Bloom).
+        </p>
+        <div class="flex flex-wrap gap-2">
+          <select id="currTopicSelect" class="flex-1 bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white"></select>
+          <button onclick="generateCurricularProposal()" id="btnCurricular" class="px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-xs font-semibold transition flex items-center gap-1.5">
+            <i class="fa-solid fa-sparkles"></i> Generar Planeación, Rúbrica y Test
+          </button>
+        </div>
+        <div id="curricularResult" class="bg-slate-950 border border-slate-800 rounded-xl p-3 text-xs text-slate-300 max-h-80 overflow-y-auto space-y-2">
+          <span class="text-slate-500">Haz clic en "Generar Planeación, Rúbrica y Test" para visualizar el contrato JSON estructurado.</span>
+        </div>
+      </div>
+
+      <!-- Caso de Uso #3: Tutor RAG Basado en el Sílabo (pgvector) -->
+      <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-4">
+        <div class="flex items-center justify-between">
+          <h2 class="text-base font-bold text-white flex items-center gap-2">
+            <i class="fa-solid fa-magnifying-glass-chart text-sky-400"></i>
+            3. Tutor RAG Basado en el Sílabo (pgvector)
+          </h2>
+          <span class="text-[11px] px-2 py-0.5 rounded bg-sky-500/10 text-sky-300 border border-sky-500/20">Cosine Similarity &lt;=&gt;</span>
+        </div>
+        <p class="text-xs text-slate-400">
+          Formula cualquier duda académica: el sistema embebe la consulta, busca en PostgreSQL (<code class="text-sky-300">pgvector</code>) los temas más cercanos y responde con <em>grounding</em> estricto.
+        </p>
+        <div class="flex gap-2">
+          <input id="ragQuestionInput" type="text" value="¿Cómo evitar cierres prematuros de AsyncSession al usar BackgroundTasks y cómo funciona pgvector HNSW?" class="flex-1 bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:border-sky-500 focus:outline-none" />
+          <button onclick="askRagTutor()" id="btnRag" class="px-4 py-2 rounded-xl bg-sky-600 hover:bg-sky-500 text-white text-xs font-semibold transition flex items-center gap-1.5 whitespace-nowrap">
+            <i class="fa-solid fa-paper-plane"></i> Consultar RAG
+          </button>
+        </div>
+        <div id="ragResult" class="bg-slate-950 border border-slate-800 rounded-xl p-3 text-xs text-slate-300 max-h-80 overflow-y-auto space-y-2">
+          <span class="text-slate-500">Envía tu consulta para ejecutar la búsqueda semántica vectorial en el sílabo.</span>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    let jwtToken = "";
+    let activeEnrollmentId = "";
+    let activeSubjectId = "";
+
+    async function apiFetch(path, options = {}) {
+      const headers = { "Content-Type": "application/json", ...(options.headers || {}) };
+      if (jwtToken) headers["Authorization"] = `Bearer ${jwtToken}`;
+      const res = await fetch(path, { ...options, headers });
+      const data = await res.json();
+      if (!res.ok) {
+        const msg = data?.detail?.message || data?.message || JSON.stringify(data);
+        throw new Error(msg);
+      }
+      return data;
+    }
+
+    async function quickLogin(email, password) {
+      try {
+        const res = await apiFetch("/api/v1/auth/login", {
+          method: "POST",
+          body: JSON.stringify({ email, password })
+        });
+        jwtToken = res.access_token;
+        document.getElementById("authBadge").innerHTML =
+          `<i class="fa-solid fa-circle-check text-emerald-400 mr-1"></i> ${res.user.full_name} <strong class="text-indigo-300">[${res.user.role}]</strong>`;
+        await bootstrapAcademicData();
+      } catch (err) {
+        alert("Error de autenticación: " + err.message);
+      }
+    }
+
+    async function bootstrapAcademicData() {
+      const demoCtx = await apiFetch("/api/v1/demo-context");
+      activeEnrollmentId = demoCtx.enrollment_id;
+      activeSubjectId = demoCtx.subject_id;
+
+      // Poblar selectores de temas del sílabo
+      const syllabus = await apiFetch(`/api/v1/syllabus/subjects/${activeSubjectId}`);
+      const evalSelect = document.getElementById("evalTopicSelect");
+      const currSelect = document.getElementById("currTopicSelect");
+      evalSelect.innerHTML = "";
+      currSelect.innerHTML = "";
+
+      for (const unit of syllabus.units) {
+        for (const topic of unit.topics) {
+          const opt1 = new Option(`U${unit.unit_number}.T${topic.topic_number} - ${topic.title}`, topic.id);
+          const opt2 = new Option(`U${unit.unit_number}.T${topic.topic_number} - ${topic.title}`, topic.id);
+          evalSelect.add(opt1);
+          currSelect.add(opt2);
+        }
+      }
+
+      await loadReportCard();
+    }
+
+    async function loadReportCard() {
+      if (!activeEnrollmentId) return;
+      const rc = await apiFetch(`/api/v1/grades/enrollments/${activeEnrollmentId}/report-card`);
+      document.getElementById("studentHeaderInfo").textContent =
+        `${rc.student_full_name} (${rc.student_code}) • ${rc.subject_name} (${rc.subject_code} - ${rc.group_code}) • Período ${rc.academic_period_code}`;
+
+      document.getElementById("kpiWeightedAvg").textContent = Number(rc.current_weighted_average).toFixed(2);
+      document.getElementById("kpiEvalWeight").textContent = `${Number(rc.evaluated_weight_percentage).toFixed(0)}%`;
+      document.getElementById("kpiRemWeight").textContent = `Restante: ${Number(rc.remaining_weight_percentage).toFixed(0)}%`;
+      document.getElementById("kpiNeededScore").textContent = Number(rc.minimum_score_needed_in_remaining).toFixed(2);
+      document.getElementById("kpiAbsencePct").textContent = `${Number(rc.attendance_summary.absence_percentage).toFixed(1)}%`;
+
+      const tbody = document.getElementById("gradesTableBody");
+      if (!rc.grades.length) {
+        tbody.innerHTML = `<tr><td colspan="6" class="py-4 text-center text-slate-500">Sin calificaciones registradas aún.</td></tr>`;
+      } else {
+        tbody.innerHTML = rc.grades.map(g => `
+          <tr class="hover:bg-slate-900/60">
+            <td class="py-2 px-3 font-semibold text-indigo-300">Corte ${g.evaluation_cut}</td>
+            <td class="py-2 px-3">${g.evaluation_name}</td>
+            <td class="py-2 px-3 text-slate-400">${g.syllabus_topic_title || 'General'}</td>
+            <td class="py-2 px-3">${Number(g.weight_percentage).toFixed(0)}%</td>
+            <td class="py-2 px-3 font-bold ${g.is_passing_score ? 'text-emerald-400' : 'text-rose-400'}">${Number(g.score).toFixed(2)}</td>
+            <td class="py-2 px-3 text-slate-300">+${Number(g.weighted_contribution).toFixed(2)}</td>
+          </tr>
+        `).join("");
+      }
+
+      const insight = rc.current_ai_insight;
+      const badge = document.getElementById("aiRiskBadge");
+      const summary = document.getElementById("aiExecSummary");
+      const planGrid = document.getElementById("aiActionPlanGrid");
+
+      if (insight) {
+        const colors = {
+          BAJO: "bg-emerald-500/20 text-emerald-300 border border-emerald-500/40",
+          MEDIO: "bg-amber-500/20 text-amber-300 border border-amber-500/40",
+          ALTO: "bg-orange-500/20 text-orange-300 border border-orange-500/40",
+          CRITICO: "bg-rose-500/20 text-rose-300 border border-rose-500/40"
+        };
+        badge.className = `text-xs font-bold px-2.5 py-0.5 rounded-full ${colors[insight.risk_level] || ''}`;
+        badge.textContent = `RIESGO ${insight.risk_level}`;
+        summary.textContent = insight.executive_summary;
+        planGrid.classList.remove("hidden");
+
+        document.getElementById("aiTeacherActions").innerHTML =
+          insight.suggested_action_plan.acciones_docente.map(a => `<li>${a}</li>`).join("");
+        document.getElementById("aiStudentActions").innerHTML =
+          insight.suggested_action_plan.acciones_estudiante.map(a => `<li>${a}</li>`).join("");
+      }
+    }
+
+    async function submitGrade(e) {
+      e.preventDefault();
+      const btn = document.getElementById("btnSubmitGrade");
+      btn.disabled = true;
+      btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Guardando y ejecutando Copiloto IA...`;
+      try {
+        await apiFetch("/api/v1/grades", {
+          method: "POST",
+          body: JSON.stringify({
+            enrollment_id: activeEnrollmentId,
+            syllabus_topic_id: document.getElementById("evalTopicSelect").value || null,
+            evaluation_cut: parseInt(document.getElementById("evalCut").value, 10),
+            evaluation_name: document.getElementById("evalName").value,
+            weight_percentage: parseFloat(document.getElementById("evalWeight").value),
+            score: parseFloat(document.getElementById("evalScore").value),
+            teacher_observations: document.getElementById("evalObs").value
+          })
+        });
+        // Incrementar el nombre de actividad por defecto para permitir pruebas sucesivas rápidas
+        const randSuffix = Math.floor(Math.random() * 90 + 10);
+        document.getElementById("evalName").value = `Evaluación Continua #${randSuffix}`;
+        setTimeout(loadReportCard, 900);
+      } catch (err) {
+        alert(err.message);
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = `<i class="fa-solid fa-bolt"></i> Registrar Nota y Disparar Diagnóstico IA`;
+      }
+    }
+
+    async function registerQuickAbsence() {
+      try {
+        const randomDay = String(Math.floor(Math.random() * 27) + 1).padStart(2, "0");
+        const randomMonth = String(Math.floor(Math.random() * 4) + 8).padStart(2, "0");
+        await apiFetch("/api/v1/academic/attendances", {
+          method: "POST",
+          body: JSON.stringify({
+            enrollment_id: activeEnrollmentId,
+            syllabus_topic_id: document.getElementById("evalTopicSelect").value || null,
+            session_date: `2026-${randomMonth}-${randomDay}`,
+            status: "ABSENT",
+            observations: "Inasistencia registrada desde consola interactiva."
+          })
+        });
+        setTimeout(loadReportCard, 900);
+      } catch (err) {
+        alert(err.message);
+      }
+    }
+
+    async function generateCurricularProposal() {
+      const topicId = document.getElementById("currTopicSelect").value;
+      const box = document.getElementById("curricularResult");
+      box.innerHTML = `<i class="fa-solid fa-spinner fa-spin text-purple-400 mr-1"></i> Generando planeación, rúbrica y banco de preguntas con el motor de IA...`;
+      try {
+        const data = await apiFetch(`/api/v1/syllabus/topics/${topicId}/curricular-assistant`, {
+          method: "POST",
+          body: JSON.stringify({
+            session_duration_minutes: 120,
+            num_quiz_questions: 3,
+            difficulty_level: "INTERMEDIO"
+          })
+        });
+        const p = data.curricular_proposal;
+        box.innerHTML = `
+          <div class="font-bold text-purple-300 text-sm">${p.titulo_sesion_propuesta}</div>
+          <div class="text-slate-400">${p.objetivo_aprendizaje_especifico}</div>
+          <div class="font-semibold text-white pt-1">Fases de la Clase:</div>
+          <ul class="list-disc list-inside space-y-1">
+            ${p.fases_planeacion_clase.map(f => `<li><strong>${f.fase} (${f.duracion_minutos} min):</strong> ${f.actividad_docente}</li>`).join("")}
+          </ul>
+          <div class="font-semibold text-white pt-1">Pregunta Tipo Test Generada (${p.banco_preguntas_test[0].nivel_taxonomia_bloom}):</div>
+          <div class="bg-slate-900 p-2.5 rounded-lg border border-slate-800 space-y-1">
+            <div class="font-medium text-slate-200">${p.banco_preguntas_test[0].enunciado}</div>
+            ${p.banco_preguntas_test[0].opciones.map((op, i) => `<div class="${i === p.banco_preguntas_test[0].indice_respuesta_correcta ? 'text-emerald-400 font-semibold' : 'text-slate-400'}">${op}</div>`).join("")}
+          </div>
+        `;
+      } catch (err) {
+        box.innerHTML = `<span class="text-rose-400">${err.message}</span>`;
+      }
+    }
+
+    async function askRagTutor() {
+      const q = document.getElementById("ragQuestionInput").value;
+      const box = document.getElementById("ragResult");
+      box.innerHTML = `<i class="fa-solid fa-spinner fa-spin text-sky-400 mr-1"></i> Ejecutando búsqueda vectorial en pgvector y generando respuesta fundamentada...`;
+      try {
+        const data = await apiFetch("/api/v1/syllabus/rag-tutor/ask", {
+          method: "POST",
+          body: JSON.stringify({
+            subject_id: activeSubjectId,
+            question: q,
+            top_k_topics: 2
+          })
+        });
+        const r = data.ai_tutor_response;
+        box.innerHTML = `
+          <div class="flex items-center justify-between">
+            <span class="font-bold text-sky-300">Fuentes recuperadas de pgvector:</span>
+            <span class="text-[11px] px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300">En Sílabo: ${r.esta_dentro_del_silabo ? 'SÍ' : 'NO'}</span>
+          </div>
+          <div class="space-y-1">
+            ${data.retrieved_syllabus_sources.map(s => `
+              <div class="bg-slate-900 px-2.5 py-1.5 rounded border border-slate-800 flex justify-between items-center">
+                <span>U${s.unit_number}.T${s.topic_number}: <strong>${s.topic_title}</strong></span>
+                <span class="text-sky-400 font-mono text-[11px]">Similitud: ${(s.cosine_similarity * 100).toFixed(1)}%</span>
+              </div>
+            `).join("")}
+          </div>
+          <div class="pt-1 text-slate-200 leading-relaxed">${r.respuesta_tutor}</div>
+          <div class="bg-indigo-950/40 border border-indigo-500/30 rounded-lg p-2 text-indigo-200">
+            <strong>Reto de Autoevaluación:</strong> ${r.ejercicio_autoevaluacion_sugerido}
+          </div>
+        `;
+      } catch (err) {
+        box.innerHTML = `<span class="text-rose-400">${err.message}</span>`;
+      }
+    }
+
+    // Iniciar automáticamente con el rol DOCENTE al abrir la consola
+    window.addEventListener("DOMContentLoaded", () => {
+      quickLogin("docente@softedu.edu.co", "docente123");
+    });
+  </script>
+</body>
+</html>
