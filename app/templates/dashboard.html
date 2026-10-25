@@ -4,255 +4,902 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>SoftEdu — AI-Powered LMS/SIS | Consola Académica & Copiloto IA</title>
-  <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
+  <style>
+    :root {
+      --bg-base: #070b14;
+      --bg-panel: #0f172a;
+      --bg-card: #111c33;
+      --bg-input: #091020;
+      --border-subtle: #1e293b;
+      --border-focus: #6366f1;
+      --text-main: #f8fafc;
+      --text-secondary: #cbd5e1;
+      --text-muted: #64748b;
+      --indigo: #6366f1;
+      --indigo-hover: #4f46e5;
+      --purple: #9333ea;
+      --sky: #0284c7;
+      --emerald: #10b981;
+      --amber: #f59e0b;
+      --rose: #f43f5e;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background: radial-gradient(circle at top right, #1e1b4b 0%, var(--bg-base) 45%);
+      color: var(--text-main);
+      font-family: 'Segoe UI', system-ui, -apple-system, BlinkMacSystemFont, Roboto, sans-serif;
+      min-height: 100vh;
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* Barra Superior */
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 40;
+      background: rgba(15, 23, 42, 0.88);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border-subtle);
+    }
+
+    .topbar-inner {
+      max-width: 1340px;
+      margin: 0 auto;
+      padding: 14px 24px;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .brand-icon {
+      width: 44px;
+      height: 44px;
+      border-radius: 12px;
+      background: linear-gradient(135deg, #6366f1 0%, #4338ca 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #fff;
+      font-size: 20px;
+      box-shadow: 0 8px 20px -4px rgba(99, 102, 241, 0.55);
+    }
+
+    .brand-title {
+      font-size: 19px;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .pill-ai {
+      font-size: 11px;
+      font-weight: 700;
+      padding: 3px 10px;
+      border-radius: 999px;
+      background: rgba(99, 102, 241, 0.18);
+      color: #a5b4fc;
+      border: 1px solid rgba(99, 102, 241, 0.35);
+      letter-spacing: 0.03em;
+    }
+
+    .brand-sub {
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-top: 2px;
+    }
+
+    .topbar-actions {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .badge-user {
+      font-size: 12.5px;
+      padding: 7px 14px;
+      border-radius: 10px;
+      background: #131d35;
+      border: 1px solid #263554;
+      color: var(--text-secondary);
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .btn-link {
+      font-size: 12.5px;
+      font-weight: 600;
+      padding: 7px 14px;
+      border-radius: 10px;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      transition: all 0.18s ease;
+    }
+
+    .btn-swagger {
+      background: rgba(16, 185, 129, 0.15);
+      color: #6ee7b7;
+      border: 1px solid rgba(16, 185, 129, 0.35);
+    }
+    .btn-swagger:hover {
+      background: rgba(16, 185, 129, 0.25);
+      transform: translateY(-1px);
+    }
+
+    .btn-redoc {
+      background: #1e293b;
+      color: #e2e8f0;
+      border: 1px solid #334155;
+    }
+    .btn-redoc:hover {
+      background: #334155;
+    }
+
+    /* Contenedor Principal */
+    .container {
+      max-width: 1340px;
+      margin: 0 auto;
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+    }
+
+    /* Barra RBAC */
+    .rbac-bar {
+      background: linear-gradient(90deg, rgba(30, 41, 59, 0.85) 0%, rgba(15, 23, 42, 0.92) 100%);
+      border: 1px solid var(--border-subtle);
+      border-radius: 16px;
+      padding: 16px 22px;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.5);
+    }
+
+    .rbac-label {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: #818cf8;
+      font-weight: 700;
+    }
+
+    .rbac-desc {
+      font-size: 13.5px;
+      color: var(--text-secondary);
+      margin-top: 2px;
+    }
+
+    .rbac-buttons {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    /* Botones Generales */
+    button {
+      cursor: pointer;
+      font-family: inherit;
+      border: none;
+      transition: all 0.18s ease;
+    }
+
+    .btn-role {
+      padding: 9px 16px;
+      border-radius: 11px;
+      font-size: 12.5px;
+      font-weight: 600;
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+    }
+
+    .btn-role-admin {
+      background: rgba(147, 51, 234, 0.16);
+      color: #d8b4fe;
+      border: 1px solid rgba(147, 51, 234, 0.4);
+    }
+    .btn-role-admin:hover {
+      background: rgba(147, 51, 234, 0.28);
+    }
+
+    .btn-role-teacher {
+      background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
+      color: #fff;
+      box-shadow: 0 6px 16px -3px rgba(99, 102, 241, 0.5);
+    }
+    .btn-role-teacher:hover {
+      filter: brightness(1.1);
+      transform: translateY(-1px);
+    }
+
+    .btn-role-student {
+      background: rgba(2, 132, 199, 0.18);
+      color: #7dd3fc;
+      border: 1px solid rgba(2, 132, 199, 0.4);
+    }
+    .btn-role-student:hover {
+      background: rgba(2, 132, 199, 0.3);
+    }
+
+    /* Layout Grids */
+    .main-grid {
+      display: grid;
+      grid-template-columns: 5fr 7fr;
+      gap: 24px;
+    }
+
+    .bottom-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+    }
+
+    @media (max-width: 1024px) {
+      .main-grid, .bottom-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    /* Tarjetas (Cards) */
+    .card {
+      background: rgba(15, 23, 42, 0.92);
+      border: 1px solid var(--border-subtle);
+      border-radius: 18px;
+      padding: 22px;
+      box-shadow: 0 12px 32px -8px rgba(0, 0, 0, 0.45);
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .card-title {
+      font-size: 16px;
+      font-weight: 700;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      gap: 9px;
+    }
+
+    .card-subtitle {
+      font-size: 12.5px;
+      color: var(--text-muted);
+      line-height: 1.45;
+    }
+
+    .tag-mini {
+      font-size: 11px;
+      font-weight: 600;
+      padding: 3px 9px;
+      border-radius: 7px;
+      background: rgba(99, 102, 241, 0.14);
+      color: #a5b4fc;
+      border: 1px solid rgba(99, 102, 241, 0.3);
+    }
+
+    /* Formularios */
+    .form-grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    .field-group {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+    }
+
+    .field-label {
+      font-size: 12px;
+      font-weight: 600;
+      color: #94a3b8;
+    }
+
+    input[type="text"],
+    input[type="number"],
+    select {
+      width: 100%;
+      background: var(--bg-input);
+      border: 1px solid #263554;
+      border-radius: 10px;
+      padding: 9px 12px;
+      font-size: 13.5px;
+      color: #fff;
+      outline: none;
+      transition: border-color 0.15s ease, box-shadow 0.15s ease;
+    }
+
+    input:focus,
+    select:focus {
+      border-color: var(--indigo);
+      box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
+    }
+
+    .input-score {
+      color: #fcd34d !important;
+      font-weight: 700;
+    }
+
+    .btn-primary-full {
+      width: 100%;
+      padding: 11px 16px;
+      border-radius: 12px;
+      background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
+      color: #fff;
+      font-weight: 700;
+      font-size: 13.5px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      box-shadow: 0 8px 20px -4px rgba(99, 102, 241, 0.45);
+      margin-top: 4px;
+    }
+    .btn-primary-full:hover {
+      filter: brightness(1.08);
+      transform: translateY(-1px);
+    }
+
+    .absence-footer {
+      padding-top: 14px;
+      border-top: 1px solid var(--border-subtle);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .btn-danger-soft {
+      padding: 8px 14px;
+      border-radius: 10px;
+      background: rgba(244, 63, 94, 0.15);
+      color: #fda4af;
+      border: 1px solid rgba(244, 63, 94, 0.35);
+      font-size: 12px;
+      font-weight: 600;
+    }
+    .btn-danger-soft:hover {
+      background: rgba(244, 63, 94, 0.25);
+    }
+
+    .btn-refresh {
+      padding: 7px 13px;
+      border-radius: 9px;
+      background: #1e293b;
+      color: #e2e8f0;
+      border: 1px solid #334155;
+      font-size: 12px;
+      font-weight: 600;
+    }
+    .btn-refresh:hover {
+      background: #334155;
+    }
+
+    /* KPIs del Boletín */
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+    }
+
+    @media (max-width: 640px) {
+      .kpi-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+
+    .kpi-box {
+      background: var(--bg-input);
+      border: 1px solid #1e293b;
+      border-radius: 13px;
+      padding: 13px;
+    }
+
+    .kpi-label {
+      font-size: 11px;
+      color: #94a3b8;
+      font-weight: 500;
+    }
+
+    .kpi-value {
+      font-size: 22px;
+      font-weight: 800;
+      margin: 4px 0 2px;
+      letter-spacing: -0.02em;
+    }
+
+    .kpi-hint {
+      font-size: 10.5px;
+      color: #64748b;
+    }
+
+    /* Tabla de Calificaciones */
+    .table-wrap {
+      overflow-x: auto;
+      border: 1px solid #1e293b;
+      border-radius: 12px;
+      background: var(--bg-input);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 12.5px;
+      text-align: left;
+    }
+
+    thead {
+      background: #0d1527;
+      color: #94a3b8;
+      border-bottom: 1px solid #1e293b;
+    }
+
+    th, td {
+      padding: 10px 12px;
+    }
+
+    tbody tr {
+      border-bottom: 1px solid rgba(30, 41, 59, 0.65);
+    }
+    tbody tr:last-child {
+      border-bottom: none;
+    }
+    tbody tr:hover {
+      background: rgba(30, 41, 59, 0.35);
+    }
+
+    /* Diagnóstico Copiloto IA */
+    .ai-insight-card {
+      background: linear-gradient(135deg, rgba(49, 46, 129, 0.42) 0%, rgba(15, 23, 42, 0.95) 65%);
+      border: 1px solid rgba(99, 102, 241, 0.4);
+      border-radius: 15px;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .ai-badge {
+      font-size: 11px;
+      font-weight: 800;
+      padding: 4px 11px;
+      border-radius: 999px;
+      letter-spacing: 0.04em;
+    }
+
+    .risk-BAJO {
+      background: rgba(16, 185, 129, 0.2);
+      color: #6ee7b7;
+      border: 1px solid rgba(16, 185, 129, 0.45);
+    }
+    .risk-MEDIO {
+      background: rgba(245, 158, 11, 0.2);
+      color: #fcd34d;
+      border: 1px solid rgba(245, 158, 11, 0.45);
+    }
+    .risk-ALTO {
+      background: rgba(249, 115, 22, 0.22);
+      color: #fdba74;
+      border: 1px solid rgba(249, 115, 22, 0.5);
+    }
+    .risk-CRITICO {
+      background: rgba(244, 63, 94, 0.24);
+      color: #fda4af;
+      border: 1px solid rgba(244, 63, 94, 0.55);
+    }
+    .risk-NONE {
+      background: #1e293b;
+      color: #94a3b8;
+    }
+
+    .ai-plan-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      padding-top: 10px;
+      border-top: 1px solid rgba(99, 102, 241, 0.25);
+    }
+
+    @media (max-width: 640px) {
+      .ai-plan-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .ai-plan-box {
+      background: rgba(9, 16, 32, 0.8);
+      border: 1px solid #1e293b;
+      border-radius: 11px;
+      padding: 12px;
+      font-size: 12px;
+    }
+
+    .ai-plan-box ul {
+      padding-left: 16px;
+      margin-top: 6px;
+      color: var(--text-secondary);
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    /* Cajas inferiores Asistente Curricular & Tutor RAG */
+    .inline-controls {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .btn-purple {
+      padding: 9px 15px;
+      border-radius: 10px;
+      background: linear-gradient(135deg, #9333ea 0%, #7e22ce 100%);
+      color: #fff;
+      font-size: 12.5px;
+      font-weight: 700;
+      white-space: nowrap;
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      box-shadow: 0 6px 16px -3px rgba(147, 51, 234, 0.45);
+    }
+    .btn-purple:hover {
+      filter: brightness(1.1);
+    }
+
+    .btn-sky {
+      padding: 9px 15px;
+      border-radius: 10px;
+      background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);
+      color: #fff;
+      font-size: 12.5px;
+      font-weight: 700;
+      white-space: nowrap;
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      box-shadow: 0 6px 16px -3px rgba(2, 132, 199, 0.45);
+    }
+    .btn-sky:hover {
+      filter: brightness(1.1);
+    }
+
+    .output-console {
+      background: var(--bg-input);
+      border: 1px solid #1e293b;
+      border-radius: 12px;
+      padding: 14px;
+      font-size: 12.5px;
+      color: var(--text-secondary);
+      max-height: 310px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 9px;
+    }
+
+    .quiz-card {
+      background: #111c33;
+      border: 1px solid #263554;
+      border-radius: 10px;
+      padding: 11px;
+      margin-top: 4px;
+    }
+
+    .source-row {
+      background: #111c33;
+      border: 1px solid #263554;
+      border-radius: 8px;
+      padding: 7px 11px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      margin-top: 4px;
+    }
+
+    .hidden {
+      display: none !important;
+    }
+
+    code {
+      font-family: Consolas, Monaco, monospace;
+      background: rgba(99, 102, 241, 0.15);
+      color: #a5b4fc;
+      padding: 1px 5px;
+      border-radius: 5px;
+      font-size: 11.5px;
+    }
+  </style>
 </head>
-<body class="bg-slate-950 text-slate-100 min-h-screen font-sans">
+<body>
   <!-- Barra Superior -->
-  <header class="border-b border-slate-800 bg-slate-900/90 backdrop-blur sticky top-0 z-30">
-    <div class="max-w-7xl mx-auto px-4 py-3 flex flex-wrap items-center justify-between gap-3">
-      <div class="flex items-center gap-3">
-        <div class="w-10 h-10 rounded-xl bg-indigo-600 flex items-center justify-center shadow-lg shadow-indigo-600/30">
-          <i class="fa-solid fa-graduation-cap text-xl text-white"></i>
+  <header class="topbar">
+    <div class="topbar-inner">
+      <div class="brand">
+        <div class="brand-icon">
+          <i class="fa-solid fa-graduation-cap"></i>
         </div>
         <div>
-          <h1 class="text-lg font-bold tracking-tight text-white flex items-center gap-2">
-            SoftEdu <span class="text-xs px-2 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">AI-Powered LMS/SIS</span>
-          </h1>
-          <p class="text-xs text-slate-400">FastAPI Async • SQLAlchemy 2.0 • PostgreSQL + pgvector • Copiloto IA</p>
+          <div class="brand-title">
+            SoftEdu <span class="pill-ai">AI-Powered LMS/SIS</span>
+          </div>
+          <div class="brand-sub">FastAPI Async • SQLAlchemy 2.0 • PostgreSQL + pgvector • Copiloto IA</div>
         </div>
       </div>
 
-      <div class="flex items-center gap-2 flex-wrap">
-        <span id="authBadge" class="text-xs px-3 py-1.5 rounded-lg bg-slate-800 border border-slate-700 text-slate-300">
-          <i class="fa-solid fa-circle-notch fa-spin mr-1 text-indigo-400"></i> Conectando...
+      <div class="topbar-actions">
+        <span id="authBadge" class="badge-user">
+          <i class="fa-solid fa-circle-notch fa-spin" style="color:#818cf8"></i> Conectando...
         </span>
-        <a href="/docs" target="_blank" class="text-xs px-3 py-1.5 rounded-lg bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-300 border border-emerald-500/30 transition flex items-center gap-1.5">
+        <a href="/docs" target="_blank" class="btn-link btn-swagger">
           <i class="fa-solid fa-book-open"></i> Swagger API (/docs)
         </a>
-        <a href="/redoc" target="_blank" class="text-xs px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition flex items-center gap-1.5">
+        <a href="/redoc" target="_blank" class="btn-link btn-redoc">
           <i class="fa-solid fa-file-code"></i> ReDoc
         </a>
       </div>
     </div>
   </header>
 
-  <main class="max-w-7xl mx-auto px-4 py-6 space-y-6">
-    <!-- Selector Rápido de Sesión RBAC + Contexto Semilla -->
-    <section class="bg-slate-900 border border-slate-800 rounded-2xl p-4 flex flex-wrap items-center justify-between gap-4">
-      <div class="space-y-1">
-        <div class="text-xs uppercase tracking-wider text-indigo-400 font-semibold">Control de Acceso Basado en Roles (JWT RBAC)</div>
-        <p class="text-sm text-slate-300">Cambia de rol con un clic para probar los permisos y los 3 módulos del Copiloto de IA en vivo:</p>
+  <main class="container">
+    <!-- Selector Rápido de Sesión RBAC -->
+    <section class="rbac-bar">
+      <div>
+        <div class="rbac-label">Control de Acceso Basado en Roles (JWT RBAC)</div>
+        <div class="rbac-desc">Cambia de rol con un clic para probar los permisos y los 3 módulos del Copiloto de IA en vivo:</div>
       </div>
-      <div class="flex flex-wrap gap-2">
-        <button onclick="quickLogin('admin@softedu.edu.co', 'admin12345')" class="px-3.5 py-2 rounded-xl text-xs font-semibold bg-purple-600/20 hover:bg-purple-600/30 text-purple-300 border border-purple-500/40 transition">
-          <i class="fa-solid fa-user-shield mr-1"></i> Rol ADMIN
+      <div class="rbac-buttons">
+        <button onclick="quickLogin('admin@softedu.edu.co', 'admin12345')" class="btn-role btn-role-admin">
+          <i class="fa-solid fa-user-shield"></i> Rol ADMIN
         </button>
-        <button onclick="quickLogin('docente@softedu.edu.co', 'docente123')" class="px-3.5 py-2 rounded-xl text-xs font-semibold bg-indigo-600 hover:bg-indigo-500 text-white shadow-lg shadow-indigo-600/20 transition">
-          <i class="fa-solid fa-chalkboard-user mr-1"></i> Rol DOCENTE (Titular)
+        <button onclick="quickLogin('docente@softedu.edu.co', 'docente123')" class="btn-role btn-role-teacher">
+          <i class="fa-solid fa-chalkboard-user"></i> Rol DOCENTE (Titular)
         </button>
-        <button onclick="quickLogin('estudiante@softedu.edu.co', 'estudiante123')" class="px-3.5 py-2 rounded-xl text-xs font-semibold bg-sky-600/20 hover:bg-sky-600/30 text-sky-300 border border-sky-500/40 transition">
-          <i class="fa-solid fa-user-graduate mr-1"></i> Rol ESTUDIANTE
+        <button onclick="quickLogin('estudiante@softedu.edu.co', 'estudiante123')" class="btn-role btn-role-student">
+          <i class="fa-solid fa-user-graduate"></i> Rol ESTUDIANTE
         </button>
       </div>
     </section>
 
-    <!-- Grid Principal: Boletín + Registro de Notas + Alerta Temprana IA -->
-    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
-      <!-- Columna Izquierda: Formulario de Notas y Asistencia (5 cols) -->
-      <div class="lg:col-span-5 space-y-6">
-        <!-- Card: Registrar Calificación Ponderada -->
-        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-4">
-          <div class="flex items-center justify-between">
-            <h2 class="text-base font-bold text-white flex items-center gap-2">
-              <i class="fa-solid fa-pen-to-square text-indigo-400"></i>
-              1. Registrar Calificación Ponderada
-            </h2>
-            <span class="text-[11px] px-2 py-0.5 rounded bg-indigo-500/10 text-indigo-300 border border-indigo-500/20">Escala 0.0 - 5.0</span>
+    <!-- Grid Principal: Registro de Notas + Boletín y Alerta Temprana IA -->
+    <div class="main-grid">
+      <!-- Columna Izquierda: Registrar Calificación Ponderada -->
+      <div class="card">
+        <div class="card-header">
+          <h2 class="card-title">
+            <i class="fa-solid fa-pen-to-square" style="color:#818cf8"></i>
+            1. Registrar Calificación Ponderada
+          </h2>
+          <span class="tag-mini">Escala 0.0 - 5.0</span>
+        </div>
+        <p class="card-subtitle">
+          Valida matrícula activa, calcula el promedio ponderado acumulado y dispara en <code>BackgroundTasks</code> el diagnóstico del Copiloto de IA.
+        </p>
+
+        <form id="gradeForm" onsubmit="submitGrade(event)" style="display:flex; flex-direction:column; gap:12px;">
+          <div class="form-grid-2">
+            <div class="field-group">
+              <label class="field-label">Corte Evaluativo</label>
+              <input id="evalCut" type="number" min="1" max="10" value="1" required />
+            </div>
+            <div class="field-group">
+              <label class="field-label">Peso Porcentual (%)</label>
+              <input id="evalWeight" type="number" step="0.01" min="1" max="100" value="25" required />
+            </div>
           </div>
-          <p class="text-xs text-slate-400">
-            Valida matrícula activa, calcula el promedio ponderado acumulado y dispara en <code class="text-indigo-300">BackgroundTasks</code> el diagnóstico del Copiloto de IA.
-          </p>
 
-          <form id="gradeForm" onsubmit="submitGrade(event)" class="space-y-3">
-            <div class="grid grid-cols-2 gap-3">
-              <div>
-                <label class="block text-xs text-slate-400 mb-1">Corte Evaluativo</label>
-                <input id="evalCut" type="number" min="1" max="10" value="1" required class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-white focus:border-indigo-500 focus:outline-none" />
-              </div>
-              <div>
-                <label class="block text-xs text-slate-400 mb-1">Peso Porcentual (%)</label>
-                <input id="evalWeight" type="number" step="0.01" min="1" max="100" value="30" required class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-white focus:border-indigo-500 focus:outline-none" />
-              </div>
+          <div class="form-grid-2">
+            <div class="field-group">
+              <label class="field-label">Actividad / Evaluación</label>
+              <input id="evalName" type="text" value="Parcial 1 - Arquitectura Async" required />
             </div>
-
-            <div class="grid grid-cols-2 gap-3">
-              <div>
-                <label class="block text-xs text-slate-400 mb-1">Actividad / Evaluación</label>
-                <input id="evalName" type="text" value="Parcial 1 - Arquitectura Async" required class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-white focus:border-indigo-500 focus:outline-none" />
-              </div>
-              <div>
-                <label class="block text-xs text-slate-400 mb-1">Nota (0.00 a 5.00)</label>
-                <input id="evalScore" type="number" step="0.1" min="0" max="5" value="2.4" required class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-amber-300 font-bold focus:border-indigo-500 focus:outline-none" />
-              </div>
+            <div class="field-group">
+              <label class="field-label">Nota (0.00 a 5.00)</label>
+              <input id="evalScore" type="number" step="0.1" min="0" max="5" value="2.4" required class="input-score" />
             </div>
-
-            <div>
-              <label class="block text-xs text-slate-400 mb-1">Tema del Sílabo Evaluado (Trazabilidad RAG)</label>
-              <select id="evalTopicSelect" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-white focus:border-indigo-500 focus:outline-none"></select>
-            </div>
-
-            <div>
-              <label class="block text-xs text-slate-400 mb-1">Observaciones del Docente</label>
-              <input id="evalObs" type="text" value="Presenta dificultad en el manejo de sesiones aisladas en BackgroundTasks." class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-white focus:border-indigo-500 focus:outline-none" />
-            </div>
-
-            <button type="submit" id="btnSubmitGrade" class="w-full py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-sm shadow-lg shadow-indigo-600/25 transition flex items-center justify-center gap-2">
-              <i class="fa-solid fa-bolt"></i> Registrar Nota y Disparar Diagnóstico IA
-            </button>
-          </form>
-
-          <!-- Botón rápido de Inasistencia -->
-          <div class="pt-3 border-t border-slate-800 flex items-center justify-between gap-2">
-            <span class="text-xs text-slate-400">¿Simular falla de asistencia hoy?</span>
-            <button onclick="registerQuickAbsence()" class="px-3 py-1.5 rounded-lg bg-rose-500/15 hover:bg-rose-500/25 text-rose-300 border border-rose-500/30 text-xs font-medium transition">
-              <i class="fa-solid fa-user-xmark mr-1"></i> Registrar Inasistencia + Alerta IA
-            </button>
           </div>
+
+          <div class="field-group">
+            <label class="field-label">Tema del Sílabo Evaluado (Trazabilidad RAG)</label>
+            <select id="evalTopicSelect"></select>
+          </div>
+
+          <div class="field-group">
+            <label class="field-label">Observaciones del Docente</label>
+            <input id="evalObs" type="text" value="Presenta dificultad en el manejo de sesiones aisladas en BackgroundTasks." />
+          </div>
+
+          <button type="submit" id="btnSubmitGrade" class="btn-primary-full">
+            <i class="fa-solid fa-bolt"></i> Registrar Nota y Disparar Diagnóstico IA
+          </button>
+        </form>
+
+        <div class="absence-footer">
+          <span style="font-size:12px; color:#94a3b8;">¿Simular falla de asistencia en sesión?</span>
+          <button onclick="registerQuickAbsence()" class="btn-danger-soft">
+            <i class="fa-solid fa-user-xmark"></i> Registrar Inasistencia + Alerta IA
+          </button>
         </div>
       </div>
 
-      <!-- Columna Derecha: Boletín Académico + Diagnóstico IA en Tiempo Real (7 cols) -->
-      <div class="lg:col-span-7 space-y-6">
-        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-4">
-          <div class="flex flex-wrap items-center justify-between gap-2">
-            <div>
-              <h2 class="text-base font-bold text-white flex items-center gap-2">
-                <i class="fa-solid fa-chart-pie text-emerald-400"></i>
-                Boletín Académico Integral & Alerta Temprana IA
-              </h2>
-              <p id="studentHeaderInfo" class="text-xs text-slate-400 mt-0.5">Cargando matrícula activa...</p>
+      <!-- Columna Derecha: Boletín Académico Integral & Alerta Temprana IA -->
+      <div class="card">
+        <div class="card-header">
+          <div>
+            <h2 class="card-title">
+              <i class="fa-solid fa-chart-pie" style="color:#34d399"></i>
+              Boletín Académico Integral & Alerta Temprana IA
+            </h2>
+            <p id="studentHeaderInfo" class="card-subtitle" style="margin-top:3px;">Cargando matrícula activa...</p>
+          </div>
+          <button onclick="loadReportCard()" class="btn-refresh">
+            <i class="fa-solid fa-rotate"></i> Actualizar Boletín
+          </button>
+        </div>
+
+        <!-- KPIs -->
+        <div class="kpi-grid">
+          <div class="kpi-box">
+            <div class="kpi-label">Promedio Ponderado</div>
+            <div id="kpiWeightedAvg" class="kpi-value" style="color:#fff">--</div>
+            <div class="kpi-hint">Mín. aprobatoria: 3.00</div>
+          </div>
+          <div class="kpi-box">
+            <div class="kpi-label">% Curso Evaluado</div>
+            <div id="kpiEvalWeight" class="kpi-value" style="color:#818cf8">--%</div>
+            <div id="kpiRemWeight" class="kpi-hint">Restante: --%</div>
+          </div>
+          <div class="kpi-box">
+            <div class="kpi-label">Meta en % Restante</div>
+            <div id="kpiNeededScore" class="kpi-value" style="color:#fbbf24">--</div>
+            <div class="kpi-hint">Para cerrar en 3.00</div>
+          </div>
+          <div class="kpi-box">
+            <div class="kpi-label">% Inasistencias</div>
+            <div id="kpiAbsencePct" class="kpi-value" style="color:#34d399">--%</div>
+            <div class="kpi-hint">Límite máx: 20.0%</div>
+          </div>
+        </div>
+
+        <!-- Tabla de Calificaciones -->
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Corte</th>
+                <th>Evaluación</th>
+                <th>Tema Sílabo</th>
+                <th>Peso</th>
+                <th>Nota</th>
+                <th>Aporte</th>
+              </tr>
+            </thead>
+            <tbody id="gradesTableBody">
+              <tr><td colspan="6" style="text-align:center; color:#64748b; padding:18px;">Sin calificaciones registradas aún.</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Tarjeta del Copiloto de IA -->
+        <div class="ai-insight-card">
+          <div class="card-header">
+            <div style="display:flex; align-items:center; gap:8px;">
+              <i class="fa-solid fa-robot" style="color:#818cf8; font-size:16px;"></i>
+              <span style="font-size:12px; font-weight:800; text-transform:uppercase; letter-spacing:0.05em; color:#a5b4fc;">
+                Diagnóstico Vigente del Copiloto IA (AIRiskAssessmentSchema)
+              </span>
             </div>
-            <button onclick="loadReportCard()" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs text-slate-200 border border-slate-700 transition">
-              <i class="fa-solid fa-rotate mr-1"></i> Actualizar Boletín
-            </button>
+            <span id="aiRiskBadge" class="ai-badge risk-NONE">SIN DIAGNÓSTICO AÚN</span>
           </div>
 
-          <!-- KPIs del Boletín -->
-          <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            <div class="bg-slate-950 border border-slate-800 rounded-xl p-3">
-              <div class="text-[11px] text-slate-400">Promedio Ponderado</div>
-              <div id="kpiWeightedAvg" class="text-xl font-extrabold text-white mt-0.5">--</div>
-              <div class="text-[10px] text-slate-500">Mín. aprobatoria: 3.00</div>
-            </div>
-            <div class="bg-slate-950 border border-slate-800 rounded-xl p-3">
-              <div class="text-[11px] text-slate-400">% Curso Evaluado</div>
-              <div id="kpiEvalWeight" class="text-xl font-extrabold text-indigo-400 mt-0.5">--%</div>
-              <div id="kpiRemWeight" class="text-[10px] text-slate-500">Restante: --%</div>
-            </div>
-            <div class="bg-slate-950 border border-slate-800 rounded-xl p-3">
-              <div class="text-[11px] text-slate-400">Meta en % Restante</div>
-              <div id="kpiNeededScore" class="text-xl font-extrabold text-amber-400 mt-0.5">--</div>
-              <div class="text-[10px] text-slate-500">Para cerrar en 3.00</div>
-            </div>
-            <div class="bg-slate-950 border border-slate-800 rounded-xl p-3">
-              <div class="text-[11px] text-slate-400">% Inasistencias</div>
-              <div id="kpiAbsencePct" class="text-xl font-extrabold text-emerald-400 mt-0.5">--%</div>
-              <div class="text-[10px] text-slate-500">Límite máx: 20.0%</div>
-            </div>
-          </div>
+          <p id="aiExecSummary" style="font-size:12.5px; color:#e2e8f0; line-height:1.55;">
+            Registra una calificación o una inasistencia en el panel izquierdo para disparar el análisis predictivo en segundo plano.
+          </p>
 
-          <!-- Tabla de Calificaciones -->
-          <div class="overflow-x-auto border border-slate-800 rounded-xl">
-            <table class="w-full text-left text-xs">
-              <thead class="bg-slate-950 text-slate-400 border-b border-slate-800">
-                <tr>
-                  <th class="py-2.5 px-3">Corte</th>
-                  <th class="py-2.5 px-3">Evaluación</th>
-                  <th class="py-2.5 px-3">Tema Sílabo</th>
-                  <th class="py-2.5 px-3">Peso</th>
-                  <th class="py-2.5 px-3">Nota</th>
-                  <th class="py-2.5 px-3">Aporte</th>
-                </tr>
-              </thead>
-              <tbody id="gradesTableBody" class="divide-y divide-slate-800/70 text-slate-200">
-                <tr><td colspan="6" class="py-4 text-center text-slate-500">Sin calificaciones registradas aún.</td></tr>
-              </tbody>
-            </table>
-          </div>
-
-          <!-- Tarjeta del Copiloto de IA: StudentAIInsight -->
-          <div id="aiInsightBox" class="bg-gradient-to-br from-indigo-950/60 via-slate-900 to-slate-950 border border-indigo-500/30 rounded-2xl p-4 space-y-3">
-            <div class="flex items-center justify-between">
-              <div class="flex items-center gap-2">
-                <i class="fa-solid fa-robot text-indigo-400"></i>
-                <span class="text-xs font-bold uppercase tracking-wider text-indigo-300">Diagnóstico Vigente del Copiloto IA (AIRiskAssessmentSchema)</span>
+          <div id="aiActionPlanGrid" class="ai-plan-grid hidden">
+            <div class="ai-plan-box">
+              <div style="font-weight:700; color:#a5b4fc;">
+                <i class="fa-solid fa-chalkboard-user"></i> Plan Sugerido al Docente:
               </div>
-              <span id="aiRiskBadge" class="text-xs font-bold px-2.5 py-0.5 rounded-full bg-slate-800 text-slate-300">SIN DIAGNÓSTICO AÚN</span>
+              <ul id="aiTeacherActions"></ul>
             </div>
-            <p id="aiExecSummary" class="text-xs text-slate-300 leading-relaxed">
-              Registra una calificación o una inasistencia en el panel izquierdo para disparar el análisis predictivo en segundo plano.
-            </p>
-            <div id="aiActionPlanGrid" class="hidden grid grid-cols-1 md:grid-cols-2 gap-3 pt-2 border-t border-indigo-500/20 text-xs">
-              <div class="bg-slate-950/70 rounded-xl p-3 border border-slate-800">
-                <div class="font-semibold text-indigo-300 mb-1"><i class="fa-solid fa-chalkboard-user mr-1"></i> Plan Sugerido al Docente:</div>
-                <ul id="aiTeacherActions" class="list-disc list-inside text-slate-300 space-y-1"></ul>
+            <div class="ai-plan-box">
+              <div style="font-weight:700; color:#6ee7b7;">
+                <i class="fa-solid fa-user-graduate"></i> Plan Sugerido al Estudiante:
               </div>
-              <div class="bg-slate-950/70 rounded-xl p-3 border border-slate-800">
-                <div class="font-semibold text-emerald-300 mb-1"><i class="fa-solid fa-user-graduate mr-1"></i> Plan Sugerido al Estudiante:</div>
-                <ul id="aiStudentActions" class="list-disc list-inside text-slate-300 space-y-1"></ul>
-              </div>
+              <ul id="aiStudentActions"></ul>
             </div>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- Grid Inferior: Caso de Uso #2 (Asistente Curricular) y Caso de Uso #3 (Tutor RAG pgvector) -->
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-      <!-- Caso de Uso #2: Asistente Curricular para el Docente -->
-      <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-4">
-        <div class="flex items-center justify-between">
-          <h2 class="text-base font-bold text-white flex items-center gap-2">
-            <i class="fa-solid fa-wand-magic-sparkles text-purple-400"></i>
+    <!-- Grid Inferior: Caso de Uso #2 y Caso de Uso #3 -->
+    <div class="bottom-grid">
+      <!-- Caso de Uso #2: Asistente Curricular Docente -->
+      <div class="card">
+        <div class="card-header">
+          <h2 class="card-title">
+            <i class="fa-solid fa-wand-magic-sparkles" style="color:#c084fc"></i>
             2. Asistente Curricular Docente (Generativo)
           </h2>
-          <span class="text-[11px] px-2 py-0.5 rounded bg-purple-500/10 text-purple-300 border border-purple-500/20">Structured JSON</span>
+          <span class="tag-mini" style="color:#d8b4fe; border-color:rgba(192,132,252,0.35); background:rgba(147,51,234,0.15);">Structured JSON</span>
         </div>
-        <p class="text-xs text-slate-400">
-          Selecciona un <code class="text-purple-300">SyllabusTopic</code> oficial para generar planeación de sesión en 3 fases, rúbrica analítica y banco de preguntas tipo test (Taxonomía de Bloom).
+        <p class="card-subtitle">
+          Selecciona un <code>SyllabusTopic</code> oficial para generar planeación de sesión en 3 fases, rúbrica analítica y banco de preguntas tipo test (Taxonomía de Bloom).
         </p>
-        <div class="flex flex-wrap gap-2">
-          <select id="currTopicSelect" class="flex-1 bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white"></select>
-          <button onclick="generateCurricularProposal()" id="btnCurricular" class="px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-xs font-semibold transition flex items-center gap-1.5">
-            <i class="fa-solid fa-sparkles"></i> Generar Planeación, Rúbrica y Test
+
+        <div class="inline-controls">
+          <select id="currTopicSelect"></select>
+          <button onclick="generateCurricularProposal()" id="btnCurricular" class="btn-purple">
+            <i class="fa-solid fa-sparkles"></i> Generar Planeación y Test
           </button>
         </div>
-        <div id="curricularResult" class="bg-slate-950 border border-slate-800 rounded-xl p-3 text-xs text-slate-300 max-h-80 overflow-y-auto space-y-2">
-          <span class="text-slate-500">Haz clic en "Generar Planeación, Rúbrica y Test" para visualizar el contrato JSON estructurado.</span>
+
+        <div id="curricularResult" class="output-console">
+          <span style="color:#64748b;">Haz clic en "Generar Planeación y Test" para visualizar la propuesta generada por IA.</span>
         </div>
       </div>
 
       <!-- Caso de Uso #3: Tutor RAG Basado en el Sílabo (pgvector) -->
-      <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-4">
-        <div class="flex items-center justify-between">
-          <h2 class="text-base font-bold text-white flex items-center gap-2">
-            <i class="fa-solid fa-magnifying-glass-chart text-sky-400"></i>
+      <div class="card">
+        <div class="card-header">
+          <h2 class="card-title">
+            <i class="fa-solid fa-magnifying-glass-chart" style="color:#38bdf8"></i>
             3. Tutor RAG Basado en el Sílabo (pgvector)
           </h2>
-          <span class="text-[11px] px-2 py-0.5 rounded bg-sky-500/10 text-sky-300 border border-sky-500/20">Cosine Similarity &lt;=&gt;</span>
+          <span class="tag-mini" style="color:#7dd3fc; border-color:rgba(56,189,248,0.35); background:rgba(2,132,199,0.15);">Cosine Similarity &lt;=&gt;</span>
         </div>
-        <p class="text-xs text-slate-400">
-          Formula cualquier duda académica: el sistema embebe la consulta, busca en PostgreSQL (<code class="text-sky-300">pgvector</code>) los temas más cercanos y responde con <em>grounding</em> estricto.
+        <p class="card-subtitle">
+          Formula cualquier duda académica: el sistema embebe la consulta, busca en PostgreSQL (<code>pgvector</code>) los temas más cercanos y responde con <em>grounding</em> estricto.
         </p>
-        <div class="flex gap-2">
-          <input id="ragQuestionInput" type="text" value="¿Cómo evitar cierres prematuros de AsyncSession al usar BackgroundTasks y cómo funciona pgvector HNSW?" class="flex-1 bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:border-sky-500 focus:outline-none" />
-          <button onclick="askRagTutor()" id="btnRag" class="px-4 py-2 rounded-xl bg-sky-600 hover:bg-sky-500 text-white text-xs font-semibold transition flex items-center gap-1.5 whitespace-nowrap">
+
+        <div class="inline-controls">
+          <input id="ragQuestionInput" type="text" value="¿Cómo evitar cierres prematuros de AsyncSession al usar BackgroundTasks y cómo funciona pgvector HNSW?" />
+          <button onclick="askRagTutor()" id="btnRag" class="btn-sky">
             <i class="fa-solid fa-paper-plane"></i> Consultar RAG
           </button>
         </div>
-        <div id="ragResult" class="bg-slate-950 border border-slate-800 rounded-xl p-3 text-xs text-slate-300 max-h-80 overflow-y-auto space-y-2">
-          <span class="text-slate-500">Envía tu consulta para ejecutar la búsqueda semántica vectorial en el sílabo.</span>
+
+        <div id="ragResult" class="output-console">
+          <span style="color:#64748b;">Envía tu consulta para ejecutar la búsqueda semántica vectorial en el sílabo.</span>
         </div>
       </div>
     </div>
@@ -283,7 +930,7 @@
         });
         jwtToken = res.access_token;
         document.getElementById("authBadge").innerHTML =
-          `<i class="fa-solid fa-circle-check text-emerald-400 mr-1"></i> ${res.user.full_name} <strong class="text-indigo-300">[${res.user.role}]</strong>`;
+          `<i class="fa-solid fa-circle-check" style="color:#34d399"></i> ${res.user.full_name} <strong style="color:#a5b4fc">[${res.user.role}]</strong>`;
         await bootstrapAcademicData();
       } catch (err) {
         alert("Error de autenticación: " + err.message);
@@ -295,7 +942,6 @@
       activeEnrollmentId = demoCtx.enrollment_id;
       activeSubjectId = demoCtx.subject_id;
 
-      // Poblar selectores de temas del sílabo
       const syllabus = await apiFetch(`/api/v1/syllabus/subjects/${activeSubjectId}`);
       const evalSelect = document.getElementById("evalTopicSelect");
       const currSelect = document.getElementById("currTopicSelect");
@@ -304,10 +950,9 @@
 
       for (const unit of syllabus.units) {
         for (const topic of unit.topics) {
-          const opt1 = new Option(`U${unit.unit_number}.T${topic.topic_number} - ${topic.title}`, topic.id);
-          const opt2 = new Option(`U${unit.unit_number}.T${topic.topic_number} - ${topic.title}`, topic.id);
-          evalSelect.add(opt1);
-          currSelect.add(opt2);
+          const label = `U${unit.unit_number}.T${topic.topic_number} - ${topic.title}`;
+          evalSelect.add(new Option(label, topic.id));
+          currSelect.add(new Option(label, topic.id));
         }
       }
 
@@ -328,16 +973,16 @@
 
       const tbody = document.getElementById("gradesTableBody");
       if (!rc.grades.length) {
-        tbody.innerHTML = `<tr><td colspan="6" class="py-4 text-center text-slate-500">Sin calificaciones registradas aún.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; color:#64748b; padding:18px;">Sin calificaciones registradas aún.</td></tr>`;
       } else {
         tbody.innerHTML = rc.grades.map(g => `
-          <tr class="hover:bg-slate-900/60">
-            <td class="py-2 px-3 font-semibold text-indigo-300">Corte ${g.evaluation_cut}</td>
-            <td class="py-2 px-3">${g.evaluation_name}</td>
-            <td class="py-2 px-3 text-slate-400">${g.syllabus_topic_title || 'General'}</td>
-            <td class="py-2 px-3">${Number(g.weight_percentage).toFixed(0)}%</td>
-            <td class="py-2 px-3 font-bold ${g.is_passing_score ? 'text-emerald-400' : 'text-rose-400'}">${Number(g.score).toFixed(2)}</td>
-            <td class="py-2 px-3 text-slate-300">+${Number(g.weighted_contribution).toFixed(2)}</td>
+          <tr>
+            <td style="font-weight:700; color:#a5b4fc;">Corte ${g.evaluation_cut}</td>
+            <td>${g.evaluation_name}</td>
+            <td style="color:#94a3b8;">${g.syllabus_topic_title || 'General'}</td>
+            <td>${Number(g.weight_percentage).toFixed(0)}%</td>
+            <td style="font-weight:800; color:${g.is_passing_score ? '#34d399' : '#fb7185'};">${Number(g.score).toFixed(2)}</td>
+            <td style="color:#cbd5e1;">+${Number(g.weighted_contribution).toFixed(2)}</td>
           </tr>
         `).join("");
       }
@@ -348,13 +993,7 @@
       const planGrid = document.getElementById("aiActionPlanGrid");
 
       if (insight) {
-        const colors = {
-          BAJO: "bg-emerald-500/20 text-emerald-300 border border-emerald-500/40",
-          MEDIO: "bg-amber-500/20 text-amber-300 border border-amber-500/40",
-          ALTO: "bg-orange-500/20 text-orange-300 border border-orange-500/40",
-          CRITICO: "bg-rose-500/20 text-rose-300 border border-rose-500/40"
-        };
-        badge.className = `text-xs font-bold px-2.5 py-0.5 rounded-full ${colors[insight.risk_level] || ''}`;
+        badge.className = `ai-badge risk-${insight.risk_level}`;
         badge.textContent = `RIESGO ${insight.risk_level}`;
         summary.textContent = insight.executive_summary;
         planGrid.classList.remove("hidden");
@@ -384,7 +1023,6 @@
             teacher_observations: document.getElementById("evalObs").value
           })
         });
-        // Incrementar el nombre de actividad por defecto para permitir pruebas sucesivas rápidas
         const randSuffix = Math.floor(Math.random() * 90 + 10);
         document.getElementById("evalName").value = `Evaluación Continua #${randSuffix}`;
         setTimeout(loadReportCard, 900);
@@ -419,7 +1057,7 @@
     async function generateCurricularProposal() {
       const topicId = document.getElementById("currTopicSelect").value;
       const box = document.getElementById("curricularResult");
-      box.innerHTML = `<i class="fa-solid fa-spinner fa-spin text-purple-400 mr-1"></i> Generando planeación, rúbrica y banco de preguntas con el motor de IA...`;
+      box.innerHTML = `<span><i class="fa-solid fa-spinner fa-spin" style="color:#c084fc"></i> Generando planeación, rúbrica y banco de preguntas con el motor de IA...</span>`;
       try {
         const data = await apiFetch(`/api/v1/syllabus/topics/${topicId}/curricular-assistant`, {
           method: "POST",
@@ -431,27 +1069,27 @@
         });
         const p = data.curricular_proposal;
         box.innerHTML = `
-          <div class="font-bold text-purple-300 text-sm">${p.titulo_sesion_propuesta}</div>
-          <div class="text-slate-400">${p.objetivo_aprendizaje_especifico}</div>
-          <div class="font-semibold text-white pt-1">Fases de la Clase:</div>
-          <ul class="list-disc list-inside space-y-1">
-            ${p.fases_planeacion_clase.map(f => `<li><strong>${f.fase} (${f.duracion_minutos} min):</strong> ${f.actividad_docente}</li>`).join("")}
+          <div style="font-weight:800; color:#d8b4fe; font-size:14px;">${p.titulo_sesion_propuesta}</div>
+          <div style="color:#94a3b8;">${p.objetivo_aprendizaje_especifico}</div>
+          <div style="font-weight:700; color:#fff; margin-top:4px;">Fases de la Clase:</div>
+          <ul style="padding-left:18px; display:flex; flex-direction:column; gap:4px;">
+            ${p.fases_planeacion_clase.map(f => `<li><strong style="color:#c084fc">${f.fase} (${f.duracion_minutos} min):</strong> ${f.actividad_docente}</li>`).join("")}
           </ul>
-          <div class="font-semibold text-white pt-1">Pregunta Tipo Test Generada (${p.banco_preguntas_test[0].nivel_taxonomia_bloom}):</div>
-          <div class="bg-slate-900 p-2.5 rounded-lg border border-slate-800 space-y-1">
-            <div class="font-medium text-slate-200">${p.banco_preguntas_test[0].enunciado}</div>
-            ${p.banco_preguntas_test[0].opciones.map((op, i) => `<div class="${i === p.banco_preguntas_test[0].indice_respuesta_correcta ? 'text-emerald-400 font-semibold' : 'text-slate-400'}">${op}</div>`).join("")}
+          <div style="font-weight:700; color:#fff; margin-top:4px;">Pregunta Tipo Test Generada (${p.banco_preguntas_test[0].nivel_taxonomia_bloom}):</div>
+          <div class="quiz-card">
+            <div style="font-weight:600; color:#f8fafc; margin-bottom:6px;">${p.banco_preguntas_test[0].enunciado}</div>
+            ${p.banco_preguntas_test[0].opciones.map((op, i) => `<div style="margin-top:3px; color:${i === p.banco_preguntas_test[0].indice_respuesta_correcta ? '#34d399' : '#94a3b8'}; font-weight:${i === p.banco_preguntas_test[0].indice_respuesta_correcta ? '700' : '400'};">${op}</div>`).join("")}
           </div>
         `;
       } catch (err) {
-        box.innerHTML = `<span class="text-rose-400">${err.message}</span>`;
+        box.innerHTML = `<span style="color:#fb7185">${err.message}</span>`;
       }
     }
 
     async function askRagTutor() {
       const q = document.getElementById("ragQuestionInput").value;
       const box = document.getElementById("ragResult");
-      box.innerHTML = `<i class="fa-solid fa-spinner fa-spin text-sky-400 mr-1"></i> Ejecutando búsqueda vectorial en pgvector y generando respuesta fundamentada...`;
+      box.innerHTML = `<span><i class="fa-solid fa-spinner fa-spin" style="color:#38bdf8"></i> Ejecutando búsqueda vectorial en pgvector y generando respuesta fundamentada...</span>`;
       try {
         const data = await apiFetch("/api/v1/syllabus/rag-tutor/ask", {
           method: "POST",
@@ -463,29 +1101,28 @@
         });
         const r = data.ai_tutor_response;
         box.innerHTML = `
-          <div class="flex items-center justify-between">
-            <span class="font-bold text-sky-300">Fuentes recuperadas de pgvector:</span>
-            <span class="text-[11px] px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300">En Sílabo: ${r.esta_dentro_del_silabo ? 'SÍ' : 'NO'}</span>
+          <div style="display:flex; justify-content:space-between; align-items:center;">
+            <strong style="color:#7dd3fc;">Fuentes recuperadas de pgvector:</strong>
+            <span class="tag-mini" style="color:#6ee7b7; border-color:rgba(16,185,129,0.35); background:rgba(16,185,129,0.15);">En Sílabo: ${r.esta_dentro_del_silabo ? 'SÍ' : 'NO'}</span>
           </div>
-          <div class="space-y-1">
+          <div>
             ${data.retrieved_syllabus_sources.map(s => `
-              <div class="bg-slate-900 px-2.5 py-1.5 rounded border border-slate-800 flex justify-between items-center">
+              <div class="source-row">
                 <span>U${s.unit_number}.T${s.topic_number}: <strong>${s.topic_title}</strong></span>
-                <span class="text-sky-400 font-mono text-[11px]">Similitud: ${(s.cosine_similarity * 100).toFixed(1)}%</span>
+                <span style="color:#38bdf8; font-weight:700; font-size:11.5px;">Similitud: ${(s.cosine_similarity * 100).toFixed(1)}%</span>
               </div>
             `).join("")}
           </div>
-          <div class="pt-1 text-slate-200 leading-relaxed">${r.respuesta_tutor}</div>
-          <div class="bg-indigo-950/40 border border-indigo-500/30 rounded-lg p-2 text-indigo-200">
+          <div style="color:#f1f5f9; line-height:1.55; margin-top:4px;">${r.respuesta_tutor}</div>
+          <div style="background:rgba(49,46,129,0.35); border:1px solid rgba(99,102,241,0.35); border-radius:9px; padding:10px; color:#c7d2fe; margin-top:4px;">
             <strong>Reto de Autoevaluación:</strong> ${r.ejercicio_autoevaluacion_sugerido}
           </div>
         `;
       } catch (err) {
-        box.innerHTML = `<span class="text-rose-400">${err.message}</span>`;
+        box.innerHTML = `<span style="color:#fb7185">${err.message}</span>`;
       }
     }
 
-    // Iniciar automáticamente con el rol DOCENTE al abrir la consola
     window.addEventListener("DOMContentLoaded", () => {
       quickLogin("docente@softedu.edu.co", "docente123");
     });
