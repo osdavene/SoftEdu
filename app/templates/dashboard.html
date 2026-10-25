@@ -2462,31 +2462,31 @@
        ===================================================================== -->
 
   <!-- MODAL: CREAR NUEVO SALÓN / GRUPO POR GRADO (SECRETARÍA ACADÉMICA) -->
-  <div id="modal-create-group" style="display: none; position: fixed; inset: 0; z-index: 99999; background: rgba(0,0,0,0.78); backdrop-filter: blur(8px); align-items: center; justify-content: center; padding: 20px;">
-    <div style="background: #0f172a; border: 1px solid #3b82f6; border-radius: 16px; max-width: 560px; width: 100%; padding: 26px; box-shadow: 0 25px 60px -15px rgba(0,0,0,0.9);">
-      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px;">
+  <div id="modal-create-group" style="display: none; position: fixed; inset: 0; z-index: 99999; background: rgba(0,0,0,0.8); backdrop-filter: blur(8px); align-items: center; justify-content: center; padding: 16px; overflow-y: auto;">
+    <div style="background: #0f172a; border: 1px solid #3b82f6; border-radius: 16px; max-width: 560px; width: 100%; padding: 22px 24px; box-shadow: 0 25px 60px -15px rgba(0,0,0,0.9); max-height: calc(100vh - 32px); overflow-y: auto; margin: auto;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
         <h4 style="color: #fff; font-size: 17px; font-weight: 700; display: flex; align-items: center; gap: 9px;">
           <i class="fa-solid fa-shapes" style="color: #60a5fa;"></i> Apertura de Salón / Grupo Escolar
         </h4>
         <button class="btn-secondary" style="padding: 4px 8px;" onclick="closeModal('modal-create-group')"><i class="fa-solid fa-xmark"></i></button>
       </div>
 
-      <div style="font-size: 13px; color: #94a3b8; margin-bottom: 18px; line-height: 1.5;">
-        Cree tantas secciones o salones como requiera la matrícula para el grado (ej: para Grado 6° cree <strong>6-1</strong>, <strong>6-2</strong>, <strong>6-3</strong> sucesivamente).
+      <div style="font-size: 12.5px; color: #94a3b8; margin-bottom: 16px; line-height: 1.4;">
+        Cree tantas secciones o salones como requiera la matrícula para el grado (ej: para Grado 1° cree <strong>1-1</strong>, <strong>1-2</strong>; para Grado 6° <strong>6-1</strong>, <strong>6-2</strong>, etc.).
       </div>
 
       <form onsubmit="submitCreateClassroomGroup(event)">
-        <div class="form-group" style="margin-bottom: 14px;">
+        <div class="form-group" style="margin-bottom: 12px;">
           <label class="form-label">Grado Escolar Oficial *</label>
           <select id="grp-grade" class="form-control" onchange="suggestGroupCode()" required>
             <!-- Opciones pobladas dinámicamente con grados habilitados -->
           </select>
         </div>
 
-        <div class="form-grid-2" style="margin-bottom: 14px;">
+        <div class="form-grid-2" style="margin-bottom: 12px;">
           <div class="form-group">
-            <label class="form-label">Código del Grupo (ej: 6-1, 6-2...) *</label>
-            <input type="text" id="grp-code" class="form-control" placeholder="Ej: 6-1" required />
+            <label class="form-label">Código del Grupo (ej: 1-1, 6-1...) *</label>
+            <input type="text" id="grp-code" class="form-control" placeholder="Ej: 1-1" required />
           </div>
           <div class="form-group">
             <label class="form-label">Cupo Máximo (Alumnos) *</label>
@@ -2494,12 +2494,12 @@
           </div>
         </div>
 
-        <div class="form-group" style="margin-bottom: 14px;">
+        <div class="form-group" style="margin-bottom: 12px;">
           <label class="form-label">Nombre Descriptivo del Salón *</label>
-          <input type="text" id="grp-name" class="form-control" placeholder="Ej: Sexto Uno — Jornada Mañana" required />
+          <input type="text" id="grp-name" class="form-control" placeholder="Ej: Primero Uno — Jornada Mañana" required />
         </div>
 
-        <div class="form-grid-2" style="margin-bottom: 14px;">
+        <div class="form-grid-2" style="margin-bottom: 12px;">
           <div class="form-group">
             <label class="form-label">Jornada Escolar</label>
             <select id="grp-shift" class="form-control">
@@ -2511,18 +2511,18 @@
           </div>
           <div class="form-group">
             <label class="form-label">Aula / Ubicación Física</label>
-            <input type="text" id="grp-location" class="form-control" placeholder="Ej: Salón 201 (Bloque A)" />
+            <input type="text" id="grp-location" class="form-control" placeholder="Ej: Salón 101" />
           </div>
         </div>
 
-        <div class="form-group" style="margin-bottom: 20px;">
+        <div class="form-group" style="margin-bottom: 18px;">
           <label class="form-label">Docente Director(a) de Grupo (Opcional)</label>
           <select id="grp-director" class="form-control">
             <option value="">-- Sin director asignado por ahora --</option>
           </select>
         </div>
 
-        <div style="display: flex; justify-content: flex-end; gap: 10px;">
+        <div style="display: flex; justify-content: flex-end; gap: 10px; padding-top: 4px;">
           <button type="button" class="btn-secondary" onclick="closeModal('modal-create-group')">Cancelar</button>
           <button type="submit" class="btn-primary" style="background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);">
             <i class="fa-solid fa-check"></i> Crear Salón / Grupo
@@ -2533,8 +2533,8 @@
   </div>
 
   <!-- MODAL: PROGRAMAR BLOQUE DE CLASE EN HORARIO (RECTOR / COORDINADOR) -->
-  <div id="modal-add-schedule-block" style="display: none; position: fixed; inset: 0; z-index: 99999; background: rgba(0,0,0,0.8); backdrop-filter: blur(8px); align-items: center; justify-content: center; padding: 20px;">
-    <div style="background: #0f172a; border: 1px solid #3b82f6; border-radius: 16px; max-width: 580px; width: 100%; padding: 26px; box-shadow: 0 25px 60px -15px rgba(0,0,0,0.9);">
+  <div id="modal-add-schedule-block" style="display: none; position: fixed; inset: 0; z-index: 99999; background: rgba(0,0,0,0.8); backdrop-filter: blur(8px); align-items: center; justify-content: center; padding: 16px; overflow-y: auto;">
+    <div style="background: #0f172a; border: 1px solid #3b82f6; border-radius: 16px; max-width: 580px; width: 100%; padding: 22px 24px; box-shadow: 0 25px 60px -15px rgba(0,0,0,0.9); max-height: calc(100vh - 32px); overflow-y: auto; margin: auto;">
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px;">
         <h4 style="color: #fff; font-size: 17px; font-weight: 700; display: flex; align-items: center; gap: 9px;">
           <i class="fa-solid fa-calendar-plus" style="color: #38bdf8;"></i> Programar Bloque de Clase Escolar
@@ -2592,8 +2592,8 @@
   </div>
 
   <!-- MODAL: ACTUALIZAR REQUISITOS DE GRADO 11° (SECRETARÍA ACADÉMICA) -->
-  <div id="modal-edit-graduation-req" style="display: none; position: fixed; inset: 0; z-index: 99999; background: rgba(0,0,0,0.8); backdrop-filter: blur(8px); align-items: center; justify-content: center; padding: 20px;">
-    <div style="background: #0f172a; border: 1px solid #3b82f6; border-radius: 16px; max-width: 580px; width: 100%; padding: 26px; box-shadow: 0 25px 60px -15px rgba(0,0,0,0.9);">
+  <div id="modal-edit-graduation-req" style="display: none; position: fixed; inset: 0; z-index: 99999; background: rgba(0,0,0,0.8); backdrop-filter: blur(8px); align-items: center; justify-content: center; padding: 16px; overflow-y: auto;">
+    <div style="background: #0f172a; border: 1px solid #3b82f6; border-radius: 16px; max-width: 580px; width: 100%; padding: 22px 24px; box-shadow: 0 25px 60px -15px rgba(0,0,0,0.9); max-height: calc(100vh - 32px); overflow-y: auto; margin: auto;">
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px;">
         <h4 style="color: #fff; font-size: 17px; font-weight: 700; display: flex; align-items: center; gap: 9px;">
           <i class="fa-solid fa-user-graduate" style="color: #fbbf24;"></i> Requisitos Legales de Grado 11°
@@ -2651,8 +2651,8 @@
   </div>
 
   <!-- MODAL: GESTIONAR GRADOS DE UN COLEGIO (SUPERADMIN) -->
-  <div id="modal-manage-grades" style="display: none; position: fixed; inset: 0; z-index: 99999; background: rgba(0,0,0,0.75); backdrop-filter: blur(8px); align-items: center; justify-content: center; padding: 20px;">
-    <div style="background: #0f172a; border: 1px solid #3b82f6; border-radius: 16px; max-width: 680px; width: 100%; padding: 24px; max-height: 90vh; overflow-y: auto;">
+  <div id="modal-manage-grades" style="display: none; position: fixed; inset: 0; z-index: 99999; background: rgba(0,0,0,0.75); backdrop-filter: blur(8px); align-items: center; justify-content: center; padding: 16px; overflow-y: auto;">
+    <div style="background: #0f172a; border: 1px solid #3b82f6; border-radius: 16px; max-width: 680px; width: 100%; padding: 24px; max-height: calc(100vh - 32px); overflow-y: auto; margin: auto;">
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
         <h4 style="color: #fff; font-size: 17px; font-weight: 700;">
           <i class="fa-solid fa-sliders" style="color: #818cf8;"></i> Gestionar Grados Habilitados (Maternal a 11°)
@@ -2676,7 +2676,8 @@
   </div>
 
   <!-- MODAL: ASIGNAR / CAMBIAR RECTOR (SUPERADMIN) -->
-  <div id="modal-assign-rector" style="display: none; position: fixed; inset: 0; z-index: 99999; background: rgba(0,0,0,0.75); backdrop-filter: blur(8px); align-items: center; justify-content: center; padding: 20px;">
+  <div id="modal-assign-rector" style="display: none; position: fixed; inset: 0; z-index: 99999; background: rgba(0,0,0,0.75); backdrop-filter: blur(8px); align-items: center; justify-content: center; padding: 16px; overflow-y: auto;">
+    <div style="background: #0f172a; border: 1px solid #3b82f6; border-radius: 16px; max-width: 580px; width: 100%; padding: 24px; max-height: calc(100vh - 32px); overflow-y: auto; margin: auto;">
     <div style="background: #0f172a; border: 1px solid #3b82f6; border-radius: 16px; max-width: 580px; width: 100%; padding: 24px;">
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
         <h4 style="color: #fff; font-size: 17px; font-weight: 700;">
@@ -3325,9 +3326,20 @@
       }
 
       if (dirSel) {
-        const teachers = (globalOverview.institutional_directory || []).filter(u => u.role === 'DOCENTE' || u.role === 'TEACHER');
+        let teacherOptions = [];
+        if (globalOverview.teachers && globalOverview.teachers.length > 0) {
+          teacherOptions = globalOverview.teachers.map(t => ({
+            id: t.id,
+            name: t.full_name,
+            role: t.department || t.specialization || 'Docente Titular'
+          }));
+        } else {
+          teacherOptions = (globalOverview.institutional_directory || [])
+            .filter(u => u.role === 'DOCENTE' || u.role === 'TEACHER')
+            .map(u => ({ id: u.id, name: u.full_name, role: u.job_title || 'Docente' }));
+        }
         dirSel.innerHTML = '<option value="">-- Sin director asignado por ahora --</option>' +
-          teachers.map(t => `<option value="${t.id}">${t.full_name} (${t.job_title || 'Docente'})</option>`).join('');
+          teacherOptions.map(t => `<option value="${t.id}">${t.name} (${t.role})</option>`).join('');
       }
 
       suggestGroupCode();
@@ -3387,7 +3399,14 @@
           })
         });
 
-        const data = await resp.json();
+        const text = await resp.text();
+        let data;
+        try {
+          data = JSON.parse(text);
+        } catch {
+          throw new Error('Error al procesar la respuesta del servidor.');
+        }
+
         if (!resp.ok) {
           throw new Error(data.detail || data.message || 'Error al crear el grupo escolar.');
         }

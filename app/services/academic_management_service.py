@@ -782,6 +782,34 @@ class AcademicManagementService:
             )
         ).scalars().first()
 
+        # Resolver director_teacher_id a un ID válido en la tabla teachers (maneja tanto Teacher.id como User.id)
+        actual_director_teacher_id: uuid.UUID | None = None
+        director_teacher_name_val: str | None = None
+        if payload.director_teacher_id:
+            # 1. Verificar si ya es un ID de Teacher
+            stmt_t = select(Teacher).options(joinedload(Teacher.user)).where(Teacher.id == payload.director_teacher_id)
+            teacher_obj = (await self._session.execute(stmt_t)).scalars().first()
+            if teacher_obj is None:
+                # 2. Verificar si es un User.id con perfil de Teacher existente
+                stmt_t2 = select(Teacher).options(joinedload(Teacher.user)).where(Teacher.user_id == payload.director_teacher_id)
+                teacher_obj = (await self._session.execute(stmt_t2)).scalars().first()
+                if teacher_obj is None:
+                    # 3. Si es un User con rol DOCENTE/TEACHER, crear perfil Teacher
+                    user_obj = await self._session.get(User, payload.director_teacher_id)
+                    if user_obj and user_obj.role in (UserRole.DOCENTE, UserRole.TEACHER):
+                        teacher_obj = Teacher(
+                            user_id=user_obj.id,
+                            specialization=user_obj.department_area or user_obj.job_title or "Docente Institucional",
+                            is_active=True,
+                        )
+                        self._session.add(teacher_obj)
+                        await self._session.flush()
+                        teacher_obj.user = user_obj
+            if teacher_obj:
+                actual_director_teacher_id = teacher_obj.id
+                if teacher_obj.user:
+                    director_teacher_name_val = teacher_obj.user.full_name
+
         new_group = ClassroomGroup(
             school_id=effective_school_id,
             grade_level_code=grade_code,
@@ -789,7 +817,7 @@ class AcademicManagementService:
             name=payload.name.strip(),
             shift=payload.shift,
             classroom_location=payload.classroom_location,
-            director_teacher_id=payload.director_teacher_id,
+            director_teacher_id=actual_director_teacher_id,
             academic_period_id=period.id if period else None,
             max_capacity=payload.max_capacity,
             is_active=True,
@@ -822,7 +850,7 @@ class AcademicManagementService:
             if existing_off is None:
                 new_offering = CourseOffering(
                     subject_id=subject.id,
-                    teacher_id=payload.director_teacher_id or teacher.id,
+                    teacher_id=actual_director_teacher_id or teacher.id,
                     academic_period_id=period.id,
                     classroom_group_id=new_group.id,
                     group_code=norm_group_code,
@@ -860,6 +888,7 @@ class AcademicManagementService:
             shift=new_group.shift,
             classroom_location=new_group.classroom_location,
             director_teacher_id=new_group.director_teacher_id,
+            director_teacher_name=director_teacher_name_val,
             max_capacity=new_group.max_capacity,
             enrolled_students_count=0,
             available_capacity=new_group.max_capacity,
