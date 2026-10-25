@@ -23,6 +23,8 @@ from app.schemas.management import (
     AttendanceCreateRequest,
     AttendanceRegistrationResponse,
     BulkAttendanceCreateRequest,
+    ClassroomGroupCreateRequest,
+    ClassroomGroupResponse,
     CourseOfferingCreateRequest,
     CourseOfferingResponse,
     InstitutionalOverviewResponse,
@@ -152,7 +154,44 @@ async def create_school_staff(
 
 
 # =====================================================================
-# 1. TABLERO INSTITUCIONAL EJECUTIVO (SUPERPANEL / RECTORÍA / COORDINACIÓN)
+# 1. SALONES Y GRUPOS POR GRADO (SECRETARÍA ACADÉMICA — 6-1, 6-2, 6-3...)
+# =====================================================================
+@router.get(
+    "/classroom-groups",
+    response_model=list[ClassroomGroupResponse],
+    status_code=status.HTTP_200_OK,
+    summary="Listar salones/grupos activos por grado (ej. 6-1, 6-2, 6-3, 11-1) con conteo de alumnos",
+)
+async def list_classroom_groups(
+    service: Annotated[AcademicManagementService, Depends(get_management_service)],
+    _current_user: Annotated[User, Depends(get_current_active_user)],
+    school_id: uuid.UUID | None = Query(default=None, description="Filtrar por colegio"),
+    grade_level_code: str | None = Query(default=None, description="Filtrar por grado escolar (ej. GRADO_6)"),
+) -> list[ClassroomGroupResponse]:
+    """Retorna los grupos creados con su capacidad, director de grupo y estudiantes inscritos."""
+    eff_school_id = school_id or _current_user.school_id
+    return await service.list_classroom_groups(school_id=eff_school_id, grade_level_code=grade_level_code)
+
+
+@router.post(
+    "/classroom-groups",
+    response_model=ClassroomGroupResponse,
+    status_code=status.HTTP_201_CREATED,
+    summary="Secretaría: Crear un nuevo salón o grupo escolar para un grado (ej. 6-1, 6-2, 6-3, 11-1)",
+)
+async def create_classroom_group(
+    payload: ClassroomGroupCreateRequest,
+    service: Annotated[AcademicManagementService, Depends(get_management_service)],
+    current_user: Annotated[
+        User, Depends(require_roles(UserRole.ADMIN, UserRole.RECTOR, UserRole.COORDINADOR, UserRole.SECRETARIA))
+    ],
+) -> ClassroomGroupResponse:
+    """Permite a la Secretaría Académica abrir tantos grupos por grado como requiera la matrícula."""
+    return await service.create_classroom_group(payload=payload, current_user=current_user)
+
+
+# =====================================================================
+# 2. TABLERO INSTITUCIONAL EJECUTIVO (SUPERPANEL / RECTORÍA / COORDINACIÓN)
 # =====================================================================
 @router.get(
     "/institutional-overview",

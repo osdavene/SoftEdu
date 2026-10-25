@@ -28,6 +28,7 @@ from app.models.academic import (
     AcademicPeriod,
     Attendance,
     AttendanceStatus,
+    ClassroomGroup,
     CourseOffering,
     Enrollment,
     EnrollmentStatus,
@@ -104,6 +105,26 @@ async def _ensure_schema_columns_upgraded(conn: Any) -> None:
         "ALTER TABLE users ADD COLUMN IF NOT EXISTS job_title VARCHAR(120);",
         "ALTER TABLE users ADD COLUMN IF NOT EXISTS department_area VARCHAR(120);",
         "ALTER TABLE users ADD COLUMN IF NOT EXISTS phone_number VARCHAR(40);",
+        """
+        CREATE TABLE IF NOT EXISTS classroom_groups (
+            id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+            school_id UUID REFERENCES schools(id) ON DELETE CASCADE,
+            grade_level_code VARCHAR(30) NOT NULL,
+            group_code VARCHAR(20) NOT NULL,
+            name VARCHAR(100) NOT NULL,
+            shift VARCHAR(30) DEFAULT 'MAÑANA' NOT NULL,
+            classroom_location VARCHAR(80),
+            director_teacher_id UUID REFERENCES teachers(id) ON DELETE SET NULL,
+            academic_period_id UUID REFERENCES academic_periods(id) ON DELETE SET NULL,
+            max_capacity INTEGER DEFAULT 35 NOT NULL,
+            is_active BOOLEAN DEFAULT true NOT NULL,
+            created_at TIMESTAMPTZ DEFAULT now() NOT NULL,
+            updated_at TIMESTAMPTZ DEFAULT now() NOT NULL
+        );
+        """,
+        "ALTER TABLE students ADD COLUMN IF NOT EXISTS classroom_group_id UUID;",
+        "ALTER TABLE students ADD COLUMN IF NOT EXISTS group_code VARCHAR(20) DEFAULT '11-1';",
+        "ALTER TABLE course_offerings ADD COLUMN IF NOT EXISTS classroom_group_id UUID;",
         "ALTER TABLE students ADD COLUMN IF NOT EXISTS grade_level_code VARCHAR(30) DEFAULT 'GRADO_11';",
         "ALTER TABLE students ADD COLUMN IF NOT EXISTS guardian_name VARCHAR(150);",
         "ALTER TABLE students ADD COLUMN IF NOT EXISTS guardian_phone VARCHAR(40);",
@@ -492,13 +513,51 @@ async def _seed_institutional_records(session: AsyncSession) -> None:
             except Exception:
                 pass
 
-    # 6. Oferta de Curso / Horario Escolar Semanal (Grado 11°A)
+    # 5.5 Grupos Escolares por Grado (Secretaría Académica — Estándar SIMAT / Grados 6-1, 6-2, 6-3...)
+    demo_groups = [
+        {"grade": "GRADO_6", "code": "6-1", "name": "Sexto Uno", "shift": "MAÑANA", "loc": "Salón 201 (Bloque A)", "cap": 35},
+        {"grade": "GRADO_6", "code": "6-2", "name": "Sexto Dos", "shift": "MAÑANA", "loc": "Salón 202 (Bloque A)", "cap": 35},
+        {"grade": "GRADO_6", "code": "6-3", "name": "Sexto Tres", "shift": "MAÑANA", "loc": "Salón 203 (Bloque A)", "cap": 35},
+        {"grade": "GRADO_11", "code": "11-1", "name": "Once Uno", "shift": "MAÑANA", "loc": "Salón 11-1 (Bloque B-201)", "cap": 35},
+        {"grade": "GRADO_11", "code": "11-2", "name": "Once Dos", "shift": "MAÑANA", "loc": "Salón 11-2 (Bloque B-202)", "cap": 35},
+        {"grade": "TRANSICION", "code": "T-1", "name": "Transición Uno", "shift": "MAÑANA", "loc": "Salón Preescolar 1", "cap": 25},
+    ]
+    created_groups: dict[str, ClassroomGroup] = {}
+    for g_data in demo_groups:
+        grp = (
+            await session.execute(
+                select(ClassroomGroup).where(
+                    ClassroomGroup.school_id == school_1.id,
+                    ClassroomGroup.grade_level_code == g_data["grade"],
+                    ClassroomGroup.group_code == g_data["code"],
+                )
+            )
+        ).scalars().first()
+        if grp is None:
+            grp = ClassroomGroup(
+                school_id=school_1.id,
+                grade_level_code=g_data["grade"],
+                group_code=g_data["code"],
+                name=g_data["name"],
+                shift=g_data["shift"],
+                classroom_location=g_data["loc"],
+                director_teacher_id=teacher_prof.id,
+                academic_period_id=period.id,
+                max_capacity=g_data["cap"],
+                is_active=True,
+            )
+            session.add(grp)
+            await session.flush()
+        created_groups[g_data["code"]] = grp
+
+    # 6. Oferta de Curso / Horario Escolar Semanal (Grado 11-1)
+    grp_11_1 = created_groups.get("11-1")
     course_off = (
         await session.execute(
             select(CourseOffering).where(
                 CourseOffering.subject_id == subject_mat.id,
                 CourseOffering.academic_period_id == period.id,
-                CourseOffering.group_code == "11°A",
+                CourseOffering.group_code.in_(["11-1", "11°A"]),
             )
         )
     ).scalars().first()
@@ -507,7 +566,8 @@ async def _seed_institutional_records(session: AsyncSession) -> None:
             subject_id=subject_mat.id,
             teacher_id=teacher_prof.id,
             academic_period_id=period.id,
-            group_code="11°A",
+            classroom_group_id=grp_11_1.id if grp_11_1 else None,
+            group_code="11-1",
             grade_level_code="GRADO_11",
             max_capacity=30,
             total_planned_sessions=36,
@@ -516,13 +576,13 @@ async def _seed_institutional_records(session: AsyncSession) -> None:
                     "day": "LUNES",
                     "start_time": "07:00",
                     "end_time": "08:30",
-                    "classroom": "Salón 11°A (Bloque B-201)",
+                    "classroom": "Salón 11-1 (Bloque B-201)",
                 },
                 {
                     "day": "MIERCOLES",
                     "start_time": "08:30",
                     "end_time": "10:00",
-                    "classroom": "Salón 11°A (Bloque B-201)",
+                    "classroom": "Salón 11-1 (Bloque B-201)",
                 },
                 {
                     "day": "VIERNES",
@@ -534,6 +594,10 @@ async def _seed_institutional_records(session: AsyncSession) -> None:
         )
         session.add(course_off)
         await session.flush()
+    else:
+        if grp_11_1 and not course_off.classroom_group_id:
+            course_off.classroom_group_id = grp_11_1.id
+            course_off.group_code = "11-1"
 
     # 7. Estudiantes de Demostración
     # Estudiante 1: Laura Sofía Rodríguez (Grado 11°A — Desempeño Superior, Riesgo BAJO)
@@ -730,6 +794,9 @@ async def _seed_institutional_records(session: AsyncSession) -> None:
 
     students_to_enroll = [laura_student, mateo_student, valentina_student, sebastian_student, isabella_student]
     for s_item in students_to_enroll:
+        if grp_11_1 and not s_item.classroom_group_id:
+            s_item.classroom_group_id = grp_11_1.id
+            s_item.group_code = "11-1"
         enr = (
             await session.execute(
                 select(Enrollment).where(

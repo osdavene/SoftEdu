@@ -23,6 +23,7 @@ from app.models.academic import (
     AcademicPeriod,
     Attendance,
     AttendanceStatus,
+    ClassroomGroup,
     CourseOffering,
     Enrollment,
     EnrollmentStatus,
@@ -45,6 +46,8 @@ from app.schemas.management import (
     AttendanceLogItemResponse,
     AttendanceRegistrationResponse,
     BulkAttendanceCreateRequest,
+    ClassroomGroupCreateRequest,
+    ClassroomGroupResponse,
     CourseOfferingCreateRequest,
     CourseOfferingResponse,
     EnrolledStudentSummaryItem,
@@ -627,6 +630,227 @@ class AcademicManagementService:
         )
 
     # =================================================================
+    # 2. GESTIÓN DE SALONES Y GRUPOS POR GRADO (SECRETARÍA ACADÉMICA)
+    # =================================================================
+    async def list_classroom_groups(
+        self,
+        school_id: uuid.UUID | None = None,
+        grade_level_code: str | None = None,
+    ) -> list[ClassroomGroupResponse]:
+        """
+        Lista los salones/grupos creados por Secretaría (ej: 6-1, 6-2, 6-3, 11-1),
+        calculando el número de estudiantes matriculados y cupos disponibles en cada uno.
+        """
+        stmt = (
+            select(ClassroomGroup)
+            .options(
+                joinedload(ClassroomGroup.director_teacher).joinedload(Teacher.user),
+                joinedload(ClassroomGroup.school),
+            )
+            .where(ClassroomGroup.is_active.is_(True))
+        )
+        if school_id is not None:
+            stmt = stmt.where(ClassroomGroup.school_id == school_id)
+        if grade_level_code is not None:
+            stmt = stmt.where(ClassroomGroup.grade_level_code == grade_level_code.upper())
+
+        stmt = stmt.order_by(ClassroomGroup.grade_level_code.asc(), ClassroomGroup.group_code.asc())
+        groups = list((await self._session.execute(stmt)).scalars().unique().all())
+
+        # Conteo de alumnos matriculados por grupo
+        stu_counts_stmt = (
+            select(Student.classroom_group_id, func.count(Student.id))
+            .where(Student.is_active.is_(True), Student.classroom_group_id.isnot(None))
+            .group_by(Student.classroom_group_id)
+        )
+        stu_counts = dict((await self._session.execute(stu_counts_stmt)).all())
+
+        stu_counts_code_stmt = (
+            select(Student.group_code, func.count(Student.id))
+            .where(Student.is_active.is_(True), Student.group_code.isnot(None))
+            .group_by(Student.group_code)
+        )
+        stu_counts_by_code = dict((await self._session.execute(stu_counts_code_stmt)).all())
+
+        result: list[ClassroomGroupResponse] = []
+        for g in groups:
+            grade_meta = GRADES_MAP_BY_CODE.get(g.grade_level_code, GRADES_MAP_BY_CODE["GRADO_11"])
+            count = stu_counts.get(g.id) or stu_counts_by_code.get(g.group_code, 0)
+            avail = max(0, g.max_capacity - count)
+            dir_name = None
+            if g.director_teacher and g.director_teacher.user:
+                dir_name = g.director_teacher.user.full_name
+
+            result.append(
+                ClassroomGroupResponse(
+                    id=g.id,
+                    school_id=g.school_id,
+                    grade_level_code=g.grade_level_code,
+                    grade_level_label=grade_meta["name"],
+                    group_code=g.group_code,
+                    name=g.name,
+                    shift=g.shift,
+                    classroom_location=g.classroom_location,
+                    director_teacher_id=g.director_teacher_id,
+                    director_teacher_name=dir_name,
+                    max_capacity=g.max_capacity,
+                    enrolled_students_count=count,
+                    available_capacity=avail,
+                    is_active=g.is_active,
+                )
+            )
+        return result
+
+    async def create_classroom_group(
+        self,
+        payload: ClassroomGroupCreateRequest,
+        current_user: User,
+    ) -> ClassroomGroupResponse:
+        """
+        Permite a la Secretaría Académica (o Rectoría/Coordinación) abrir un nuevo
+        grupo o salón escolar para cualquier grado activo (ej: 6-1, 6-2, 6-3, 11-1).
+        """
+        effective_school_id = current_user.school_id
+        if effective_school_id is None:
+            first_school = (
+                await self._session.execute(
+                    select(SchoolInstitution)
+                    .where(SchoolInstitution.is_active.is_(True))
+                    .order_by(SchoolInstitution.created_at.asc())
+                    .limit(1)
+                )
+            ).scalars().first()
+            if first_school:
+                effective_school_id = first_school.id
+
+        school = None
+        if effective_school_id:
+            school = await self._session.get(SchoolInstitution, effective_school_id)
+
+        grade_code = payload.grade_level_code.upper()
+        if grade_code not in GRADES_MAP_BY_CODE:
+            raise BusinessRuleViolationError(
+                message=f"El grado '{grade_code}' no existe en el catálogo oficial (Maternal a 11°).",
+                rule_code="INVALID_GRADE_LEVEL_CODE",
+            )
+
+        if school and school.enabled_grades and grade_code not in school.enabled_grades:
+            raise BusinessRuleViolationError(
+                message=f"El grado '{GRADES_MAP_BY_CODE[grade_code]['name']}' no está habilitado actualmente en este colegio.",
+                rule_code="GRADE_NOT_ENABLED_IN_SCHOOL",
+            )
+
+        norm_group_code = payload.group_code.strip().upper()
+        existing_group = (
+            await self._session.execute(
+                select(ClassroomGroup).where(
+                    ClassroomGroup.school_id == effective_school_id,
+                    ClassroomGroup.grade_level_code == grade_code,
+                    func.upper(ClassroomGroup.group_code) == norm_group_code,
+                    ClassroomGroup.is_active.is_(True),
+                )
+            )
+        ).scalars().first()
+        if existing_group is not None:
+            raise BusinessRuleViolationError(
+                message=f"Ya existe el grupo '{norm_group_code}' para el grado {GRADES_MAP_BY_CODE[grade_code]['name']}.",
+                rule_code="DUPLICATE_CLASSROOM_GROUP_CODE",
+            )
+
+        period = (
+            await self._session.execute(
+                select(AcademicPeriod)
+                .where(AcademicPeriod.is_active.is_(True))
+                .order_by(AcademicPeriod.is_current.desc())
+                .limit(1)
+            )
+        ).scalars().first()
+
+        new_group = ClassroomGroup(
+            school_id=effective_school_id,
+            grade_level_code=grade_code,
+            group_code=norm_group_code,
+            name=payload.name.strip(),
+            shift=payload.shift,
+            classroom_location=payload.classroom_location,
+            director_teacher_id=payload.director_teacher_id,
+            academic_period_id=period.id if period else None,
+            max_capacity=payload.max_capacity,
+            is_active=True,
+        )
+        self._session.add(new_group)
+        await self._session.flush()
+
+        # Crear automáticamente una oferta académica base si no existe
+        subject = (
+            await self._session.execute(
+                select(Subject).where(Subject.is_active.is_(True)).order_by(Subject.created_at.asc()).limit(1)
+            )
+        ).scalars().first()
+        teacher = (
+            await self._session.execute(
+                select(Teacher).where(Teacher.is_active.is_(True)).order_by(Teacher.created_at.asc()).limit(1)
+            )
+        ).scalars().first()
+
+        if subject and teacher and period:
+            existing_off = (
+                await self._session.execute(
+                    select(CourseOffering).where(
+                        CourseOffering.subject_id == subject.id,
+                        CourseOffering.academic_period_id == period.id,
+                        CourseOffering.group_code == norm_group_code,
+                    )
+                )
+            ).scalars().first()
+            if existing_off is None:
+                new_offering = CourseOffering(
+                    subject_id=subject.id,
+                    teacher_id=payload.director_teacher_id or teacher.id,
+                    academic_period_id=period.id,
+                    classroom_group_id=new_group.id,
+                    group_code=norm_group_code,
+                    grade_level_code=grade_code,
+                    max_capacity=payload.max_capacity,
+                    total_planned_sessions=36,
+                    schedule_blocks=[
+                        {
+                            "day": "LUNES",
+                            "start_time": "07:00",
+                            "end_time": "08:30",
+                            "classroom": payload.classroom_location or f"Salón {norm_group_code}",
+                        },
+                        {
+                            "day": "MIERCOLES",
+                            "start_time": "08:30",
+                            "end_time": "10:00",
+                            "classroom": payload.classroom_location or f"Salón {norm_group_code}",
+                        },
+                    ],
+                )
+                self._session.add(new_offering)
+
+        await self._session.commit()
+        await self._session.refresh(new_group)
+
+        grade_meta = GRADES_MAP_BY_CODE[grade_code]
+        return ClassroomGroupResponse(
+            id=new_group.id,
+            school_id=new_group.school_id,
+            grade_level_code=new_group.grade_level_code,
+            grade_level_label=grade_meta["name"],
+            group_code=new_group.group_code,
+            name=new_group.name,
+            shift=new_group.shift,
+            classroom_location=new_group.classroom_location,
+            director_teacher_id=new_group.director_teacher_id,
+            max_capacity=new_group.max_capacity,
+            enrolled_students_count=0,
+            available_capacity=new_group.max_capacity,
+            is_active=new_group.is_active,
+        )
+
+    # =================================================================
     # 2. TABLERO EJECUTIVO INSTITUCIONAL (SUPERPANEL / RECTORÍA / COORDINACIÓN)
     # =================================================================
     async def get_institutional_overview(
@@ -708,6 +932,7 @@ class AcademicManagementService:
                 approval_rate_percentage=Decimal("100.00"),
                 global_attendance_percentage=Decimal("100.00"),
                 risk_distribution={},
+                classroom_groups=[],
                 enrolled_students=[],
                 recent_attendances=[],
                 institutional_directory=[],
@@ -898,6 +1123,10 @@ class AcademicManagementService:
             for u in all_users
         ]
 
+        school_groups = await self.list_classroom_groups(
+            school_id=active_school.id if active_school else None
+        )
+
         return InstitutionalOverviewResponse(
             active_school=active_school,
             schools=all_schools,
@@ -915,6 +1144,7 @@ class AcademicManagementService:
             approval_rate_percentage=approval_rate,
             global_attendance_percentage=global_att,
             risk_distribution=risk_counts,
+            classroom_groups=school_groups,
             enrolled_students=roster,
             recent_attendances=all_attendance_logs[:40],
             institutional_directory=directory,
@@ -1297,10 +1527,37 @@ class AcademicManagementService:
         self._session.add(user)
         await self._session.flush()
 
+        # Buscar o asociar al Salón/Grupo escolar correspondiente (ej: 6-1, 6-2, 6-3, 11-1)
+        assigned_group_code = (payload.group_code or "11-1").strip().upper()
+        target_group = (
+            await self._session.execute(
+                select(ClassroomGroup).where(
+                    ClassroomGroup.school_id == (first_school.id if first_school else None),
+                    ClassroomGroup.grade_level_code == grade_code,
+                    func.upper(ClassroomGroup.group_code) == assigned_group_code,
+                    ClassroomGroup.is_active.is_(True),
+                )
+            )
+        ).scalars().first()
+        if target_group is None:
+            target_group = ClassroomGroup(
+                school_id=first_school.id if first_school else None,
+                grade_level_code=grade_code,
+                group_code=assigned_group_code,
+                name=f"{grade_info['name']} - Grupo {assigned_group_code}",
+                shift="MAÑANA",
+                max_capacity=35,
+                is_active=True,
+            )
+            self._session.add(target_group)
+            await self._session.flush()
+
         student = Student(
             user_id=user.id,
             student_code=payload.student_code,
             grade_level_code=grade_code,
+            classroom_group_id=target_group.id,
+            group_code=target_group.group_code,
             program_name=resolved_program_name,
             current_semester=resolved_order,
             enrollment_cohort=payload.enrollment_cohort,
@@ -1311,19 +1568,29 @@ class AcademicManagementService:
         self._session.add(student)
         await self._session.flush()
 
-        # Matricular automáticamente en el curso principal activo
-        default_off = (
+        # Matricular en la oferta académica correspondiente al grupo
+        group_off = (
             await self._session.execute(
-                select(CourseOffering)
-                .where(CourseOffering.is_active.is_(True))
-                .order_by(CourseOffering.created_at.asc())
-                .limit(1)
+                select(CourseOffering).where(
+                    CourseOffering.group_code == target_group.group_code,
+                    CourseOffering.is_active.is_(True),
+                )
             )
         ).scalars().first()
-        if default_off is not None:
+        if group_off is None:
+            group_off = (
+                await self._session.execute(
+                    select(CourseOffering)
+                    .where(CourseOffering.is_active.is_(True))
+                    .order_by(CourseOffering.created_at.asc())
+                    .limit(1)
+                )
+            ).scalars().first()
+
+        if group_off is not None:
             enr = Enrollment(
                 student_id=student.id,
-                course_offering_id=default_off.id,
+                course_offering_id=group_off.id,
                 status=EnrollmentStatus.ACTIVE,
             )
             self._session.add(enr)
@@ -1339,6 +1606,7 @@ class AcademicManagementService:
             document_number=user.document_number,
             student_code=student.student_code,
             grade_level_code=student.grade_level_code,
+            group_code=student.group_code,
             program_name=student.program_name,
             current_semester=student.current_semester,
             enrollment_cohort=student.enrollment_cohort,
@@ -1366,6 +1634,7 @@ class AcademicManagementService:
                 document_number=s.user.document_number,
                 student_code=s.student_code,
                 grade_level_code=s.grade_level_code or "GRADO_11",
+                group_code=s.group_code or "11-1",
                 program_name=s.program_name,
                 current_semester=s.current_semester,
                 enrollment_cohort=s.enrollment_cohort,

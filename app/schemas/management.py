@@ -386,10 +386,79 @@ class CourseOfferingResponse(BaseModel):
 
 
 # =====================================================================
-# 3. DTOS DE ALUMNOS, PLANILLA DE ASISTENCIA Y TABLERO INSTITUCIONAL
+# 3. DTOS DE SALONES Y GRUPOS POR GRADO (6-1, 6-2, 6-3... SISTEMA SIMAT)
+# =====================================================================
+class ClassroomGroupCreateRequest(BaseModel):
+    """
+    DTO para que Secretaría cree un nuevo Salón o Grupo para un Grado activo
+    (ej: 6-1, 6-2, 6-3, 11-1, T-1).
+    """
+
+    model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
+
+    grade_level_code: str = Field(
+        ...,
+        min_length=3,
+        max_length=30,
+        description="Código del grado oficial K-12 (ej. GRADO_6, GRADO_11, TRANSICION)",
+    )
+    group_code: str = Field(
+        ...,
+        min_length=1,
+        max_length=20,
+        description="Nomenclatura oficial del grupo/sección (ej. '6-1', '6-2', '6-3', '11-1')",
+    )
+    name: str = Field(
+        ...,
+        min_length=2,
+        max_length=100,
+        description="Nombre descriptivo del curso (ej. 'Sexto Uno', 'Grupo 6-1')",
+    )
+    shift: str = Field(
+        default="MAÑANA",
+        description="Jornada escolar: MAÑANA, TARDE, UNICA, COMPLETA",
+    )
+    classroom_location: str | None = Field(
+        default=None,
+        max_length=80,
+        description="Aula física asignada (ej. 'Salón 201', 'Bloque B')",
+    )
+    director_teacher_id: uuid.UUID | None = Field(
+        default=None,
+        description="Docente titular / Director(a) de Grupo",
+    )
+    max_capacity: int = Field(
+        default=35,
+        ge=5,
+        le=60,
+        description="Cupo máximo de estudiantes para este grupo",
+    )
+
+
+class ClassroomGroupResponse(BaseModel):
+    """DTO de salida de un Salón/Grupo escolar con sus cupos y estudiantes matriculados."""
+
+    id: uuid.UUID
+    school_id: uuid.UUID | None
+    grade_level_code: str
+    grade_level_label: str
+    group_code: str
+    name: str
+    shift: str
+    classroom_location: str | None
+    director_teacher_id: uuid.UUID | None
+    director_teacher_name: str | None = None
+    max_capacity: int
+    enrolled_students_count: int = 0
+    available_capacity: int = 0
+    is_active: bool
+
+
+# =====================================================================
+# 4. DTOS DE ALUMNOS, PLANILLA DE ASISTENCIA Y TABLERO INSTITUCIONAL
 # =====================================================================
 class StudentCreateRequest(BaseModel):
-    """DTO para matricular un Estudiante en un Grado activo del colegio (Maternal a 11°)."""
+    """DTO para matricular un Estudiante en un Grado y Grupo activo del colegio (ej: 6-1, 6-2)."""
 
     model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
 
@@ -403,7 +472,13 @@ class StudentCreateRequest(BaseModel):
         default="GRADO_11",
         min_length=3,
         max_length=30,
-        description="Código del grado escolar activo (ej. MATERNAL, TRANSICION, GRADO_5, GRADO_11)",
+        description="Código del grado escolar activo (ej. MATERNAL, TRANSICION, GRADO_6, GRADO_11)",
+    )
+    group_code: str = Field(
+        default="11-1",
+        min_length=1,
+        max_length=20,
+        description="Grupo/Salón asignado al alumno (ej: '6-1', '6-2', '6-3', '11-1')",
     )
     program_name: str | None = Field(default=None, max_length=150)
     current_semester: int = Field(default=11, ge=0, le=15)
@@ -425,6 +500,7 @@ class StudentResponse(BaseModel):
     document_number: str
     student_code: str
     grade_level_code: str | None = "GRADO_11"
+    group_code: str | None = "11-1"
     program_name: str
     current_semester: int
     enrollment_cohort: str
@@ -553,6 +629,7 @@ class InstitutionalOverviewResponse(BaseModel):
     approval_rate_percentage: Decimal
     global_attendance_percentage: Decimal
     risk_distribution: dict[str, int]
+    classroom_groups: list[ClassroomGroupResponse] = Field(default_factory=list)
     enrolled_students: list[EnrolledStudentSummaryItem]
     recent_attendances: list[AttendanceLogItemResponse]
     institutional_directory: list[UserProfileResponse]

@@ -307,9 +307,22 @@ class Student(Base, AuditMixin):
         default="GRADO_11",
         comment="Código del grado escolar K-12 (MATERNAL .. GRADO_11)",
     )
+    classroom_group_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("classroom_groups.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
+    group_code: Mapped[str | None] = mapped_column(
+        String(20),
+        nullable=True,
+        default="11-1",
+        comment="Código o sección del grupo escolar (ej: 6-1, 6-2, 6-3, 11-1)",
+    )
 
     # Relaciones
     user: Mapped["User"] = relationship("User", back_populates="student_profile")
+    classroom_group: Mapped["ClassroomGroup | None"] = relationship("ClassroomGroup", back_populates="students")
     enrollments: Mapped[list["Enrollment"]] = relationship(
         "Enrollment", back_populates="student"
     )
@@ -463,6 +476,92 @@ class AcademicPeriod(Base, AuditMixin):
     )
 
 
+class ClassroomGroup(Base, AuditMixin):
+    """
+    Grupo, salón o sección escolar por Grado (ej: 6-1, 6-2, 6-3, 11-1, T-1).
+    Estándar SIMAT / MEN para la organización y apertura de cursos por secretaría.
+    """
+
+    __tablename__ = "classroom_groups"
+
+    id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
+    )
+    school_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("schools.id", ondelete="CASCADE"),
+        nullable=True,
+        index=True,
+    )
+    grade_level_code: Mapped[str] = mapped_column(
+        String(30),
+        nullable=False,
+        index=True,
+        comment="Código del grado oficial K-12 (MATERNAL .. GRADO_11)",
+    )
+    group_code: Mapped[str] = mapped_column(
+        String(20),
+        nullable=False,
+        index=True,
+        comment="Nomenclatura oficial del grupo escolar (ej: '6-1', '6-2', '6-3', '11-1')",
+    )
+    name: Mapped[str] = mapped_column(
+        String(100),
+        nullable=False,
+        comment="Nombre descriptivo del curso (ej: 'Sexto Uno', 'Grupo 6-1')",
+    )
+    shift: Mapped[str] = mapped_column(
+        String(30),
+        default="MAÑANA",
+        nullable=False,
+        comment="Jornada escolar: MAÑANA, TARDE, UNICA, COMPLETA",
+    )
+    classroom_location: Mapped[str | None] = mapped_column(
+        String(80),
+        nullable=True,
+        comment="Aula física o salón asignado (ej: 'Salón 201', 'Bloque B')",
+    )
+    director_teacher_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("teachers.id", ondelete="SET NULL"),
+        nullable=True,
+    )
+    academic_period_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("academic_periods.id", ondelete="SET NULL"),
+        nullable=True,
+    )
+    max_capacity: Mapped[int] = mapped_column(
+        Integer,
+        default=35,
+        nullable=False,
+    )
+    is_active: Mapped[bool] = mapped_column(
+        Boolean,
+        default=True,
+        nullable=False,
+    )
+
+    __table_args__ = (
+        UniqueConstraint(
+            "school_id",
+            "grade_level_code",
+            "group_code",
+            name="uq_classroom_group_school_grade_code",
+        ),
+        CheckConstraint("max_capacity > 0", name="group_max_capacity_positive"),
+    )
+
+    # Relaciones
+    school: Mapped["SchoolInstitution | None"] = relationship("SchoolInstitution")
+    director_teacher: Mapped["Teacher | None"] = relationship("Teacher")
+    academic_period: Mapped["AcademicPeriod | None"] = relationship("AcademicPeriod")
+    students: Mapped[list["Student"]] = relationship("Student", back_populates="classroom_group")
+    course_offerings: Mapped[list["CourseOffering"]] = relationship(
+        "CourseOffering", back_populates="classroom_group"
+    )
+
+
 class CourseOffering(Base, AuditMixin):
     """
     Oferta de curso (Grupo/Sección): vincula Materia, Docente, Período Lectivo
@@ -490,6 +589,12 @@ class CourseOffering(Base, AuditMixin):
         UUID(as_uuid=True),
         ForeignKey("academic_periods.id", ondelete="RESTRICT"),
         nullable=False,
+        index=True,
+    )
+    classroom_group_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("classroom_groups.id", ondelete="SET NULL"),
+        nullable=True,
         index=True,
     )
     group_code: Mapped[str] = mapped_column(String(20), nullable=False)
@@ -523,6 +628,9 @@ class CourseOffering(Base, AuditMixin):
     teacher: Mapped["Teacher"] = relationship("Teacher", back_populates="course_offerings")
     academic_period: Mapped["AcademicPeriod"] = relationship(
         "AcademicPeriod", back_populates="course_offerings"
+    )
+    classroom_group: Mapped["ClassroomGroup | None"] = relationship(
+        "ClassroomGroup", back_populates="course_offerings"
     )
     enrollments: Mapped[list["Enrollment"]] = relationship(
         "Enrollment", back_populates="course_offering"
