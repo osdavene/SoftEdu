@@ -1617,7 +1617,7 @@
 
     function selectGradesPreset(preset) {
       const checkboxes = document.querySelectorAll('input[name="school-create-grade"]');
-      const preescolarSet = new Set(['MATERNAL', 'PARVULOS', 'PREJARDIN', 'JARDIN', 'TRANSICION']);
+      const preescolarSet = new Set(['MATERNAL', 'PREJARDIN', 'JARDIN', 'TRANSICION']);
 
       checkboxes.forEach(cb => {
         if (preset === 'all') {

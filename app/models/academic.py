@@ -55,10 +55,9 @@ class SchoolCalendarType(str, enum.Enum):
     CALENDARIO_B = "CALENDARIO_B"
 
 
-# Catálogo oficial de Grados Escolares (Desde Maternal hasta Grado 11°)
+# Catálogo oficial de Grados Escolares (Desde Maternal hasta Grado 11° — Sistema Colombiano MEN)
 SCHOOL_GRADES_CATALOG: list[dict[str, Any]] = [
-    {"code": "MATERNAL", "name": "Maternal (1-2 años)", "short_name": "Maternal", "stage": "Educación Inicial y Preescolar", "order": 0},
-    {"code": "PARVULOS", "name": "Párvulos (2-3 años)", "short_name": "Párvulos", "stage": "Educación Inicial y Preescolar", "order": 0},
+    {"code": "MATERNAL", "name": "Maternal (Educación Inicial)", "short_name": "Maternal", "stage": "Educación Inicial y Preescolar", "order": 0},
     {"code": "PREJARDIN", "name": "Pre-Jardín (3-4 años)", "short_name": "Pre-Jardín", "stage": "Educación Inicial y Preescolar", "order": 0},
     {"code": "JARDIN", "name": "Jardín (4-5 años)", "short_name": "Jardín", "stage": "Educación Inicial y Preescolar", "order": 0},
     {"code": "TRANSICION", "name": "Transición / Grado 0° (5-6 años)", "short_name": "Transición (0°)", "stage": "Educación Inicial y Preescolar", "order": 0},

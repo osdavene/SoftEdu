@@ -183,8 +183,7 @@ async def _seed_institutional_records(session: AsyncSession) -> None:
         await session.flush()
     else:
         school_1 = existing_school
-        if not school_1.enabled_grades:
-            school_1.enabled_grades = all_grades_codes
+        school_1.enabled_grades = [g for g in (school_1.enabled_grades or all_grades_codes) if g != "PARVULOS"]
 
     # Colegio 2 (Colegio Campestre La Colina - Calendario B)
     school_2 = (
@@ -208,12 +207,14 @@ async def _seed_institutional_records(session: AsyncSession) -> None:
             email_contact="admisiones@lacolina.edu.co",
             resolution_men="Resolución Secretaría de Educación N.° 2021-089",
             enabled_grades=[
-                "MATERNAL", "PARVULOS", "PREJARDIN", "JARDIN", "TRANSICION",
+                "MATERNAL", "PREJARDIN", "JARDIN", "TRANSICION",
                 "GRADO_1", "GRADO_2", "GRADO_3", "GRADO_4", "GRADO_5",
             ],
         )
         session.add(school_2)
         await session.flush()
+    else:
+        school_2.enabled_grades = [g for g in school_2.enabled_grades if g != "PARVULOS"]
 
     # 1. SuperAdmin Global (Acceso al SuperPanel)
     superadmin = await _upsert_user(
