@@ -1,20 +1,21 @@
 """
-Esquemas Pydantic v2 para Autenticación JWT, Docentes, Horarios, Alumnos,
-Matrículas y Control de Asistencia (Fase 3).
+Esquemas Pydantic v2 para Autenticación JWT, Roles Institucionales (Rector,
+Coordinador, Secretaría, Orientador, Docente, Estudiante), Horarios, Matrículas,
+Planillas de Llamado a Lista y Tablero Institucional (100% Español).
 """
 
 from datetime import date, datetime
 from decimal import Decimal
-from typing import Literal
+from typing import Any, Literal
 import uuid
 
 from pydantic import BaseModel, ConfigDict, EmailStr, Field, model_validator
 
-from app.models.academic import AttendanceStatus, UserRole
+from app.models.academic import AttendanceStatus, RiskLevel, UserRole
 
 
 # =====================================================================
-# 1. DTOS DE AUTENTICACIÓN JWT E IDENTIDAD (RBAC)
+# 1. DTOS DE AUTENTICACIÓN JWT E IDENTIDAD INSTITUCIONAL (RBAC)
 # =====================================================================
 class LoginRequest(BaseModel):
     """Credenciales de acceso para obtener un token Bearer JWT."""
@@ -26,7 +27,7 @@ class LoginRequest(BaseModel):
 
 
 class UserProfileResponse(BaseModel):
-    """Información pública del usuario autenticado y sus identificadores de perfil."""
+    """Información completa del usuario autenticado, su cargo y permisos en español."""
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -37,13 +38,23 @@ class UserProfileResponse(BaseModel):
     full_name: str
     document_number: str
     role: UserRole
+    role_label_es: str
+    job_title: str
+    department_area: str
+    phone_number: str | None = None
+    permissions_es: list[str] = Field(default_factory=list)
     teacher_id: uuid.UUID | None = None
+    employee_code: str | None = None
     student_id: uuid.UUID | None = None
+    student_code: str | None = None
+    program_name: str | None = None
+    current_semester: int | None = None
+    enrollment_id: uuid.UUID | None = None
     is_active: bool
 
 
 class TokenResponse(BaseModel):
-    """Respuesta estándar OAuth2/JWT con token de acceso y perfil del usuario."""
+    """Respuesta estándar OAuth2/JWT con token de acceso y perfil institucional."""
 
     access_token: str
     token_type: str = "bearer"
@@ -60,7 +71,18 @@ class ScheduleBlockSchema(BaseModel):
     model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
 
     day: Literal[
-        "MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY", "SATURDAY"
+        "MONDAY",
+        "TUESDAY",
+        "WEDNESDAY",
+        "THURSDAY",
+        "FRIDAY",
+        "SATURDAY",
+        "LUNES",
+        "MARTES",
+        "MIERCOLES",
+        "JUEVES",
+        "VIERNES",
+        "SABADO",
     ] = Field(..., description="Día de la semana del bloque de clase.")
     start_time: str = Field(
         ...,
@@ -73,7 +95,7 @@ class ScheduleBlockSchema(BaseModel):
         description="Hora de finalización en formato 24h (ej. '10:00').",
     )
     classroom: str = Field(
-        ..., min_length=2, max_length=60, description="Aula o laboratorio asignado (ej. 'B-204')."
+        ..., min_length=2, max_length=60, description="Aula o laboratorio asignado (ej. 'LAB-IA-301')."
     )
 
     @model_validator(mode="after")
@@ -91,7 +113,7 @@ class TeacherCreateRequest(BaseModel):
     model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
 
     email: EmailStr
-    password: str = Field(default="Docente2026*", min_length=6)
+    password: str = Field(default="docente123", min_length=6)
     first_name: str = Field(..., min_length=2, max_length=100)
     last_name: str = Field(..., min_length=2, max_length=100)
     document_number: str = Field(..., min_length=5, max_length=40)
@@ -128,7 +150,9 @@ class SubjectCreateRequest(BaseModel):
     description: str | None = Field(default=None, max_length=1500)
     credits: int = Field(..., ge=1, le=20)
     weekly_hours: int = Field(..., ge=1, le=30)
-    minimum_passing_grade: Decimal = Field(default=Decimal("3.00"), ge=Decimal("0.00"), le=Decimal("5.00"))
+    minimum_passing_grade: Decimal = Field(
+        default=Decimal("3.00"), ge=Decimal("0.00"), le=Decimal("5.00")
+    )
 
 
 class SubjectResponse(BaseModel):
@@ -160,7 +184,9 @@ class AcademicPeriodCreateRequest(BaseModel):
     @model_validator(mode="after")
     def validate_dates(self) -> "AcademicPeriodCreateRequest":
         if self.end_date <= self.start_date:
-            raise ValueError("La fecha de fin del período debe ser posterior a la fecha de inicio.")
+            raise ValueError(
+                "La fecha de fin del período debe ser posterior a la fecha de inicio."
+            )
         return self
 
 
@@ -219,7 +245,7 @@ class CourseOfferingResponse(BaseModel):
 
 
 # =====================================================================
-# 3. DTOS DE ALUMNOS Y CONTROL DE ASISTENCIA
+# 3. DTOS DE ALUMNOS, PLANILLA DE ASISTENCIA Y TABLERO INSTITUCIONAL
 # =====================================================================
 class StudentCreateRequest(BaseModel):
     """DTO para registrar la ficha de un Estudiante junto con su usuario RBAC."""
@@ -227,15 +253,19 @@ class StudentCreateRequest(BaseModel):
     model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
 
     email: EmailStr
-    password: str = Field(default="Estudiante2026*", min_length=6)
+    password: str = Field(default="estudiante123", min_length=6)
     first_name: str = Field(..., min_length=2, max_length=100)
     last_name: str = Field(..., min_length=2, max_length=100)
     document_number: str = Field(..., min_length=5, max_length=40)
     student_code: str = Field(..., min_length=3, max_length=30)
     program_name: str = Field(..., min_length=3, max_length=150)
     current_semester: int = Field(default=1, ge=1, le=15)
-    enrollment_cohort: str = Field(..., min_length=4, max_length=20, description="Ej. '2026-1'")
+    enrollment_cohort: str = Field(
+        default="2026-1", min_length=4, max_length=20, description="Ej. '2026-1'"
+    )
     birth_date: date | None = None
+    guardian_name: str | None = Field(default=None, max_length=150)
+    guardian_phone: str | None = Field(default=None, max_length=40)
 
 
 class StudentResponse(BaseModel):
@@ -251,6 +281,8 @@ class StudentResponse(BaseModel):
     current_semester: int
     enrollment_cohort: str
     birth_date: date | None
+    guardian_name: str | None = None
+    guardian_phone: str | None = None
     is_active: bool
 
 
@@ -269,6 +301,24 @@ class AttendanceCreateRequest(BaseModel):
     observations: str | None = Field(default=None, max_length=500)
 
 
+class BulkAttendanceItemSchema(BaseModel):
+    """Registro individual dentro de una toma de asistencia masiva de grupo."""
+
+    enrollment_id: uuid.UUID
+    status: AttendanceStatus
+    observations: str | None = None
+
+
+class BulkAttendanceCreateRequest(BaseModel):
+    """Planilla de llamado a lista masivo para todos los alumnos de un grupo en una fecha."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    session_date: date
+    syllabus_topic_id: uuid.UUID | None = None
+    records: list[BulkAttendanceItemSchema] = Field(..., min_length=1)
+
+
 class AttendanceRegistrationResponse(BaseModel):
     """Respuesta al registrar asistencia con métricas acumuladas y alerta de IA."""
 
@@ -280,8 +330,77 @@ class AttendanceRegistrationResponse(BaseModel):
     unexcused_absent_count: int
     absence_percentage: Decimal
     max_absence_allowed_percentage: Decimal
-    ai_risk_evaluation_triggered: bool = Field(
-        ...,
-        description="True si se encoló evaluación de IA por inasistencia o umbral de riesgo.",
-    )
+    ai_risk_evaluation_triggered: bool
     created_at: datetime
+
+
+class AttendanceLogItemResponse(BaseModel):
+    """Fila de historial de asistencia para reportes de coordinación y docentes."""
+
+    id: uuid.UUID
+    enrollment_id: uuid.UUID
+    student_code: str
+    student_full_name: str
+    session_date: date
+    status: AttendanceStatus
+    status_label_es: str
+    observations: str | None
+    created_at: datetime
+
+
+class EnrolledStudentSummaryItem(BaseModel):
+    """Resumen consolidado de cada estudiante matriculado para planillas y tableros."""
+
+    enrollment_id: uuid.UUID
+    student_id: uuid.UUID
+    student_code: str
+    student_full_name: str
+    student_email: str
+    document_number: str
+    program_name: str
+    current_semester: int
+    guardian_name: str | None
+    guardian_phone: str | None
+    course_offering_id: uuid.UUID
+    subject_id: uuid.UUID
+    subject_code: str
+    subject_name: str
+    group_code: str
+    academic_period_code: str
+    evaluated_weight_percentage: Decimal
+    remaining_weight_percentage: Decimal
+    current_weighted_average: Decimal
+    minimum_score_needed_in_remaining: Decimal
+    is_currently_passing: bool
+    grades_count: int
+    present_count: int
+    late_count: int
+    excused_count: int
+    unexcused_absent_count: int
+    attendance_percentage: Decimal
+    absence_percentage: Decimal
+    risk_level: RiskLevel | None = None
+    ai_executive_summary: str | None = None
+    ai_detected_factors: list[str] = Field(default_factory=list)
+    ai_action_plan: dict[str, Any] | None = None
+
+
+class InstitutionalOverviewResponse(BaseModel):
+    """Tablero Ejecutivo Institucional completo para Rectoría, Coordinación y Docentes."""
+
+    active_period_code: str
+    active_period_name: str
+    total_students: int
+    total_teachers: int
+    total_subjects: int
+    total_course_offerings: int
+    total_active_enrollments: int
+    institutional_average_grade: Decimal
+    passing_students_count: int
+    failing_students_count: int
+    approval_rate_percentage: Decimal
+    global_attendance_percentage: Decimal
+    risk_distribution: dict[str, int]
+    enrolled_students: list[EnrolledStudentSummaryItem]
+    recent_attendances: list[AttendanceLogItemResponse]
+    institutional_directory: list[UserProfileResponse]

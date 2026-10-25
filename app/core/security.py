@@ -117,21 +117,57 @@ async def get_current_active_user(
     return user
 
 
+def _expand_equivalent_roles(allowed_roles: tuple[UserRole, ...]) -> set[UserRole]:
+    """Expande los grupos jerárquicos de roles institucionales."""
+    expanded: set[UserRole] = set(allowed_roles)
+    if UserRole.ADMIN in expanded:
+        expanded.update(
+            {
+                UserRole.RECTOR,
+                UserRole.COORDINADOR,
+                UserRole.SECRETARIA,
+            }
+        )
+    if UserRole.TEACHER in expanded or UserRole.DOCENTE in expanded:
+        expanded.update(
+            {
+                UserRole.TEACHER,
+                UserRole.DOCENTE,
+                UserRole.COORDINADOR,
+                UserRole.RECTOR,
+                UserRole.ORIENTADOR,
+            }
+        )
+    if UserRole.STUDENT in expanded or UserRole.ESTUDIANTE in expanded:
+        expanded.update(
+            {
+                UserRole.STUDENT,
+                UserRole.ESTUDIANTE,
+                UserRole.ORIENTADOR,
+                UserRole.SECRETARIA,
+                UserRole.COORDINADOR,
+                UserRole.RECTOR,
+            }
+        )
+    return expanded
+
+
 def require_roles(
     *allowed_roles: UserRole,
 ) -> Callable[[User], Coroutine[Any, Any, User]]:
     """
     Fábrica de dependencias RBAC que restringe el acceso a los roles autorizados.
     """
+    effective_roles = _expand_equivalent_roles(allowed_roles)
 
     async def role_checker(
         current_user: Annotated[User, Depends(get_current_active_user)],
     ) -> User:
-        if current_user.role not in allowed_roles:
+        if current_user.role not in effective_roles:
             raise UnauthorizedAccessError(
                 message=(
-                    f"Operación restringida. Rol actual: '{current_user.role.value}'. "
-                    f"Roles permitidos: {[r.value for r in allowed_roles]}."
+                    f"Operación restringida para su rol actual ('{current_user.role.value}'). "
+                    f"Se requiere autorización de: {[r.value for r in effective_roles]}."
                 )
             )
         return current_user

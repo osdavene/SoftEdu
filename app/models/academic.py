@@ -8,7 +8,7 @@ import uuid
 
 from pgvector.sqlalchemy import Vector
 from sqlalchemy import (
-     Boolean,
+    Boolean,
     CheckConstraint,
     Date,
     DateTime,
@@ -30,12 +30,19 @@ from app.core.database import Base
 
 
 # =====================================================================
-# ENUMS DE DOMINIO
+# ENUMS DE DOMINIO (100% COMPATIBLES CON ROLES INSTITUCIONALES)
 # =====================================================================
 class UserRole(str, enum.Enum):
-    """Roles del sistema para control de acceso basado en roles (RBAC)."""
+    """Roles institucionales del sistema para control de acceso (RBAC)."""
 
     ADMIN = "ADMIN"
+    RECTOR = "RECTOR"
+    COORDINADOR = "COORDINADOR"
+    SECRETARIA = "SECRETARIA"
+    ORIENTADOR = "ORIENTADOR"
+    DOCENTE = "DOCENTE"
+    ESTUDIANTE = "ESTUDIANTE"
+    # Alias técnicos retrocompatibles
     TEACHER = "TEACHER"
     STUDENT = "STUDENT"
 
@@ -97,7 +104,7 @@ class AuditMixin:
 # 1. IDENTIDAD Y PERFILES (USER, TEACHER, STUDENT)
 # =====================================================================
 class User(Base, AuditMixin):
-    """Entidad central de identidad, credenciales y rol RBAC."""
+    """Entidad central de identidad, credenciales y rol institucional RBAC."""
 
     __tablename__ = "users"
 
@@ -114,10 +121,21 @@ class User(Base, AuditMixin):
         String(40), unique=True, index=True, nullable=False
     )
     role: Mapped[UserRole] = mapped_column(
-        SQLEnum(UserRole, name="user_role_enum"),
+        SQLEnum(UserRole, name="user_role_enum", native_enum=False, length=40),
         nullable=False,
         index=True,
     )
+    job_title: Mapped[str | None] = mapped_column(
+        String(120),
+        nullable=True,
+        comment="Cargo institucional descriptivo (ej. Rector General, Coordinadora Académica)",
+    )
+    department_area: Mapped[str | None] = mapped_column(
+        String(120),
+        nullable=True,
+        comment="Dependencia o área institucional",
+    )
+    phone_number: Mapped[str | None] = mapped_column(String(40), nullable=True)
 
     # Relaciones 1:1 hacia perfiles específicos
     teacher_profile: Mapped["Teacher | None"] = relationship(
@@ -189,6 +207,10 @@ class Student(Base, AuditMixin):
     current_semester: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
     enrollment_cohort: Mapped[str] = mapped_column(String(20), nullable=False)
     birth_date: Mapped[date | None] = mapped_column(Date, nullable=True)
+    guardian_name: Mapped[str | None] = mapped_column(
+        String(150), nullable=True, comment="Nombre del acudiente o contacto de emergencia"
+    )
+    guardian_phone: Mapped[str | None] = mapped_column(String(40), nullable=True)
 
     # Relaciones
     user: Mapped["User"] = relationship("User", back_populates="student_profile")
@@ -379,7 +401,6 @@ class CourseOffering(Base, AuditMixin):
     total_planned_sessions: Mapped[int] = mapped_column(
         Integer, default=32, nullable=False
     )
-    # Estructura JSONB de bloques horarios: [{"day": "MONDAY", "start": "08:00", "end": "10:00", "room": "B-204"}]
     schedule_blocks: Mapped[list[dict[str, Any]]] = mapped_column(
         JSONB, default=list, server_default="[]", nullable=False
     )
@@ -430,7 +451,7 @@ class Enrollment(Base, AuditMixin):
         index=True,
     )
     status: Mapped[EnrollmentStatus] = mapped_column(
-        SQLEnum(EnrollmentStatus, name="enrollment_status_enum"),
+        SQLEnum(EnrollmentStatus, name="enrollment_status_enum", native_enum=False, length=30),
         default=EnrollmentStatus.ACTIVE,
         nullable=False,
         index=True,
@@ -561,7 +582,7 @@ class Attendance(Base, AuditMixin):
     )
     session_date: Mapped[date] = mapped_column(Date, nullable=False, index=True)
     status: Mapped[AttendanceStatus] = mapped_column(
-        SQLEnum(AttendanceStatus, name="attendance_status_enum"),
+        SQLEnum(AttendanceStatus, name="attendance_status_enum", native_enum=False, length=30),
         nullable=False,
         index=True,
     )
@@ -604,7 +625,7 @@ class StudentAIInsight(Base, AuditMixin):
         nullable=True,
     )
     risk_level: Mapped[RiskLevel] = mapped_column(
-        SQLEnum(RiskLevel, name="risk_level_enum"),
+        SQLEnum(RiskLevel, name="risk_level_enum", native_enum=False, length=30),
         nullable=False,
         index=True,
     )

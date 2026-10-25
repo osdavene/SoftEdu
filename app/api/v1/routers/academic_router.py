@@ -1,8 +1,9 @@
 """
 Controlador HTTP Asíncrono (`app/api/v1/routers/academic_router.py`).
 
-Gestiona Docentes, Materias, Períodos, Ofertas y Horarios (`schedule_blocks`),
-Alumnos, Matrículas y Registro de Asistencia con disparo de Alerta Temprana de IA.
+Gestiona Tablero Institucional (Rectoría/Coordinación), Docentes, Materias,
+Períodos, Ofertas y Horarios (`schedule_blocks`), Alumnos, Matrículas y
+Planillas de Llamado a Lista / Asistencia con disparo de Alerta Temprana de IA.
 """
 
 from typing import Annotated
@@ -12,7 +13,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.ai.ai_service import AcademicAIService
 from app.core.database import get_db_session
-from app.core.security import require_roles
+from app.core.security import get_current_active_user, require_roles
 from app.models.academic import User, UserRole
 from app.schemas.academic import EnrollmentCreate, EnrollmentResponse
 from app.schemas.management import (
@@ -20,8 +21,10 @@ from app.schemas.management import (
     AcademicPeriodResponse,
     AttendanceCreateRequest,
     AttendanceRegistrationResponse,
+    BulkAttendanceCreateRequest,
     CourseOfferingCreateRequest,
     CourseOfferingResponse,
+    InstitutionalOverviewResponse,
     StudentCreateRequest,
     StudentResponse,
     SubjectCreateRequest,
@@ -33,7 +36,7 @@ from app.services.academic_management_service import AcademicManagementService
 
 router = APIRouter(
     prefix="/academic",
-    tags=["Docentes, Horarios, Alumnos, Matrículas & Asistencia"],
+    tags=["Gestión Institucional, Docentes, Horarios, Matrículas y Asistencia"],
 )
 
 
@@ -45,6 +48,26 @@ def get_management_service(
 
 def get_academic_ai_service() -> AcademicAIService:
     return AcademicAIService()
+
+
+# =====================================================================
+# 0. TABLERO EJECUTIVO INSTITUCIONAL (RECTORÍA / COORDINACIÓN / ERP)
+# =====================================================================
+@router.get(
+    "/institutional-overview",
+    response_model=InstitutionalOverviewResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Obtener tablero ejecutivo institucional, planillas y directorio de roles",
+)
+async def get_institutional_overview(
+    service: Annotated[AcademicManagementService, Depends(get_management_service)],
+    _current_user: Annotated[User, Depends(get_current_active_user)],
+) -> InstitutionalOverviewResponse:
+    """
+    Consolida KPIs institucionales, lista completa de estudiantes matriculados con
+    su promedio, % de fallas, nivel de riesgo IA, historial de asistencia y directorio.
+    """
+    return await service.get_institutional_overview()
 
 
 # =====================================================================
@@ -73,7 +96,8 @@ async def create_teacher(
 async def list_teachers(
     service: Annotated[AcademicManagementService, Depends(get_management_service)],
     _current_user: Annotated[
-        User, Depends(require_roles(UserRole.ADMIN, UserRole.TEACHER))
+        User,
+        Depends(require_roles(UserRole.ADMIN, UserRole.TEACHER, UserRole.STUDENT)),
     ],
 ) -> list[TeacherResponse]:
     return await service.list_teachers()
@@ -134,10 +158,6 @@ async def create_course_offering(
     service: Annotated[AcademicManagementService, Depends(get_management_service)],
     _current_user: Annotated[User, Depends(require_roles(UserRole.ADMIN))],
 ) -> CourseOfferingResponse:
-    """
-    Crea una oferta de curso validando que los bloques horarios (`schedule_blocks`)
-    del docente no se solapen con otras materias asignadas en el mismo período.
-    """
     return await service.create_course_offering(payload=payload)
 
 
@@ -158,7 +178,7 @@ async def list_course_offerings(
 
 
 # =====================================================================
-# 2. ALUMNOS, MATRÍCULAS Y ASISTENCIA CON ALERTA TEMPRANA IA
+# 2. ALUMNOS, MATRÍCULAS Y PLANILLA DE ASISTENCIA CON ALERTA IA
 # =====================================================================
 @router.post(
     "/students",
@@ -183,7 +203,8 @@ async def create_student(
 async def list_students(
     service: Annotated[AcademicManagementService, Depends(get_management_service)],
     _current_user: Annotated[
-        User, Depends(require_roles(UserRole.ADMIN, UserRole.TEACHER))
+        User,
+        Depends(require_roles(UserRole.ADMIN, UserRole.TEACHER, UserRole.STUDENT)),
     ],
 ) -> list[StudentResponse]:
     return await service.list_students()
@@ -207,12 +228,7 @@ async def enroll_student(
     "/attendances",
     response_model=AttendanceRegistrationResponse,
     status_code=status.HTTP_201_CREATED,
-    summary="Registrar asistencia/inasistencia y disparar alerta temprana de IA",
-    description=(
-        "Registra la asistencia de un alumno en una fecha de sesión. Cuando se "
-        "registra una inasistencia (`ABSENT`) o retardo (`LATE`), dispara en "
-        "`BackgroundTasks` el análisis de riesgo académico con el Copiloto de IA."
-    ),
+    summary="Registrar asistencia individual y disparar alerta temprana de IA",
 )
 async def register_student_attendance(
     payload: AttendanceCreateRequest,
@@ -232,3 +248,29 @@ async def register_student_attendance(
             context=ai_context_dto,
         )
     return result_dto
+
+
+@router.post(
+    "/attendances/bulk",
+    response_model=list[AttendanceRegistrationResponse],
+    status_code=status.HTTP_201_CREATED,
+    summary="Tomar asistencia masiva (Llamado a Lista de Grupo) y disparar alertas IA",
+)
+async def register_bulk_attendance(
+    payload: BulkAttendanceCreateRequest,
+    background_tasks: BackgroundTasks,
+    service: Annotated[AcademicManagementService, Depends(get_management_service)],
+    ai_service: Annotated[AcademicAIService, Depends(get_academic_ai_service)],
+    _current_user: Annotated[
+        User, Depends(require_roles(UserRole.ADMIN, UserRole.TEACHER))
+    ],
+) -> list[AttendanceRegistrationResponse]:
+    results, ai_contexts = await service.register_bulk_attendance_session(
+        payload=payload
+    )
+    for ctx in ai_contexts:
+        background_tasks.add_task(
+            ai_service.evaluate_and_save_student_risk_background,
+            context=ctx,
+        )
+    return results

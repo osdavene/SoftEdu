@@ -3,21 +3,22 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>SoftEdu — AI-Powered LMS/SIS | Consola Académica & Copiloto IA</title>
+  <title>SoftEdu ERP / LMS — Sistema Inteligente de Gestión Académica y Control Educativo</title>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
   <style>
     :root {
-      --bg-base: #070b14;
+      --bg-base: #060a12;
+      --bg-sidebar: #0b1120;
       --bg-panel: #0f172a;
-      --bg-card: #111c33;
-      --bg-input: #091020;
+      --bg-card: #131e36;
+      --bg-input: #080e1c;
       --border-subtle: #1e293b;
-      --border-focus: #6366f1;
+      --border-highlight: #334155;
       --text-main: #f8fafc;
       --text-secondary: #cbd5e1;
-      --text-muted: #64748b;
+      --text-muted: #94a3b8;
       --indigo: #6366f1;
-      --indigo-hover: #4f46e5;
+      --indigo-dark: #4f46e5;
       --purple: #9333ea;
       --sky: #0284c7;
       --emerald: #10b981;
@@ -25,265 +26,388 @@
       --rose: #f43f5e;
     }
 
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
 
     body {
       background: radial-gradient(circle at top right, #1e1b4b 0%, var(--bg-base) 45%);
       color: var(--text-main);
-      font-family: 'Segoe UI', system-ui, -apple-system, BlinkMacSystemFont, Roboto, sans-serif;
+      font-family: 'Segoe UI', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
       min-height: 100vh;
       line-height: 1.5;
-      -webkit-font-smoothing: antialiased;
+      display: flex;
+      flex-direction: column;
     }
 
-    /* Barra Superior */
+    button, input, select, textarea {
+      font-family: inherit;
+    }
+
+    button {
+      cursor: pointer;
+      border: none;
+      transition: all 0.18s ease;
+    }
+
+    /* Barra Superior Institucional */
     .topbar {
       position: sticky;
       top: 0;
-      z-index: 40;
-      background: rgba(15, 23, 42, 0.88);
+      z-index: 50;
+      background: rgba(11, 17, 32, 0.94);
       backdrop-filter: blur(12px);
       border-bottom: 1px solid var(--border-subtle);
-    }
-
-    .topbar-inner {
-      max-width: 1340px;
-      margin: 0 auto;
-      padding: 14px 24px;
+      padding: 10px 22px;
       display: flex;
       flex-wrap: wrap;
       align-items: center;
       justify-content: space-between;
-      gap: 16px;
+      gap: 14px;
     }
 
     .brand {
       display: flex;
       align-items: center;
-      gap: 14px;
+      gap: 12px;
     }
 
-    .brand-icon {
-      width: 44px;
-      height: 44px;
-      border-radius: 12px;
+    .brand-logo {
+      width: 42px;
+      height: 42px;
+      border-radius: 11px;
       background: linear-gradient(135deg, #6366f1 0%, #4338ca 100%);
       display: flex;
       align-items: center;
       justify-content: center;
       color: #fff;
       font-size: 20px;
-      box-shadow: 0 8px 20px -4px rgba(99, 102, 241, 0.55);
+      box-shadow: 0 6px 18px -4px rgba(99, 102, 241, 0.6);
     }
 
     .brand-title {
-      font-size: 19px;
+      font-size: 18px;
       font-weight: 800;
-      letter-spacing: -0.02em;
       color: #fff;
       display: flex;
       align-items: center;
-      gap: 10px;
+      gap: 8px;
     }
 
-    .pill-ai {
-      font-size: 11px;
+    .badge-erp {
+      font-size: 10.5px;
       font-weight: 700;
-      padding: 3px 10px;
+      padding: 2px 9px;
       border-radius: 999px;
-      background: rgba(99, 102, 241, 0.18);
+      background: rgba(99, 102, 241, 0.2);
       color: #a5b4fc;
-      border: 1px solid rgba(99, 102, 241, 0.35);
-      letter-spacing: 0.03em;
+      border: 1px solid rgba(99, 102, 241, 0.4);
+      text-transform: uppercase;
     }
 
     .brand-sub {
-      font-size: 12px;
+      font-size: 11.5px;
       color: var(--text-muted);
-      margin-top: 2px;
     }
 
-    .topbar-actions {
+    .topbar-right {
       display: flex;
       align-items: center;
-      flex-wrap: wrap;
       gap: 10px;
+      flex-wrap: wrap;
     }
 
-    .badge-user {
+    .active-user-pill {
+      background: #131e36;
+      border: 1px solid #2a3b63;
+      border-radius: 11px;
+      padding: 6px 13px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
       font-size: 12.5px;
-      padding: 7px 14px;
-      border-radius: 10px;
-      background: #131d35;
-      border: 1px solid #263554;
-      color: var(--text-secondary);
+    }
+
+    .btn-top {
+      font-size: 12px;
+      font-weight: 600;
+      padding: 7px 13px;
+      border-radius: 9px;
+      text-decoration: none;
       display: inline-flex;
       align-items: center;
       gap: 6px;
     }
 
-    .btn-link {
-      font-size: 12.5px;
-      font-weight: 600;
-      padding: 7px 14px;
-      border-radius: 10px;
-      text-decoration: none;
-      display: inline-flex;
-      align-items: center;
-      gap: 7px;
-      transition: all 0.18s ease;
+    .btn-login-modal {
+      background: rgba(99, 102, 241, 0.2);
+      color: #c7d2fe;
+      border: 1px solid rgba(99, 102, 241, 0.45);
     }
+    .btn-login-modal:hover { background: rgba(99, 102, 241, 0.35); }
 
-    .btn-swagger {
-      background: rgba(16, 185, 129, 0.15);
+    .btn-api-docs {
+      background: rgba(16, 185, 129, 0.14);
       color: #6ee7b7;
       border: 1px solid rgba(16, 185, 129, 0.35);
     }
-    .btn-swagger:hover {
-      background: rgba(16, 185, 129, 0.25);
-      transform: translateY(-1px);
-    }
 
-    .btn-redoc {
-      background: #1e293b;
-      color: #e2e8f0;
-      border: 1px solid #334155;
-    }
-    .btn-redoc:hover {
-      background: #334155;
-    }
-
-    /* Contenedor Principal */
-    .container {
-      max-width: 1340px;
-      margin: 0 auto;
-      padding: 24px;
-      display: flex;
-      flex-direction: column;
-      gap: 24px;
-    }
-
-    /* Barra RBAC */
-    .rbac-bar {
-      background: linear-gradient(90deg, rgba(30, 41, 59, 0.85) 0%, rgba(15, 23, 42, 0.92) 100%);
-      border: 1px solid var(--border-subtle);
-      border-radius: 16px;
-      padding: 16px 22px;
+    /* Barra Rápida de Simulación de Roles Institucionales */
+    .role-switcher-strip {
+      background: #0d1528;
+      border-bottom: 1px solid var(--border-subtle);
+      padding: 9px 22px;
       display: flex;
       flex-wrap: wrap;
       align-items: center;
       justify-content: space-between;
-      gap: 16px;
-      box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.5);
-    }
-
-    .rbac-label {
-      font-size: 11px;
-      text-transform: uppercase;
-      letter-spacing: 0.08em;
-      color: #818cf8;
-      font-weight: 700;
-    }
-
-    .rbac-desc {
-      font-size: 13.5px;
-      color: var(--text-secondary);
-      margin-top: 2px;
-    }
-
-    .rbac-buttons {
-      display: flex;
-      flex-wrap: wrap;
       gap: 10px;
     }
 
-    /* Botones Generales */
-    button {
-      cursor: pointer;
-      font-family: inherit;
-      border: none;
-      transition: all 0.18s ease;
-    }
-
-    .btn-role {
-      padding: 9px 16px;
-      border-radius: 11px;
-      font-size: 12.5px;
-      font-weight: 600;
-      display: inline-flex;
+    .strip-label {
+      font-size: 11.5px;
+      font-weight: 700;
+      color: #94a3b8;
+      display: flex;
       align-items: center;
       gap: 7px;
     }
 
-    .btn-role-admin {
-      background: rgba(147, 51, 234, 0.16);
-      color: #d8b4fe;
-      border: 1px solid rgba(147, 51, 234, 0.4);
-    }
-    .btn-role-admin:hover {
-      background: rgba(147, 51, 234, 0.28);
+    .role-pills {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 7px;
     }
 
-    .btn-role-teacher {
-      background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
-      color: #fff;
-      box-shadow: 0 6px 16px -3px rgba(99, 102, 241, 0.5);
+    .role-btn {
+      font-size: 11.5px;
+      font-weight: 600;
+      padding: 6px 12px;
+      border-radius: 8px;
+      background: #152238;
+      color: #cbd5e1;
+      border: 1px solid #263554;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
     }
-    .btn-role-teacher:hover {
-      filter: brightness(1.1);
+    .role-btn:hover {
+      background: #1e2f4d;
+      color: #fff;
       transform: translateY(-1px);
     }
-
-    .btn-role-student {
-      background: rgba(2, 132, 199, 0.18);
-      color: #7dd3fc;
-      border: 1px solid rgba(2, 132, 199, 0.4);
-    }
-    .btn-role-student:hover {
-      background: rgba(2, 132, 199, 0.3);
+    .role-btn.active-role {
+      background: linear-gradient(135deg, #6366f1 0%, #4338ca 100%);
+      color: #fff;
+      border-color: #818cf8;
+      box-shadow: 0 4px 14px -2px rgba(99, 102, 241, 0.55);
     }
 
-    /* Layout Grids */
-    .main-grid {
+    /* Estructura ERP: Sidebar + Contenido */
+    .erp-layout {
       display: grid;
-      grid-template-columns: 5fr 7fr;
-      gap: 24px;
+      grid-template-columns: 265px 1fr;
+      flex: 1;
+      max-width: 1560px;
+      width: 100%;
+      margin: 0 auto;
     }
 
-    .bottom-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 24px;
-    }
-
-    @media (max-width: 1024px) {
-      .main-grid, .bottom-grid {
+    @media (max-width: 1080px) {
+      .erp-layout {
         grid-template-columns: 1fr;
       }
     }
 
-    /* Tarjetas (Cards) */
-    .card {
-      background: rgba(15, 23, 42, 0.92);
+    /* Menú Lateral (Sidebar) */
+    .sidebar {
+      background: rgba(11, 17, 32, 0.85);
+      border-right: 1px solid var(--border-subtle);
+      padding: 18px 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+    }
+
+    .nav-section-title {
+      font-size: 10.5px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: #64748b;
+      padding: 0 10px;
+      margin-bottom: 6px;
+    }
+
+    .nav-list {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+    }
+
+    .nav-item {
+      width: 100%;
+      text-align: left;
+      padding: 10px 13px;
+      border-radius: 11px;
+      font-size: 13px;
+      font-weight: 600;
+      color: #cbd5e1;
+      background: transparent;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .nav-item i {
+      width: 18px;
+      text-align: center;
+      font-size: 14px;
+    }
+    .nav-item:hover {
+      background: rgba(30, 41, 59, 0.65);
+      color: #fff;
+    }
+    .nav-item.active {
+      background: linear-gradient(90deg, rgba(99, 102, 241, 0.24) 0%, rgba(99, 102, 241, 0.08) 100%);
+      color: #fff;
+      border: 1px solid rgba(99, 102, 241, 0.45);
+    }
+
+    /* Tarjeta Lateral de Perfil Activo */
+    .profile-side-card {
+      background: linear-gradient(160deg, #131e36 0%, #0b1324 100%);
+      border: 1px solid #263554;
+      border-radius: 14px;
+      padding: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      font-size: 12px;
+    }
+
+    .profile-role-badge {
+      display: inline-block;
+      font-size: 10.5px;
+      font-weight: 800;
+      padding: 3px 9px;
+      border-radius: 6px;
+      background: rgba(99, 102, 241, 0.22);
+      color: #a5b4fc;
+      text-transform: uppercase;
+      width: fit-content;
+    }
+
+    /* Área de Contenido Principal */
+    .workspace {
+      padding: 22px 26px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+      overflow-x: hidden;
+    }
+
+    /* Banner de Perfil y Permisos de la Sesión Actual */
+    .session-banner {
+      background: linear-gradient(90deg, rgba(30, 27, 75, 0.75) 0%, rgba(15, 23, 42, 0.92) 100%);
+      border: 1px solid rgba(99, 102, 241, 0.35);
+      border-radius: 16px;
+      padding: 16px 20px;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+    }
+
+    .session-user-info {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .avatar-circle {
+      width: 50px;
+      height: 50px;
+      border-radius: 14px;
+      background: linear-gradient(135deg, #4f46e5, #7c3aed);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+      font-weight: 800;
+      color: #fff;
+      flex-shrink: 0;
+    }
+
+    .perm-chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 6px;
+    }
+
+    .perm-chip {
+      font-size: 11px;
+      padding: 3px 9px;
+      border-radius: 6px;
+      background: rgba(15, 23, 42, 0.85);
+      border: 1px solid #334155;
+      color: #cbd5e1;
+    }
+
+    /* Tarjetas y Grillas */
+    .kpi-row {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(185px, 1fr));
+      gap: 14px;
+    }
+
+    .kpi-card {
+      background: var(--bg-panel);
       border: 1px solid var(--border-subtle);
-      border-radius: 18px;
-      padding: 22px;
-      box-shadow: 0 12px 32px -8px rgba(0, 0, 0, 0.45);
+      border-radius: 14px;
+      padding: 15px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .kpi-title {
+      font-size: 11.5px;
+      color: var(--text-muted);
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .kpi-num {
+      font-size: 24px;
+      font-weight: 800;
+      color: #fff;
+    }
+
+    .kpi-sub {
+      font-size: 11px;
+      color: #64748b;
+    }
+
+    .card {
+      background: rgba(15, 23, 42, 0.94);
+      border: 1px solid var(--border-subtle);
+      border-radius: 16px;
+      padding: 20px;
       display: flex;
       flex-direction: column;
       gap: 16px;
     }
 
-    .card-header {
+    .card-head {
       display: flex;
+      flex-wrap: wrap;
       align-items: center;
       justify-content: space-between;
       gap: 12px;
-      flex-wrap: wrap;
+      border-bottom: 1px solid rgba(30, 41, 59, 0.8);
+      padding-bottom: 12px;
     }
 
     .card-title {
@@ -295,164 +419,33 @@
       gap: 9px;
     }
 
-    .card-subtitle {
+    .card-desc {
       font-size: 12.5px;
       color: var(--text-muted);
-      line-height: 1.45;
     }
 
-    .tag-mini {
-      font-size: 11px;
-      font-weight: 600;
-      padding: 3px 9px;
-      border-radius: 7px;
-      background: rgba(99, 102, 241, 0.14);
-      color: #a5b4fc;
-      border: 1px solid rgba(99, 102, 241, 0.3);
-    }
-
-    /* Formularios */
-    .form-grid-2 {
+    .grid-2 {
       display: grid;
       grid-template-columns: 1fr 1fr;
-      gap: 12px;
+      gap: 20px;
     }
 
-    .field-group {
-      display: flex;
-      flex-direction: column;
-      gap: 5px;
-    }
-
-    .field-label {
-      font-size: 12px;
-      font-weight: 600;
-      color: #94a3b8;
-    }
-
-    input[type="text"],
-    input[type="number"],
-    select {
-      width: 100%;
-      background: var(--bg-input);
-      border: 1px solid #263554;
-      border-radius: 10px;
-      padding: 9px 12px;
-      font-size: 13.5px;
-      color: #fff;
-      outline: none;
-      transition: border-color 0.15s ease, box-shadow 0.15s ease;
-    }
-
-    input:focus,
-    select:focus {
-      border-color: var(--indigo);
-      box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
-    }
-
-    .input-score {
-      color: #fcd34d !important;
-      font-weight: 700;
-    }
-
-    .btn-primary-full {
-      width: 100%;
-      padding: 11px 16px;
-      border-radius: 12px;
-      background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
-      color: #fff;
-      font-weight: 700;
-      font-size: 13.5px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
-      box-shadow: 0 8px 20px -4px rgba(99, 102, 241, 0.45);
-      margin-top: 4px;
-    }
-    .btn-primary-full:hover {
-      filter: brightness(1.08);
-      transform: translateY(-1px);
-    }
-
-    .absence-footer {
-      padding-top: 14px;
-      border-top: 1px solid var(--border-subtle);
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 10px;
-      flex-wrap: wrap;
-    }
-
-    .btn-danger-soft {
-      padding: 8px 14px;
-      border-radius: 10px;
-      background: rgba(244, 63, 94, 0.15);
-      color: #fda4af;
-      border: 1px solid rgba(244, 63, 94, 0.35);
-      font-size: 12px;
-      font-weight: 600;
-    }
-    .btn-danger-soft:hover {
-      background: rgba(244, 63, 94, 0.25);
-    }
-
-    .btn-refresh {
-      padding: 7px 13px;
-      border-radius: 9px;
-      background: #1e293b;
-      color: #e2e8f0;
-      border: 1px solid #334155;
-      font-size: 12px;
-      font-weight: 600;
-    }
-    .btn-refresh:hover {
-      background: #334155;
-    }
-
-    /* KPIs del Boletín */
-    .kpi-grid {
+    .grid-5-7 {
       display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 12px;
+      grid-template-columns: 5fr 7fr;
+      gap: 20px;
     }
 
-    @media (max-width: 640px) {
-      .kpi-grid {
-        grid-template-columns: repeat(2, 1fr);
+    @media (max-width: 980px) {
+      .grid-2, .grid-5-7 {
+        grid-template-columns: 1fr;
       }
     }
 
-    .kpi-box {
-      background: var(--bg-input);
-      border: 1px solid #1e293b;
-      border-radius: 13px;
-      padding: 13px;
-    }
-
-    .kpi-label {
-      font-size: 11px;
-      color: #94a3b8;
-      font-weight: 500;
-    }
-
-    .kpi-value {
-      font-size: 22px;
-      font-weight: 800;
-      margin: 4px 0 2px;
-      letter-spacing: -0.02em;
-    }
-
-    .kpi-hint {
-      font-size: 10.5px;
-      color: #64748b;
-    }
-
-    /* Tabla de Calificaciones */
-    .table-wrap {
+    /* Tablas Profesionales */
+    .table-container {
       overflow-x: auto;
-      border: 1px solid #1e293b;
+      border: 1px solid var(--border-subtle);
       border-radius: 12px;
       background: var(--bg-input);
     }
@@ -465,450 +458,1000 @@
     }
 
     thead {
-      background: #0d1527;
+      background: #0d1629;
       color: #94a3b8;
-      border-bottom: 1px solid #1e293b;
+      border-bottom: 1px solid var(--border-subtle);
+      font-weight: 700;
     }
 
     th, td {
-      padding: 10px 12px;
+      padding: 11px 13px;
+      vertical-align: middle;
     }
 
     tbody tr {
       border-bottom: 1px solid rgba(30, 41, 59, 0.65);
     }
-    tbody tr:last-child {
-      border-bottom: none;
-    }
-    tbody tr:hover {
-      background: rgba(30, 41, 59, 0.35);
-    }
+    tbody tr:last-child { border-bottom: none; }
+    tbody tr:hover { background: rgba(30, 41, 59, 0.4); }
 
-    /* Diagnóstico Copiloto IA */
-    .ai-insight-card {
-      background: linear-gradient(135deg, rgba(49, 46, 129, 0.42) 0%, rgba(15, 23, 42, 0.95) 65%);
-      border: 1px solid rgba(99, 102, 241, 0.4);
-      border-radius: 15px;
-      padding: 16px;
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-    }
-
-    .ai-badge {
-      font-size: 11px;
-      font-weight: 800;
-      padding: 4px 11px;
-      border-radius: 999px;
-      letter-spacing: 0.04em;
-    }
-
-    .risk-BAJO {
-      background: rgba(16, 185, 129, 0.2);
-      color: #6ee7b7;
-      border: 1px solid rgba(16, 185, 129, 0.45);
-    }
-    .risk-MEDIO {
-      background: rgba(245, 158, 11, 0.2);
-      color: #fcd34d;
-      border: 1px solid rgba(245, 158, 11, 0.45);
-    }
-    .risk-ALTO {
-      background: rgba(249, 115, 22, 0.22);
-      color: #fdba74;
-      border: 1px solid rgba(249, 115, 22, 0.5);
-    }
-    .risk-CRITICO {
-      background: rgba(244, 63, 94, 0.24);
-      color: #fda4af;
-      border: 1px solid rgba(244, 63, 94, 0.55);
-    }
-    .risk-NONE {
-      background: #1e293b;
-      color: #94a3b8;
-    }
-
-    .ai-plan-grid {
+    /* Formularios e Inputs */
+    .form-row {
       display: grid;
       grid-template-columns: 1fr 1fr;
       gap: 12px;
-      padding-top: 10px;
-      border-top: 1px solid rgba(99, 102, 241, 0.25);
     }
 
-    @media (max-width: 640px) {
-      .ai-plan-grid {
-        grid-template-columns: 1fr;
-      }
+    .field {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
     }
 
-    .ai-plan-box {
-      background: rgba(9, 16, 32, 0.8);
-      border: 1px solid #1e293b;
-      border-radius: 11px;
-      padding: 12px;
+    .field label {
       font-size: 12px;
+      font-weight: 600;
+      color: #94a3b8;
     }
 
-    .ai-plan-box ul {
-      padding-left: 16px;
-      margin-top: 6px;
-      color: var(--text-secondary);
-      display: flex;
-      flex-direction: column;
-      gap: 4px;
-    }
-
-    /* Cajas inferiores Asistente Curricular & Tutor RAG */
-    .inline-controls {
-      display: flex;
-      gap: 10px;
-      align-items: center;
-    }
-
-    .btn-purple {
-      padding: 9px 15px;
-      border-radius: 10px;
-      background: linear-gradient(135deg, #9333ea 0%, #7e22ce 100%);
-      color: #fff;
-      font-size: 12.5px;
-      font-weight: 700;
-      white-space: nowrap;
-      display: inline-flex;
-      align-items: center;
-      gap: 7px;
-      box-shadow: 0 6px 16px -3px rgba(147, 51, 234, 0.45);
-    }
-    .btn-purple:hover {
-      filter: brightness(1.1);
-    }
-
-    .btn-sky {
-      padding: 9px 15px;
-      border-radius: 10px;
-      background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);
-      color: #fff;
-      font-size: 12.5px;
-      font-weight: 700;
-      white-space: nowrap;
-      display: inline-flex;
-      align-items: center;
-      gap: 7px;
-      box-shadow: 0 6px 16px -3px rgba(2, 132, 199, 0.45);
-    }
-    .btn-sky:hover {
-      filter: brightness(1.1);
-    }
-
-    .output-console {
+    input[type="text"],
+    input[type="email"],
+    input[type="password"],
+    input[type="number"],
+    input[type="date"],
+    select {
+      width: 100%;
       background: var(--bg-input);
-      border: 1px solid #1e293b;
-      border-radius: 12px;
-      padding: 14px;
-      font-size: 12.5px;
-      color: var(--text-secondary);
-      max-height: 310px;
-      overflow-y: auto;
-      display: flex;
-      flex-direction: column;
-      gap: 9px;
+      border: 1px solid #263554;
+      border-radius: 9px;
+      padding: 9px 12px;
+      font-size: 13px;
+      color: #fff;
+      outline: none;
     }
 
-    .quiz-card {
-      background: #111c33;
-      border: 1px solid #263554;
+    input:focus, select:focus {
+      border-color: var(--indigo);
+      box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
+    }
+
+    /* Badges de Riesgo y Estado */
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 11px;
+      font-weight: 700;
+      padding: 3px 9px;
+      border-radius: 999px;
+    }
+
+    .risk-BAJO { background: rgba(16, 185, 129, 0.18); color: #6ee7b7; border: 1px solid rgba(16, 185, 129, 0.4); }
+    .risk-MEDIO { background: rgba(245, 158, 11, 0.18); color: #fcd34d; border: 1px solid rgba(245, 158, 11, 0.4); }
+    .risk-ALTO { background: rgba(249, 115, 22, 0.2); color: #fdba74; border: 1px solid rgba(249, 115, 22, 0.45); }
+    .risk-CRITICO { background: rgba(244, 63, 94, 0.22); color: #fda4af; border: 1px solid rgba(244, 63, 94, 0.5); }
+
+    /* Botones de Acción */
+    .btn-primary {
+      background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
+      color: #fff;
+      font-weight: 700;
+      font-size: 13px;
+      padding: 10px 16px;
       border-radius: 10px;
-      padding: 11px;
-      margin-top: 4px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      box-shadow: 0 6px 16px -3px rgba(99, 102, 241, 0.45);
+    }
+    .btn-primary:hover { filter: brightness(1.08); }
+
+    .btn-emerald {
+      background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+      color: #fff;
+      font-weight: 700;
+      font-size: 13px;
+      padding: 10px 16px;
+      border-radius: 10px;
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
     }
 
-    .source-row {
-      background: #111c33;
-      border: 1px solid #263554;
+    .btn-sm {
+      font-size: 11.5px;
+      font-weight: 600;
+      padding: 6px 11px;
       border-radius: 8px;
-      padding: 7px 11px;
+      background: #1e293b;
+      color: #e2e8f0;
+      border: 1px solid #334155;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+    }
+    .btn-sm:hover { background: #334155; color: #fff; }
+
+    /* Botones de Planilla de Asistencia (Presente, Ausente, Tarde, Excusa) */
+    .att-radio-group {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+
+    .att-opt {
+      padding: 6px 11px;
+      border-radius: 8px;
+      font-size: 11.5px;
+      font-weight: 700;
+      background: #0f172a;
+      color: #94a3b8;
+      border: 1px solid #263554;
+    }
+
+    .att-opt.selected-PRESENT {
+      background: rgba(16, 185, 129, 0.22);
+      color: #6ee7b7;
+      border-color: #10b981;
+    }
+    .att-opt.selected-ABSENT {
+      background: rgba(244, 63, 94, 0.25);
+      color: #fda4af;
+      border-color: #f43f5e;
+    }
+    .att-opt.selected-LATE {
+      background: rgba(245, 158, 11, 0.22);
+      color: #fcd34d;
+      border-color: #f59e0b;
+    }
+    .att-opt.selected-EXCUSED {
+      background: rgba(2, 132, 199, 0.22);
+      color: #7dd3fc;
+      border-color: #0284c7;
+    }
+
+    /* Modal de Login */
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(3, 7, 18, 0.8);
+      backdrop-filter: blur(6px);
+      z-index: 100;
       display: flex;
       align-items: center;
-      justify-content: space-between;
-      gap: 8px;
-      margin-top: 4px;
+      justify-content: center;
+      padding: 20px;
     }
 
-    .hidden {
-      display: none !important;
+    .modal-card {
+      background: #0f172a;
+      border: 1px solid #334155;
+      border-radius: 18px;
+      max-width: 520px;
+      width: 100%;
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      box-shadow: 0 24px 48px rgba(0, 0, 0, 0.65);
     }
 
-    code {
-      font-family: Consolas, Monaco, monospace;
-      background: rgba(99, 102, 241, 0.15);
-      color: #a5b4fc;
-      padding: 1px 5px;
-      border-radius: 5px;
-      font-size: 11.5px;
+    .toast-notification {
+      position: fixed;
+      bottom: 22px;
+      right: 22px;
+      z-index: 120;
+      background: #131e36;
+      border: 1px solid #6366f1;
+      color: #fff;
+      padding: 13px 18px;
+      border-radius: 12px;
+      font-size: 13px;
+      font-weight: 600;
+      box-shadow: 0 12px 30px rgba(0,0,0,0.5);
+      display: flex;
+      align-items: center;
+      gap: 10px;
     }
+
+    .hidden { display: none !important; }
   </style>
 </head>
 <body>
-  <!-- Barra Superior -->
-  <header class="topbar">
-    <div class="topbar-inner">
-      <div class="brand">
-        <div class="brand-icon">
-          <i class="fa-solid fa-graduation-cap"></i>
-        </div>
-        <div>
-          <div class="brand-title">
-            SoftEdu <span class="pill-ai">AI-Powered LMS/SIS</span>
-          </div>
-          <div class="brand-sub">FastAPI Async • SQLAlchemy 2.0 • PostgreSQL + pgvector • Copiloto IA</div>
-        </div>
-      </div>
 
-      <div class="topbar-actions">
-        <span id="authBadge" class="badge-user">
-          <i class="fa-solid fa-circle-notch fa-spin" style="color:#818cf8"></i> Conectando...
-        </span>
-        <a href="/docs" target="_blank" class="btn-link btn-swagger">
-          <i class="fa-solid fa-book-open"></i> Swagger API (/docs)
-        </a>
-        <a href="/redoc" target="_blank" class="btn-link btn-redoc">
-          <i class="fa-solid fa-file-code"></i> ReDoc
-        </a>
+  <!-- BARRA SUPERIOR -->
+  <header class="topbar">
+    <div class="brand">
+      <div class="brand-logo"><i class="fa-solid fa-graduation-cap"></i></div>
+      <div>
+        <div class="brand-title">
+          SoftEdu <span class="badge-erp">ERP Académico &amp; Copiloto IA</span>
+        </div>
+        <div class="brand-sub">Sistema Integral de Gestión Educativa, Asistencia, Calificaciones Ponderadas y RAG Vectorial</div>
       </div>
+    </div>
+
+    <div class="topbar-right">
+      <div class="active-user-pill">
+        <i class="fa-solid fa-circle-user" style="color:#818cf8; font-size:18px;"></i>
+        <div>
+          <div id="topUserName" style="font-weight:700; color:#fff; line-height:1.2;">Cargando...</div>
+          <div id="topUserRole" style="font-size:11px; color:#a5b4fc;">Conectando sesión...</div>
+        </div>
+      </div>
+      <button onclick="openLoginModal()" class="btn-top btn-login-modal">
+        <i class="fa-solid fa-right-to-bracket"></i> Iniciar Sesión / Cambiar Cuenta
+      </button>
+      <a href="/docs" target="_blank" class="btn-top btn-api-docs">
+        <i class="fa-solid fa-code"></i> API OpenAPI (/docs)
+      </a>
     </div>
   </header>
 
-  <main class="container">
-    <!-- Selector Rápido de Sesión RBAC -->
-    <section class="rbac-bar">
+  <!-- BARRA DE CAMBIO INSTANTÁNEO DE ROLES INSTITUCIONALES -->
+  <div class="role-switcher-strip">
+    <div class="strip-label">
+      <i class="fa-solid fa-key" style="color:#818cf8;"></i>
+      CAMBIO RÁPIDO DE ROL INSTITUCIONAL (1 CLIC):
+    </div>
+    <div class="role-pills">
+      <button id="btnRoleRector" onclick="quickLogin('rector@softedu.edu.co', 'rector123', 'tab-rectoria')" class="role-btn">
+        <i class="fa-solid fa-building-columns" style="color:#fcd34d;"></i> Rectoría General
+      </button>
+      <button id="btnRoleCoord" onclick="quickLogin('coordinador@softedu.edu.co', 'coordinador123', 'tab-rectoria')" class="role-btn">
+        <i class="fa-solid fa-sitemap" style="color:#c084fc;"></i> Coordinación Académica
+      </button>
+      <button id="btnRoleSec" onclick="quickLogin('secretaria@softedu.edu.co', 'secretaria123', 'tab-secretaria')" class="role-btn">
+        <i class="fa-solid fa-id-card-clip" style="color:#38bdf8;"></i> Secretaría y Matrículas
+      </button>
+      <button id="btnRoleOri" onclick="quickLogin('orientador@softedu.edu.co', 'orientador123', 'tab-copiloto')" class="role-btn">
+        <i class="fa-solid fa-heart-pulse" style="color:#fb7185;"></i> Psicoorientación
+      </button>
+      <button id="btnRoleDoc" onclick="quickLogin('docente@softedu.edu.co', 'docente123', 'tab-asistencia')" class="role-btn">
+        <i class="fa-solid fa-chalkboard-user" style="color:#818cf8;"></i> Docente Titular
+      </button>
+      <button id="btnRoleEst1" onclick="quickLogin('estudiante@softedu.edu.co', 'estudiante123', 'tab-notas')" class="role-btn">
+        <i class="fa-solid fa-user-graduate" style="color:#fb923c;"></i> Estudiante (Laura - Riesgo Alto)
+      </button>
+      <button id="btnRoleEst4" onclick="quickLogin('sebastian.vargas@softedu.edu.co', 'estudiante123', 'tab-notas')" class="role-btn">
+        <i class="fa-solid fa-triangle-exclamation" style="color:#f43f5e;"></i> Estudiante (Sebastián - Crítico)
+      </button>
+      <button id="btnRoleEst2" onclick="quickLogin('mateo.gomez@softedu.edu.co', 'estudiante123', 'tab-notas')" class="role-btn">
+        <i class="fa-solid fa-medal" style="color:#34d399;"></i> Estudiante (Mateo - Excelente)
+      </button>
+    </div>
+  </div>
+
+  <!-- LAYOUT PRINCIPAL ERP -->
+  <div class="erp-layout">
+    <!-- MENÚ LATERAL -->
+    <aside class="sidebar">
       <div>
-        <div class="rbac-label">Control de Acceso Basado en Roles (JWT RBAC)</div>
-        <div class="rbac-desc">Cambia de rol con un clic para probar los permisos y los 3 módulos del Copiloto de IA en vivo:</div>
-      </div>
-      <div class="rbac-buttons">
-        <button onclick="quickLogin('admin@softedu.edu.co', 'admin12345')" class="btn-role btn-role-admin">
-          <i class="fa-solid fa-user-shield"></i> Rol ADMIN
-        </button>
-        <button onclick="quickLogin('docente@softedu.edu.co', 'docente123')" class="btn-role btn-role-teacher">
-          <i class="fa-solid fa-chalkboard-user"></i> Rol DOCENTE (Titular)
-        </button>
-        <button onclick="quickLogin('estudiante@softedu.edu.co', 'estudiante123')" class="btn-role btn-role-student">
-          <i class="fa-solid fa-user-graduate"></i> Rol ESTUDIANTE
-        </button>
-      </div>
-    </section>
-
-    <!-- Grid Principal: Registro de Notas + Boletín y Alerta Temprana IA -->
-    <div class="main-grid">
-      <!-- Columna Izquierda: Registrar Calificación Ponderada -->
-      <div class="card">
-        <div class="card-header">
-          <h2 class="card-title">
-            <i class="fa-solid fa-pen-to-square" style="color:#818cf8"></i>
-            1. Registrar Calificación Ponderada
-          </h2>
-          <span class="tag-mini">Escala 0.0 - 5.0</span>
-        </div>
-        <p class="card-subtitle">
-          Valida matrícula activa, calcula el promedio ponderado acumulado y dispara en <code>BackgroundTasks</code> el diagnóstico del Copiloto de IA.
-        </p>
-
-        <form id="gradeForm" onsubmit="submitGrade(event)" style="display:flex; flex-direction:column; gap:12px;">
-          <div class="form-grid-2">
-            <div class="field-group">
-              <label class="field-label">Corte Evaluativo</label>
-              <input id="evalCut" type="number" min="1" max="10" value="1" required />
-            </div>
-            <div class="field-group">
-              <label class="field-label">Peso Porcentual (%)</label>
-              <input id="evalWeight" type="number" step="0.01" min="1" max="100" value="25" required />
-            </div>
-          </div>
-
-          <div class="form-grid-2">
-            <div class="field-group">
-              <label class="field-label">Actividad / Evaluación</label>
-              <input id="evalName" type="text" value="Parcial 1 - Arquitectura Async" required />
-            </div>
-            <div class="field-group">
-              <label class="field-label">Nota (0.00 a 5.00)</label>
-              <input id="evalScore" type="number" step="0.1" min="0" max="5" value="2.4" required class="input-score" />
-            </div>
-          </div>
-
-          <div class="field-group">
-            <label class="field-label">Tema del Sílabo Evaluado (Trazabilidad RAG)</label>
-            <select id="evalTopicSelect"></select>
-          </div>
-
-          <div class="field-group">
-            <label class="field-label">Observaciones del Docente</label>
-            <input id="evalObs" type="text" value="Presenta dificultad en el manejo de sesiones aisladas en BackgroundTasks." />
-          </div>
-
-          <button type="submit" id="btnSubmitGrade" class="btn-primary-full">
-            <i class="fa-solid fa-bolt"></i> Registrar Nota y Disparar Diagnóstico IA
+        <div class="nav-section-title">Módulos del Sistema ERP</div>
+        <div class="nav-list">
+          <button id="nav-tab-rectoria" onclick="switchTab('tab-rectoria')" class="nav-item active">
+            <i class="fa-solid fa-chart-line" style="color:#fcd34d;"></i>
+            <span>1. Tablero Rectoría y Consolidado</span>
           </button>
-        </form>
-
-        <div class="absence-footer">
-          <span style="font-size:12px; color:#94a3b8;">¿Simular falla de asistencia en sesión?</span>
-          <button onclick="registerQuickAbsence()" class="btn-danger-soft">
-            <i class="fa-solid fa-user-xmark"></i> Registrar Inasistencia + Alerta IA
+          <button id="nav-tab-asistencia" onclick="switchTab('tab-asistencia')" class="nav-item">
+            <i class="fa-solid fa-clipboard-user" style="color:#34d399;"></i>
+            <span>2. Llamado a Lista y Asistencia</span>
+          </button>
+          <button id="nav-tab-notas" onclick="switchTab('tab-notas')" class="nav-item">
+            <i class="fa-solid fa-file-signature" style="color:#818cf8;"></i>
+            <span>3. Calificaciones y Boletines</span>
+          </button>
+          <button id="nav-tab-horarios" onclick="switchTab('tab-horarios')" class="nav-item">
+            <i class="fa-solid fa-calendar-days" style="color:#c084fc;"></i>
+            <span>4. Horarios y Sílabo Vectorizado</span>
+          </button>
+          <button id="nav-tab-secretaria" onclick="switchTab('tab-secretaria')" class="nav-item">
+            <i class="fa-solid fa-users-gear" style="color:#38bdf8;"></i>
+            <span>5. Secretaría, Alumnos y Roles</span>
+          </button>
+          <button id="nav-tab-copiloto" onclick="switchTab('tab-copiloto')" class="nav-item">
+            <i class="fa-solid fa-brain" style="color:#fb7185;"></i>
+            <span>6. Centro Copiloto IA (3 Motores)</span>
           </button>
         </div>
       </div>
 
-      <!-- Columna Derecha: Boletín Académico Integral & Alerta Temprana IA -->
-      <div class="card">
-        <div class="card-header">
+      <!-- Ficha Lateral del Usuario Conectado -->
+      <div class="profile-side-card">
+        <div style="font-size:11px; color:#94a3b8; font-weight:700;">FICHA DE SESIÓN ACTIVA</div>
+        <div id="sideRoleBadge" class="profile-role-badge">CARGANDO</div>
+        <div id="sideFullName" style="font-weight:800; color:#fff; font-size:13.5px;">--</div>
+        <div id="sideJobTitle" style="color:#cbd5e1; font-size:11.5px;">--</div>
+        <div style="border-top:1px solid #1e293b; padding-top:6px; margin-top:2px; color:#94a3b8; font-size:11px; display:flex; flex-direction:column; gap:3px;">
+          <div><strong>Correo:</strong> <span id="sideEmail">--</span></div>
+          <div><strong>Documento:</strong> <span id="sideDoc">--</span></div>
+          <div><strong>Área:</strong> <span id="sideArea">--</span></div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- ÁREA DE TRABAJO -->
+    <main class="workspace">
+      <!-- BANNER DE SESIÓN Y PERMISOS -->
+      <section class="session-banner">
+        <div class="session-user-info">
+          <div id="bannerAvatar" class="avatar-circle">S</div>
           <div>
-            <h2 class="card-title">
-              <i class="fa-solid fa-chart-pie" style="color:#34d399"></i>
-              Boletín Académico Integral & Alerta Temprana IA
-            </h2>
-            <p id="studentHeaderInfo" class="card-subtitle" style="margin-top:3px;">Cargando matrícula activa...</p>
+            <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+              <h2 id="bannerName" style="font-size:17px; font-weight:800; color:#fff;">Iniciando sesión...</h2>
+              <span id="bannerRoleTag" class="badge risk-BAJO">--</span>
+            </div>
+            <div id="bannerMeta" style="font-size:12.5px; color:#a5b4fc; margin-top:2px;">--</div>
+            <div id="bannerPerms" class="perm-chips"></div>
           </div>
-          <button onclick="loadReportCard()" class="btn-refresh">
-            <i class="fa-solid fa-rotate"></i> Actualizar Boletín
+        </div>
+        <div style="display:flex; flex-direction:column; align-items:flex-end; gap:6px;">
+          <div style="font-size:11.5px; color:#94a3b8;">Período Lectivo Activo: <strong id="bannerPeriod" style="color:#fff;">2026-2</strong></div>
+          <button onclick="refreshAllData()" class="btn-sm">
+            <i class="fa-solid fa-arrows-rotate"></i> Sincronizar Datos en Tiempo Real
           </button>
         </div>
+      </section>
 
-        <!-- KPIs -->
-        <div class="kpi-grid">
-          <div class="kpi-box">
-            <div class="kpi-label">Promedio Ponderado</div>
-            <div id="kpiWeightedAvg" class="kpi-value" style="color:#fff">--</div>
-            <div class="kpi-hint">Mín. aprobatoria: 3.00</div>
+      <!-- =================================================================== -->
+      <!-- PESTAÑA 1: TABLERO RECTORÍA, COORDINACIÓN Y SÁBANA DE ESTUDIANTES -->
+      <!-- =================================================================== -->
+      <div id="tab-rectoria" class="tab-pane" style="display:flex; flex-direction:column; gap:20px;">
+        <div class="kpi-row">
+          <div class="kpi-card">
+            <div class="kpi-title"><span>Estudiantes Matriculados</span> <i class="fa-solid fa-user-graduate" style="color:#818cf8;"></i></div>
+            <div id="kpiTotalStudents" class="kpi-num">--</div>
+            <div id="kpiTotalEnrollments" class="kpi-sub">Matrículas activas en curso</div>
           </div>
-          <div class="kpi-box">
-            <div class="kpi-label">% Curso Evaluado</div>
-            <div id="kpiEvalWeight" class="kpi-value" style="color:#818cf8">--%</div>
-            <div id="kpiRemWeight" class="kpi-hint">Restante: --%</div>
+          <div class="kpi-card">
+            <div class="kpi-title"><span>Promedio Institucional</span> <i class="fa-solid fa-award" style="color:#fcd34d;"></i></div>
+            <div id="kpiInstAvg" class="kpi-num">--</div>
+            <div class="kpi-sub">Escala 0.00 a 5.00 (Mín. 3.00)</div>
           </div>
-          <div class="kpi-box">
-            <div class="kpi-label">Meta en % Restante</div>
-            <div id="kpiNeededScore" class="kpi-value" style="color:#fbbf24">--</div>
-            <div class="kpi-hint">Para cerrar en 3.00</div>
+          <div class="kpi-card">
+            <div class="kpi-title"><span>Tasa de Aprobación</span> <i class="fa-solid fa-circle-check" style="color:#34d399;"></i></div>
+            <div id="kpiApprovalRate" class="kpi-num" style="color:#34d399;">--%</div>
+            <div id="kpiPassFailCounts" class="kpi-sub">Aprobando vs En riesgo</div>
           </div>
-          <div class="kpi-box">
-            <div class="kpi-label">% Inasistencias</div>
-            <div id="kpiAbsencePct" class="kpi-value" style="color:#34d399">--%</div>
-            <div class="kpi-hint">Límite máx: 20.0%</div>
+          <div class="kpi-card">
+            <div class="kpi-title"><span>Asistencia Global</span> <i class="fa-solid fa-calendar-check" style="color:#38bdf8;"></i></div>
+            <div id="kpiGlobalAtt" class="kpi-num" style="color:#38bdf8;">--%</div>
+            <div class="kpi-sub">Cumplimiento de sesiones</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-title"><span>Alertas IA (Alto / Crítico)</span> <i class="fa-solid fa-bell" style="color:#f43f5e;"></i></div>
+            <div id="kpiHighRiskCount" class="kpi-num" style="color:#fb7185;">--</div>
+            <div class="kpi-sub">Detectados por Copiloto IA</div>
           </div>
         </div>
 
-        <!-- Tabla de Calificaciones -->
-        <div class="table-wrap">
-          <table>
-            <thead>
-              <tr>
-                <th>Corte</th>
-                <th>Evaluación</th>
-                <th>Tema Sílabo</th>
-                <th>Peso</th>
-                <th>Nota</th>
-                <th>Aporte</th>
-              </tr>
-            </thead>
-            <tbody id="gradesTableBody">
-              <tr><td colspan="6" style="text-align:center; color:#64748b; padding:18px;">Sin calificaciones registradas aún.</td></tr>
-            </tbody>
-          </table>
-        </div>
-
-        <!-- Tarjeta del Copiloto de IA -->
-        <div class="ai-insight-card">
-          <div class="card-header">
-            <div style="display:flex; align-items:center; gap:8px;">
-              <i class="fa-solid fa-robot" style="color:#818cf8; font-size:16px;"></i>
-              <span style="font-size:12px; font-weight:800; text-transform:uppercase; letter-spacing:0.05em; color:#a5b4fc;">
-                Diagnóstico Vigente del Copiloto IA (AIRiskAssessmentSchema)
-              </span>
+        <!-- Sábana Académica Institucional -->
+        <div class="card">
+          <div class="card-head">
+            <div>
+              <h3 class="card-title">
+                <i class="fa-solid fa-table-list" style="color:#fcd34d;"></i>
+                Consolidado Académico Institucional (Sábana de Notas, Asistencia y Riesgo IA)
+              </h3>
+              <p class="card-desc">Vista integral para Rectoría, Coordinación, Psicoorientación y Docentes. Haz clic en cualquier alumno para abrir su Boletín o tomar acción.</p>
             </div>
-            <span id="aiRiskBadge" class="ai-badge risk-NONE">SIN DIAGNÓSTICO AÚN</span>
+            <div style="display:flex; gap:8px;">
+              <button onclick="switchTab('tab-asistencia')" class="btn-sm"><i class="fa-solid fa-clipboard-user"></i> Ir a Llamado a Lista</button>
+              <button onclick="switchTab('tab-secretaria')" class="btn-sm"><i class="fa-solid fa-user-plus"></i> Matricular Nuevo Alumno</button>
+            </div>
           </div>
 
-          <p id="aiExecSummary" style="font-size:12.5px; color:#e2e8f0; line-height:1.55;">
-            Registra una calificación o una inasistencia en el panel izquierdo para disparar el análisis predictivo en segundo plano.
-          </p>
+          <div class="table-container">
+            <table>
+              <thead>
+                <tr>
+                  <th>Código</th>
+                  <th>Estudiante</th>
+                  <th>Programa / Sem.</th>
+                  <th>Acudiente / Contacto</th>
+                  <th>% Evaluado</th>
+                  <th>Promedio Actual</th>
+                  <th>Meta % Restante</th>
+                  <th>Fallas / % Inasist.</th>
+                  <th>Diagnóstico Copiloto IA</th>
+                  <th>Acciones</th>
+                </tr>
+              </thead>
+              <tbody id="rosterTableBody">
+                <tr><td colspan="10" style="text-align:center; padding:20px; color:#64748b;">Cargando sábana académica...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
 
-          <div id="aiActionPlanGrid" class="ai-plan-grid hidden">
-            <div class="ai-plan-box">
-              <div style="font-weight:700; color:#a5b4fc;">
-                <i class="fa-solid fa-chalkboard-user"></i> Plan Sugerido al Docente:
+      <!-- =================================================================== -->
+      <!-- PESTAÑA 2: LLAMADO A LISTA Y CONTROL DE ASISTENCIA POR SESIÓN -->
+      <!-- =================================================================== -->
+      <div id="tab-asistencia" class="tab-pane hidden" style="display:flex; flex-direction:column; gap:20px;">
+        <div class="card">
+          <div class="card-head">
+            <div>
+              <h3 class="card-title">
+                <i class="fa-solid fa-clipboard-user" style="color:#34d399;"></i>
+                Planilla Oficial de Llamado a Lista y Control de Asistencia por Sesión
+              </h3>
+              <p class="card-desc">
+                Selecciona la fecha de clase y el tema del sílabo desarrollado. Al guardar, el sistema actualiza el porcentaje de fallas y dispara automáticamente el Copiloto de IA para los alumnos ausentes o con retardo.
+              </p>
+            </div>
+            <div style="display:flex; gap:8px; flex-wrap:wrap;">
+              <button onclick="markAllAttendance('PRESENT')" class="btn-sm" style="border-color:#10b981; color:#6ee7b7;">
+                <i class="fa-solid fa-check-double"></i> Marcar Todos Presentes
+              </button>
+              <button onclick="saveBulkAttendance()" id="btnSaveAttendanceSheet" class="btn-emerald">
+                <i class="fa-solid fa-floppy-disk"></i> Guardar Planilla de Asistencia y Evaluar IA
+              </button>
+            </div>
+          </div>
+
+          <!-- Filtros de la Sesión de Clase -->
+          <div class="form-row" style="grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); background:#091020; padding:14px; border-radius:12px; border:1px solid #1e293b;">
+            <div class="field">
+              <label>Curso / Grupo Asignado</label>
+              <input type="text" value="ISW-402 • Arquitectura Empresarial e IA Aplicada (Grupo G01)" readonly style="color:#a5b4fc; font-weight:700;" />
+            </div>
+            <div class="field">
+              <label>Fecha de la Sesión de Clase</label>
+              <input type="date" id="attSessionDate" value="2026-10-24" />
+            </div>
+            <div class="field">
+              <label>Tema del Sílabo Visto en la Sesión</label>
+              <select id="attTopicSelect"></select>
+            </div>
+          </div>
+
+          <!-- Tabla Interactiva de Llamado a Lista -->
+          <div class="table-container">
+            <table>
+              <thead>
+                <tr>
+                  <th>Código</th>
+                  <th>Estudiante Matriculado</th>
+                  <th>Asistencias / Fallas Acumuladas</th>
+                  <th>% Inasistencia (Máx. 20%)</th>
+                  <th>Estado en la Sesión Actual</th>
+                  <th>Observación Pedagógica / Excusa</th>
+                </tr>
+              </thead>
+              <tbody id="attendanceSheetBody"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Bitácora Histórica de Asistencia -->
+        <div class="card">
+          <div class="card-head">
+            <h3 class="card-title">
+              <i class="fa-solid fa-clock-rotate-left" style="color:#38bdf8;"></i>
+              Bitácora Histórica de Sesiones de Asistencia e Inasistencias Registradas
+            </h3>
+          </div>
+          <div class="table-container" style="max-height:320px; overflow-y:auto;">
+            <table>
+              <thead>
+                <tr>
+                  <th>Fecha de Sesión</th>
+                  <th>Código</th>
+                  <th>Estudiante</th>
+                  <th>Estado Registrado</th>
+                  <th>Observaciones</th>
+                </tr>
+              </thead>
+              <tbody id="attendanceHistoryBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- =================================================================== -->
+      <!-- PESTAÑA 3: PLANILLA DE CALIFICACIONES PONDERADAS Y BOLETÍN OFICIAL -->
+      <!-- =================================================================== -->
+      <div id="tab-notas" class="tab-pane hidden" style="display:flex; flex-direction:column; gap:20px;">
+        <!-- Selector Superior de Estudiante a Inspeccionar / Calificar -->
+        <div class="card" style="padding:14px 20px; background:#111c35; border-color:#334155;">
+          <div style="display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:14px;">
+            <div style="display:flex; align-items:center; gap:10px;">
+              <i class="fa-solid fa-user-check" style="color:#818cf8; font-size:18px;"></i>
+              <div>
+                <div style="font-size:12px; font-weight:700; color:#a5b4fc; text-transform:uppercase;">Estudiante Seleccionado para Consulta de Boletín o Registro de Nota:</div>
+                <div style="font-size:11.5px; color:#94a3b8;">Cambia de estudiante aquí para revisar su boletín individual, sus cortes y la recomendación vigente de la IA:</div>
               </div>
-              <ul id="aiTeacherActions"></ul>
             </div>
-            <div class="ai-plan-box">
-              <div style="font-weight:700; color:#6ee7b7;">
-                <i class="fa-solid fa-user-graduate"></i> Plan Sugerido al Estudiante:
-              </div>
-              <ul id="aiStudentActions"></ul>
+            <div style="min-width:340px; flex:1; max-width:480px;">
+              <select id="studentSelectorDropdown" onchange="onSelectStudentEnrollment(this.value)" style="font-weight:700; border-color:#6366f1; background:#070c18;"></select>
             </div>
           </div>
         </div>
+
+        <div class="grid-5-7">
+          <!-- Columna Izquierda: Registrar Calificación Ponderada -->
+          <div class="card">
+            <div class="card-head">
+              <h3 class="card-title">
+                <i class="fa-solid fa-pen-to-square" style="color:#818cf8;"></i>
+                Registrar Calificación Ponderada por Corte
+              </h3>
+              <span class="badge risk-BAJO">Escala 0.00 a 5.00</span>
+            </div>
+            <p class="card-desc">
+              Nota mínima aprobatoria: <strong>3.00</strong>. Valida que la suma de pesos porcentuales no supere el 100% y dispara en segundo plano el análisis predictivo de IA.
+            </p>
+
+            <form onsubmit="submitGradeForm(event)" style="display:flex; flex-direction:column; gap:12px;">
+              <div class="form-row">
+                <div class="field">
+                  <label>Corte Académico (1, 2, 3)</label>
+                  <select id="gradeCutInput">
+                    <option value="1">Corte 1 (Primer Seguimiento)</option>
+                    <option value="2" selected>Corte 2 (Segundo Seguimiento)</option>
+                    <option value="3">Corte 3 (Evaluación Final)</option>
+                  </select>
+                </div>
+                <div class="field">
+                  <label>Peso Porcentual (%)</label>
+                  <input id="gradeWeightInput" type="number" step="0.01" min="1" max="100" value="25" required />
+                </div>
+              </div>
+
+              <div class="form-row">
+                <div class="field">
+                  <label>Nombre de la Actividad Evaluativa</label>
+                  <input id="gradeNameInput" type="text" value="Parcial 2 - Arquitectura RAG y Seguridad" required />
+                </div>
+                <div class="field">
+                  <label>Calificación Obtenida (0.00 a 5.00)</label>
+                  <input id="gradeScoreInput" type="number" step="0.1" min="0" max="5" value="2.5" required style="color:#fcd34d; font-weight:800;" />
+                </div>
+              </div>
+
+              <div class="field">
+                <label>Tema Oficial del Sílabo Evaluado</label>
+                <select id="gradeTopicSelect"></select>
+              </div>
+
+              <div class="field">
+                <label>Retroalimentación / Observación del Docente</label>
+                <input id="gradeObsInput" type="text" value="Requiere reforzar la implementación de búsquedas por similitud coseno." />
+              </div>
+
+              <button type="submit" id="btnSubmitGrade" class="btn-primary" style="width:100%; margin-top:4px;">
+                <i class="fa-solid fa-bolt"></i> Guardar Calificación y Actualizar Diagnóstico IA
+              </button>
+            </form>
+          </div>
+
+          <!-- Columna Derecha: Boletín Académico Oficial del Estudiante -->
+          <div class="card">
+            <div class="card-head">
+              <div>
+                <h3 class="card-title">
+                  <i class="fa-solid fa-file-invoice" style="color:#34d399;"></i>
+                  Boletín Académico Oficial y Diagnóstico Copiloto IA
+                </h3>
+                <p id="rcStudentSubtitle" class="card-desc">--</p>
+              </div>
+              <button onclick="loadSelectedStudentReportCard()" class="btn-sm">
+                <i class="fa-solid fa-rotate"></i> Actualizar Boletín
+              </button>
+            </div>
+
+            <div class="kpi-row" style="grid-template-columns: repeat(4, 1fr);">
+              <div class="kpi-card" style="padding:11px;">
+                <div class="kpi-title">Promedio Ponderado</div>
+                <div id="rcAvg" class="kpi-num" style="font-size:20px;">--</div>
+                <div id="rcStatusText" class="kpi-sub">--</div>
+              </div>
+              <div class="kpi-card" style="padding:11px;">
+                <div class="kpi-title">% Evaluado</div>
+                <div id="rcEvalPct" class="kpi-num" style="font-size:20px; color:#818cf8;">--%</div>
+                <div id="rcRemPct" class="kpi-sub">Pendiente: --%</div>
+              </div>
+              <div class="kpi-card" style="padding:11px;">
+                <div class="kpi-title">Meta en % Restante</div>
+                <div id="rcNeeded" class="kpi-num" style="font-size:20px; color:#fcd34d;">--</div>
+                <div class="kpi-sub">Para cerrar en 3.00</div>
+              </div>
+              <div class="kpi-card" style="padding:11px;">
+                <div class="kpi-title">% Inasistencia</div>
+                <div id="rcAbsPct" class="kpi-num" style="font-size:20px; color:#38bdf8;">--%</div>
+                <div id="rcAbsCount" class="kpi-sub">-- fallas</div>
+              </div>
+            </div>
+
+            <!-- Tabla de Notas del Alumno -->
+            <div class="table-container">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Corte</th>
+                    <th>Evaluación</th>
+                    <th>Tema del Sílabo</th>
+                    <th>Peso</th>
+                    <th>Calificación</th>
+                    <th>Puntos Netos</th>
+                    <th>Observación Docente</th>
+                  </tr>
+                </thead>
+                <tbody id="rcGradesBody"></tbody>
+              </table>
+            </div>
+
+            <!-- Diagnóstico Vigente del Copiloto IA en el Boletín -->
+            <div style="background:linear-gradient(135deg, rgba(49,46,129,0.45) 0%, rgba(15,23,42,0.95) 100%); border:1px solid rgba(99,102,241,0.45); border-radius:14px; padding:16px; display:flex; flex-direction:column; gap:10px;">
+              <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
+                <div style="font-size:12px; font-weight:800; color:#a5b4fc; text-transform:uppercase;">
+                  <i class="fa-solid fa-robot"></i> Diagnóstico Psicopedagógico Vigente del Copiloto IA
+                </div>
+                <span id="rcRiskBadge" class="badge risk-BAJO">--</span>
+              </div>
+              <p id="rcAiSummary" style="font-size:12.5px; color:#f1f5f9;"></p>
+              <div class="grid-2" style="gap:10px; padding-top:8px; border-top:1px solid rgba(99,102,241,0.25);">
+                <div style="background:#080e1c; padding:11px; border-radius:10px; border:1px solid #1e293b; font-size:12px;">
+                  <strong style="color:#a5b4fc;"><i class="fa-solid fa-chalkboard-user"></i> Acciones Sugeridas al Docente:</strong>
+                  <ul id="rcTeacherActions" style="padding-left:16px; margin-top:5px; color:#cbd5e1;"></ul>
+                </div>
+                <div style="background:#080e1c; padding:11px; border-radius:10px; border:1px solid #1e293b; font-size:12px;">
+                  <strong style="color:#6ee7b7;"><i class="fa-solid fa-user-graduate"></i> Plan de Acción para el Estudiante:</strong>
+                  <ul id="rcStudentActions" style="padding-left:16px; margin-top:5px; color:#cbd5e1;"></ul>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- =================================================================== -->
+      <!-- PESTAÑA 4: COORDINACIÓN CURRICULAR, HORARIOS Y SÍLABO VECTORIZADO -->
+      <!-- =================================================================== -->
+      <div id="tab-horarios" class="tab-pane hidden" style="display:flex; flex-direction:column; gap:20px;">
+        <div class="grid-2">
+          <!-- Bloques Horarios y Carga Académica -->
+          <div class="card">
+            <div class="card-head">
+              <h3 class="card-title">
+                <i class="fa-solid fa-calendar-week" style="color:#c084fc;"></i>
+                Asignación de Materias y Control de Bloques Horarios
+              </h3>
+              <span class="badge risk-BAJO">Detector de Cruces Activo</span>
+            </div>
+            <p class="card-desc">Control de grupos ofertados en el período lectivo, docente titular asignado, aula de clase y cupos matriculados.</p>
+            <div id="offeringsContainer" style="display:flex; flex-direction:column; gap:12px;"></div>
+          </div>
+
+          <!-- Agregar Nuevo Tema al Sílabo Vectorizado -->
+          <div class="card">
+            <div class="card-head">
+              <h3 class="card-title">
+                <i class="fa-solid fa-vector-square" style="color:#38bdf8;"></i>
+                Agregar Tema al Sílabo Oficial (Indexación Automática pgvector)
+              </h3>
+            </div>
+            <p class="card-desc">Al registrar un nuevo tema curricular, <code>BackgroundTasks</code> genera automáticamente su vector semántico de 768 dimensiones para el Tutor RAG.</p>
+            <form onsubmit="submitNewSyllabusTopic(event)" style="display:flex; flex-direction:column; gap:11px;">
+              <div class="form-row">
+                <div class="field">
+                  <label>Unidad Temática Padre</label>
+                  <select id="newTopicUnitSelect" required></select>
+                </div>
+                <div class="field">
+                  <label>Número de Tema</label>
+                  <input id="newTopicNumber" type="number" min="1" max="30" value="3" required />
+                </div>
+              </div>
+              <div class="field">
+                <label>Título Oficial del Tema</label>
+                <input id="newTopicTitle" type="text" placeholder="Ej. Orquestación de Agentes IA y Evaluación Automática" required />
+              </div>
+              <div class="field">
+                <label>Descripción Detallada del Contenido Curricular</label>
+                <input id="newTopicDesc" type="text" placeholder="Diseño de flujos asíncronos con validación estricta de contratos Pydantic..." required />
+              </div>
+              <div class="field">
+                <label>Conceptos Clave (separados por coma)</label>
+                <input id="newTopicConcepts" type="text" value="Structured Outputs, Pydantic v2, Agentes IA, FastAPI" />
+              </div>
+              <button type="submit" class="btn-primary">
+                <i class="fa-solid fa-plus"></i> Guardar Tema y Vectorizar en pgvector
+              </button>
+            </form>
+          </div>
+        </div>
+
+        <!-- Árbol Jerárquico del Sílabo -->
+        <div class="card">
+          <div class="card-head">
+            <h3 class="card-title">
+              <i class="fa-solid fa-sitemap" style="color:#34d399;"></i>
+              Estructura Jerárquica del Sílabo Oficial Vectorizado (Materia &rarr; Unidades &rarr; Temas)
+            </h3>
+            <span id="syllabusStatsBadge" class="badge risk-BAJO">--</span>
+          </div>
+          <div id="syllabusTreeContainer" style="display:flex; flex-direction:column; gap:14px;"></div>
+        </div>
+      </div>
+
+      <!-- =================================================================== -->
+      <!-- PESTAÑA 5: SECRETARÍA ACADÉMICA, MATRÍCULAS Y DIRECTORIO DE ROLES -->
+      <!-- =================================================================== -->
+      <div id="tab-secretaria" class="tab-pane hidden" style="display:flex; flex-direction:column; gap:20px;">
+        <div class="grid-2">
+          <!-- Formulario de Admisión y Matrícula de Nuevo Estudiante -->
+          <div class="card">
+            <div class="card-head">
+              <h3 class="card-title">
+                <i class="fa-solid fa-user-plus" style="color:#38bdf8;"></i>
+                Inscripción y Matrícula Inmediata de Nuevo Estudiante
+              </h3>
+            </div>
+            <p class="card-desc">Crea la cuenta estudiantil, registra los datos del acudiente y lo matricula automáticamente en el grupo activo para incluirlo en las planillas de asistencia y notas.</p>
+            <form onsubmit="submitNewStudent(event)" style="display:flex; flex-direction:column; gap:11px;">
+              <div class="form-row">
+                <div class="field">
+                  <label>Nombres del Estudiante</label>
+                  <input id="stuFirstName" type="text" placeholder="Ej. Daniel Santiago" required />
+                </div>
+                <div class="field">
+                  <label>Apellidos del Estudiante</label>
+                  <input id="stuLastName" type="text" placeholder="Ej. Pineda Morales" required />
+                </div>
+              </div>
+              <div class="form-row">
+                <div class="field">
+                  <label>Correo Institucional</label>
+                  <input id="stuEmail" type="email" placeholder="daniel.pineda@softedu.edu.co" required />
+                </div>
+                <div class="field">
+                  <label>Documento de Identidad</label>
+                  <input id="stuDoc" type="text" placeholder="1005889123" required />
+                </div>
+              </div>
+              <div class="form-row">
+                <div class="field">
+                  <label>Código Estudiantil</label>
+                  <input id="stuCode" type="text" placeholder="EST-2026-106" required />
+                </div>
+                <div class="field">
+                  <label>Programa Académico</label>
+                  <input id="stuProgram" type="text" value="Ingeniería de Software" required />
+                </div>
+              </div>
+              <div class="form-row">
+                <div class="field">
+                  <label>Nombre del Acudiente / Contacto</label>
+                  <input id="stuGuardian" type="text" placeholder="Ej. Claudia Morales (Madre)" required />
+                </div>
+                <div class="field">
+                  <label>Teléfono del Acudiente</label>
+                  <input id="stuGuardianPhone" type="text" placeholder="310-555-8900" required />
+                </div>
+              </div>
+              <button type="submit" class="btn-emerald" style="justify-content:center; margin-top:4px;">
+                <i class="fa-solid fa-id-card"></i> Registrar y Matricular Estudiante Ahora
+              </button>
+            </form>
+          </div>
+
+          <!-- Directorio de Planta Docente -->
+          <div class="card">
+            <div class="card-head">
+              <h3 class="card-title">
+                <i class="fa-solid fa-chalkboard-user" style="color:#818cf8;"></i>
+                Planta Docente Oficial Vinculada
+              </h3>
+            </div>
+            <div id="teachersDirectoryBox" style="display:flex; flex-direction:column; gap:10px;"></div>
+          </div>
+        </div>
+
+        <!-- Directorio General de Usuarios y Roles Institucionales -->
+        <div class="card">
+          <div class="card-head">
+            <div>
+              <h3 class="card-title">
+                <i class="fa-solid fa-address-book" style="color:#fcd34d;"></i>
+                Directorio General de Cuentas y Roles de la Institución (Rector, Coordinador, Secretaría, Orientador, Docentes y Alumnos)
+              </h3>
+              <p class="card-desc">Haz clic en <strong>"Entrar con esta Cuenta"</strong> en cualquier fila para asumir inmediatamente la identidad de ese usuario y ver su información.</p>
+            </div>
+          </div>
+          <div class="table-container">
+            <table>
+              <thead>
+                <tr>
+                  <th>Rol Institucional</th>
+                  <th>Nombre Completo</th>
+                  <th>Cargo / Perfil</th>
+                  <th>Dependencia / Programa</th>
+                  <th>Documento</th>
+                  <th>Correo Institucional</th>
+                  <th>Acción Rápida</th>
+                </tr>
+              </thead>
+              <tbody id="directoryTableBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- =================================================================== -->
+      <!-- PESTAÑA 6: CENTRO COPILOTO IA (LOS 3 MOTORES INTELIGENTES) -->
+      <!-- =================================================================== -->
+      <div id="tab-copiloto" class="tab-pane hidden" style="display:flex; flex-direction:column; gap:20px;">
+        <div class="grid-2">
+          <!-- Motor IA #2: Asistente Curricular Generativo para el Docente -->
+          <div class="card">
+            <div class="card-head">
+              <h3 class="card-title">
+                <i class="fa-solid fa-wand-magic-sparkles" style="color:#c084fc;"></i>
+                Motor IA #2: Asistente Curricular para el Docente
+              </h3>
+              <span class="badge risk-MEDIO">Generativo JSON</span>
+            </div>
+            <p class="card-desc">
+              Genera automáticamente una propuesta de <strong>Planeación de Clase (Inicio, Desarrollo, Cierre)</strong>, <strong>Rúbrica Analítica (0.0 a 5.0)</strong> y <strong>Banco de Preguntas Tipo Test (Taxonomía de Bloom)</strong> a partir de un tema del sílabo.
+            </p>
+            <div class="form-row">
+              <div class="field">
+                <label>Tema del Sílabo Oficial</label>
+                <select id="aiCurrTopicSelect"></select>
+              </div>
+              <div class="field">
+                <label>Nivel de Exigencia</label>
+                <select id="aiCurrDiffSelect">
+                  <option value="BASICO">Nivel Básico / Introductorio</option>
+                  <option value="INTERMEDIO" selected>Nivel Intermedio / Aplicado</option>
+                  <option value="AVANZADO">Nivel Avanzado / Ingeniería</option>
+                </select>
+              </div>
+            </div>
+            <button onclick="runCurricularAssistant()" class="btn-primary" style="background:linear-gradient(135deg,#9333ea,#6b21a8);">
+              <i class="fa-solid fa-sparkles"></i> Generar Planeación de Clase, Rúbrica y Examen Test
+            </button>
+            <div id="aiCurricularOutput" style="background:#080e1c; border:1px solid #1e293b; border-radius:12px; padding:14px; font-size:12.5px; max-height:420px; overflow-y:auto;">
+              <span style="color:#64748b;">Presiona el botón superior para generar la planeación didáctica completa, la rúbrica y las preguntas de opción múltiple.</span>
+            </div>
+          </div>
+
+          <!-- Motor IA #3: Tutor Académico RAG Basado en el Sílabo (pgvector) -->
+          <div class="card">
+            <div class="card-head">
+              <h3 class="card-title">
+                <i class="fa-solid fa-magnifying-glass-chart" style="color:#38bdf8;"></i>
+                Motor IA #3: Tutor Académico RAG (pgvector)
+              </h3>
+              <span class="badge risk-BAJO">Similitud Coseno &lt;=&gt;</span>
+            </div>
+            <p class="card-desc">
+              Responde dudas académicas de los estudiantes buscando semánticamente en los vectores del sílabo oficial y citando las unidades y temas utilizados.
+            </p>
+            <div class="field">
+              <label>Pregunta o Duda Académica del Estudiante</label>
+              <input id="aiRagInput" type="text" value="¿Por qué debo usar una sesión aislada en BackgroundTasks con SQLAlchemy 2.0 y cómo se indexa en pgvector?" />
+            </div>
+            <button onclick="runRagTutor()" class="btn-primary" style="background:linear-gradient(135deg,#0284c7,#0369a1);">
+              <i class="fa-solid fa-paper-plane"></i> Consultar al Tutor Inteligente RAG
+            </button>
+            <div id="aiRagOutput" style="background:#080e1c; border:1px solid #1e293b; border-radius:12px; padding:14px; font-size:12.5px; max-height:420px; overflow-y:auto;">
+              <span style="color:#64748b;">Envía tu pregunta para consultar la base vectorial del sílabo de la asignatura.</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Motor IA #1: Panel de Psicoorientación y Alertas Tempranas -->
+        <div class="card">
+          <div class="card-head">
+            <h3 class="card-title">
+              <i class="fa-solid fa-heart-circle-bolt" style="color:#fb7185;"></i>
+              Motor IA #1: Monitor de Alertas Tempranas de Riesgo Académico y Permanencia Estudiantil
+            </h3>
+          </div>
+          <div id="psychRiskCardsContainer" class="grid-2"></div>
+        </div>
+      </div>
+
+    </main>
+  </div>
+
+  <!-- MODAL DE INICIO DE SESIÓN MANUAL Y SELECTOR DE CUENTAS -->
+  <div id="loginModal" class="modal-backdrop hidden">
+    <div class="modal-card">
+      <div style="display:flex; justify-content:space-between; align-items:center;">
+        <h3 style="font-size:17px; font-weight:800; color:#fff;">
+          <i class="fa-solid fa-shield-halved" style="color:#818cf8;"></i> Acceso Institucional SoftEdu (JWT RBAC)
+        </h3>
+        <button onclick="closeLoginModal()" class="btn-sm">Cerrar &times;</button>
+      </div>
+      <p style="font-size:12.5px; color:#94a3b8;">
+        Ingresa con correo y contraseña o selecciona cualquiera de las cuentas oficiales sembradas en PostgreSQL:
+      </p>
+      <form onsubmit="handleManualLogin(event)" style="display:flex; flex-direction:column; gap:11px;">
+        <div class="field">
+          <label>Correo Institucional</label>
+          <input id="loginEmailInput" type="email" value="rector@softedu.edu.co" required />
+        </div>
+        <div class="field">
+          <label>Contraseña</label>
+          <input id="loginPassInput" type="password" value="rector123" required />
+        </div>
+        <button type="submit" class="btn-primary">
+          <i class="fa-solid fa-key"></i> Iniciar Sesión y Cargar Perfil
+        </button>
+      </form>
+      <div style="border-top:1px solid #1e293b; padding-top:12px; font-size:11.5px; color:#94a3b8;">
+        <strong>Cuentas Institucionales Disponibles (Contraseña entre paréntesis):</strong>
+        <ul style="padding-left:16px; margin-top:6px; display:flex; flex-direction:column; gap:4px;">
+          <li><strong>Rectoría:</strong> <code>rector@softedu.edu.co</code> (<code>rector123</code>)</li>
+          <li><strong>Coordinación:</strong> <code>coordinador@softedu.edu.co</code> (<code>coordinador123</code>)</li>
+          <li><strong>Secretaría:</strong> <code>secretaria@softedu.edu.co</code> (<code>secretaria123</code>)</li>
+          <li><strong>Psicoorientación:</strong> <code>orientador@softedu.edu.co</code> (<code>orientador123</code>)</li>
+          <li><strong>Docente Titular:</strong> <code>docente@softedu.edu.co</code> (<code>docente123</code>)</li>
+          <li><strong>Estudiantes:</strong> <code>estudiante@softedu.edu.co</code>, <code>sebastian.vargas@softedu.edu.co</code>, <code>mateo.gomez@softedu.edu.co</code> (<code>estudiante123</code>)</li>
+        </ul>
       </div>
     </div>
+  </div>
 
-    <!-- Grid Inferior: Caso de Uso #2 y Caso de Uso #3 -->
-    <div class="bottom-grid">
-      <!-- Caso de Uso #2: Asistente Curricular Docente -->
-      <div class="card">
-        <div class="card-header">
-          <h2 class="card-title">
-            <i class="fa-solid fa-wand-magic-sparkles" style="color:#c084fc"></i>
-            2. Asistente Curricular Docente (Generativo)
-          </h2>
-          <span class="tag-mini" style="color:#d8b4fe; border-color:rgba(192,132,252,0.35); background:rgba(147,51,234,0.15);">Structured JSON</span>
-        </div>
-        <p class="card-subtitle">
-          Selecciona un <code>SyllabusTopic</code> oficial para generar planeación de sesión en 3 fases, rúbrica analítica y banco de preguntas tipo test (Taxonomía de Bloom).
-        </p>
-
-        <div class="inline-controls">
-          <select id="currTopicSelect"></select>
-          <button onclick="generateCurricularProposal()" id="btnCurricular" class="btn-purple">
-            <i class="fa-solid fa-sparkles"></i> Generar Planeación y Test
-          </button>
-        </div>
-
-        <div id="curricularResult" class="output-console">
-          <span style="color:#64748b;">Haz clic en "Generar Planeación y Test" para visualizar la propuesta generada por IA.</span>
-        </div>
-      </div>
-
-      <!-- Caso de Uso #3: Tutor RAG Basado en el Sílabo (pgvector) -->
-      <div class="card">
-        <div class="card-header">
-          <h2 class="card-title">
-            <i class="fa-solid fa-magnifying-glass-chart" style="color:#38bdf8"></i>
-            3. Tutor RAG Basado en el Sílabo (pgvector)
-          </h2>
-          <span class="tag-mini" style="color:#7dd3fc; border-color:rgba(56,189,248,0.35); background:rgba(2,132,199,0.15);">Cosine Similarity &lt;=&gt;</span>
-        </div>
-        <p class="card-subtitle">
-          Formula cualquier duda académica: el sistema embebe la consulta, busca en PostgreSQL (<code>pgvector</code>) los temas más cercanos y responde con <em>grounding</em> estricto.
-        </p>
-
-        <div class="inline-controls">
-          <input id="ragQuestionInput" type="text" value="¿Cómo evitar cierres prematuros de AsyncSession al usar BackgroundTasks y cómo funciona pgvector HNSW?" />
-          <button onclick="askRagTutor()" id="btnRag" class="btn-sky">
-            <i class="fa-solid fa-paper-plane"></i> Consultar RAG
-          </button>
-        </div>
-
-        <div id="ragResult" class="output-console">
-          <span style="color:#64748b;">Envía tu consulta para ejecutar la búsqueda semántica vectorial en el sílabo.</span>
-        </div>
-      </div>
-    </div>
-  </main>
+  <!-- NOTIFICACIÓN FLOTANTE (TOAST) -->
+  <div id="toastBox" class="toast-notification hidden">
+    <i class="fa-solid fa-circle-check" style="color:#34d399; font-size:16px;"></i>
+    <span id="toastText">Operación exitosa</span>
+  </div>
 
   <script>
     let jwtToken = "";
-    let activeEnrollmentId = "";
+    let currentUser = null;
+    let overviewData = null;
+    let syllabusData = null;
     let activeSubjectId = "";
+    let selectedEnrollmentId = "";
+    // Estado temporal de la planilla de llamado a lista
+    let attendanceDraft = {};
+
+    const DAY_NAMES_ES = {
+      MONDAY: "Lunes",
+      TUESDAY: "Martes",
+      WEDNESDAY: "Miércoles",
+      THURSDAY: "Jueves",
+      FRIDAY: "Viernes",
+      SATURDAY: "Sábado",
+      LUNES: "Lunes",
+      MARTES: "Martes",
+      MIERCOLES: "Miércoles",
+      JUEVES: "Jueves",
+      VIERNES: "Viernes",
+      SABADO: "Sábado"
+    };
+
+    function showToast(msg) {
+      const box = document.getElementById("toastBox");
+      document.getElementById("toastText").textContent = msg;
+      box.classList.remove("hidden");
+      setTimeout(() => box.classList.add("hidden"), 3800);
+    }
+
+    function openLoginModal() {
+      document.getElementById("loginModal").classList.remove("hidden");
+    }
+
+    function closeLoginModal() {
+      document.getElementById("loginModal").classList.add("hidden");
+    }
+
+    function switchTab(tabId) {
+      document.querySelectorAll(".tab-pane").forEach(el => el.classList.add("hidden"));
+      document.querySelectorAll(".nav-item").forEach(el => el.classList.remove("active"));
+      const target = document.getElementById(tabId);
+      if (target) target.classList.remove("hidden");
+      const navBtn = document.getElementById("nav-" + tabId);
+      if (navBtn) navBtn.classList.add("active");
+    }
 
     async function apiFetch(path, options = {}) {
       const headers = { "Content-Type": "application/json", ...(options.headers || {}) };
@@ -916,182 +1459,635 @@
       const res = await fetch(path, { ...options, headers });
       const data = await res.json();
       if (!res.ok) {
-        const msg = data?.detail?.message || data?.message || JSON.stringify(data);
+        const msg = data?.detail?.message || data?.detail || data?.message || JSON.stringify(data);
         throw new Error(msg);
       }
       return data;
     }
 
-    async function quickLogin(email, password) {
+    async function handleManualLogin(e) {
+      e.preventDefault();
+      const email = document.getElementById("loginEmailInput").value;
+      const pass = document.getElementById("loginPassInput").value;
+      await quickLogin(email, pass);
+      closeLoginModal();
+    }
+
+    async function quickLogin(email, password, targetTab = null) {
       try {
         const res = await apiFetch("/api/v1/auth/login", {
           method: "POST",
           body: JSON.stringify({ email, password })
         });
         jwtToken = res.access_token;
-        document.getElementById("authBadge").innerHTML =
-          `<i class="fa-solid fa-circle-check" style="color:#34d399"></i> ${res.user.full_name} <strong style="color:#a5b4fc">[${res.user.role}]</strong>`;
-        await bootstrapAcademicData();
+        currentUser = res.user;
+        renderUserSessionHeader(currentUser);
+        await refreshAllData();
+
+        // Si el usuario que inicia sesión es un ESTUDIANTE, seleccionar automáticamente su propio boletín
+        if (currentUser.enrollment_id) {
+          selectedEnrollmentId = currentUser.enrollment_id;
+          const sel = document.getElementById("studentSelectorDropdown");
+          if (sel) sel.value = selectedEnrollmentId;
+          await loadSelectedStudentReportCard();
+        }
+
+        if (targetTab) {
+          switchTab(targetTab);
+        }
+        showToast(`Sesión iniciada como ${currentUser.full_name} (${currentUser.role_label_es})`);
       } catch (err) {
         alert("Error de autenticación: " + err.message);
       }
     }
 
-    async function bootstrapAcademicData() {
-      const demoCtx = await apiFetch("/api/v1/demo-context");
-      activeEnrollmentId = demoCtx.enrollment_id;
-      activeSubjectId = demoCtx.subject_id;
+    function renderUserSessionHeader(u) {
+      document.getElementById("topUserName").textContent = u.full_name;
+      document.getElementById("topUserRole").textContent = `${u.role_label_es} • ${u.email}`;
 
-      const syllabus = await apiFetch(`/api/v1/syllabus/subjects/${activeSubjectId}`);
-      const evalSelect = document.getElementById("evalTopicSelect");
-      const currSelect = document.getElementById("currTopicSelect");
-      evalSelect.innerHTML = "";
-      currSelect.innerHTML = "";
+      document.getElementById("sideRoleBadge").textContent = u.role_label_es;
+      document.getElementById("sideFullName").textContent = u.full_name;
+      document.getElementById("sideJobTitle").textContent = u.job_title;
+      document.getElementById("sideEmail").textContent = u.email;
+      document.getElementById("sideDoc").textContent = u.document_number;
+      document.getElementById("sideArea").textContent = u.department_area;
 
-      for (const unit of syllabus.units) {
-        for (const topic of unit.topics) {
-          const label = `U${unit.unit_number}.T${topic.topic_number} - ${topic.title}`;
-          evalSelect.add(new Option(label, topic.id));
-          currSelect.add(new Option(label, topic.id));
+      document.getElementById("bannerAvatar").textContent = u.first_name.charAt(0).toUpperCase();
+      document.getElementById("bannerName").textContent = `${u.full_name} — ${u.job_title}`;
+      document.getElementById("bannerRoleTag").textContent = `ROL: ${u.role_label_es.toUpperCase()}`;
+      document.getElementById("bannerMeta").textContent =
+        `Dependencia: ${u.department_area} • Documento: ${u.document_number} • Correo: ${u.email}`;
+
+      document.getElementById("bannerPerms").innerHTML = (u.permissions_es || [])
+        .map(p => `<span class="perm-chip"><i class="fa-solid fa-check" style="color:#34d399; margin-right:4px;"></i>${p}</span>`)
+        .join("");
+
+      // Resaltar píldora activa
+      document.querySelectorAll(".role-btn").forEach(b => b.classList.remove("active-role"));
+      const mapBtn = {
+        "rector@softedu.edu.co": "btnRoleRector",
+        "coordinador@softedu.edu.co": "btnRoleCoord",
+        "secretaria@softedu.edu.co": "btnRoleSec",
+        "orientador@softedu.edu.co": "btnRoleOri",
+        "docente@softedu.edu.co": "btnRoleDoc",
+        "estudiante@softedu.edu.co": "btnRoleEst1",
+        "sebastian.vargas@softedu.edu.co": "btnRoleEst4",
+        "mateo.gomez@softedu.edu.co": "btnRoleEst2"
+      };
+      if (mapBtn[u.email]) {
+        document.getElementById(mapBtn[u.email])?.classList.add("active-role");
+      }
+    }
+
+    async function refreshAllData() {
+      overviewData = await apiFetch("/api/v1/academic/institutional-overview");
+      document.getElementById("bannerPeriod").textContent =
+        `${overviewData.active_period_code} (${overviewData.active_period_name})`;
+
+      renderRectoriaOverview(overviewData);
+      renderAttendanceSheet(overviewData);
+      renderDirectoryAndSecretaria(overviewData);
+      renderPsychRiskCards(overviewData);
+
+      if (overviewData.enrolled_students.length > 0) {
+        activeSubjectId = overviewData.enrolled_students[0].subject_id;
+        if (!selectedEnrollmentId) {
+          selectedEnrollmentId = overviewData.enrolled_students[0].enrollment_id;
         }
+        populateStudentSelector(overviewData.enrolled_students);
+        await loadSyllabusAndOfferings();
+        await loadSelectedStudentReportCard();
       }
-
-      await loadReportCard();
     }
 
-    async function loadReportCard() {
-      if (!activeEnrollmentId) return;
-      const rc = await apiFetch(`/api/v1/grades/enrollments/${activeEnrollmentId}/report-card`);
-      document.getElementById("studentHeaderInfo").textContent =
-        `${rc.student_full_name} (${rc.student_code}) • ${rc.subject_name} (${rc.subject_code} - ${rc.group_code}) • Período ${rc.academic_period_code}`;
+    function renderRectoriaOverview(ov) {
+      document.getElementById("kpiTotalStudents").textContent = ov.total_students;
+      document.getElementById("kpiTotalEnrollments").textContent =
+        `${ov.total_active_enrollments} matrículas activas • ${ov.total_teachers} docentes`;
+      document.getElementById("kpiInstAvg").textContent = Number(ov.institutional_average_grade).toFixed(2);
+      document.getElementById("kpiApprovalRate").textContent = `${Number(ov.approval_rate_percentage).toFixed(0)}%`;
+      document.getElementById("kpiPassFailCounts").textContent =
+        `${ov.passing_students_count} aprobando / ${ov.failing_students_count} reprobando`;
+      document.getElementById("kpiGlobalAtt").textContent = `${Number(ov.global_attendance_percentage).toFixed(1)}%`;
 
-      document.getElementById("kpiWeightedAvg").textContent = Number(rc.current_weighted_average).toFixed(2);
-      document.getElementById("kpiEvalWeight").textContent = `${Number(rc.evaluated_weight_percentage).toFixed(0)}%`;
-      document.getElementById("kpiRemWeight").textContent = `Restante: ${Number(rc.remaining_weight_percentage).toFixed(0)}%`;
-      document.getElementById("kpiNeededScore").textContent = Number(rc.minimum_score_needed_in_remaining).toFixed(2);
-      document.getElementById("kpiAbsencePct").textContent = `${Number(rc.attendance_summary.absence_percentage).toFixed(1)}%`;
+      const highCrit = (ov.risk_distribution.ALTO || 0) + (ov.risk_distribution.CRITICO || 0);
+      document.getElementById("kpiHighRiskCount").textContent = `${highCrit} alumnos`;
 
-      const tbody = document.getElementById("gradesTableBody");
-      if (!rc.grades.length) {
-        tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; color:#64748b; padding:18px;">Sin calificaciones registradas aún.</td></tr>`;
-      } else {
-        tbody.innerHTML = rc.grades.map(g => `
+      const tbody = document.getElementById("rosterTableBody");
+      tbody.innerHTML = ov.enrolled_students.map(s => {
+        const risk = s.risk_level || "BAJO";
+        const avgNum = Number(s.current_weighted_average);
+        return `
           <tr>
-            <td style="font-weight:700; color:#a5b4fc;">Corte ${g.evaluation_cut}</td>
-            <td>${g.evaluation_name}</td>
-            <td style="color:#94a3b8;">${g.syllabus_topic_title || 'General'}</td>
-            <td>${Number(g.weight_percentage).toFixed(0)}%</td>
-            <td style="font-weight:800; color:${g.is_passing_score ? '#34d399' : '#fb7185'};">${Number(g.score).toFixed(2)}</td>
-            <td style="color:#cbd5e1;">+${Number(g.weighted_contribution).toFixed(2)}</td>
+            <td style="font-weight:700; color:#a5b4fc;">${s.student_code}</td>
+            <td>
+              <div style="font-weight:700; color:#fff;">${s.student_full_name}</div>
+              <div style="font-size:11px; color:#94a3b8;">${s.student_email}</div>
+            </td>
+            <td>${s.program_name} (Sem. ${s.current_semester})</td>
+            <td>
+              <div style="font-size:12px;">${s.guardian_name || 'Sin registrar'}</div>
+              <div style="font-size:11px; color:#94a3b8;">${s.guardian_phone || ''}</div>
+            </td>
+            <td>${Number(s.evaluated_weight_percentage).toFixed(0)}%</td>
+            <td style="font-weight:800; font-size:14px; color:${avgNum >= 3.0 ? '#34d399' : '#fb7185'};">
+              ${avgNum.toFixed(2)}
+            </td>
+            <td style="font-weight:700; color:#fcd34d;">${Number(s.minimum_score_needed_in_remaining).toFixed(2)}</td>
+            <td>
+              <span style="color:${Number(s.absence_percentage) >= 15 ? '#fb7185' : '#cbd5e1'}; font-weight:700;">
+                ${s.unexcused_absent_count} fallas (${Number(s.absence_percentage).toFixed(1)}%)
+              </span>
+            </td>
+            <td><span class="badge risk-${risk}">RIESGO ${risk}</span></td>
+            <td>
+              <button onclick="inspectStudentFromRoster('${s.enrollment_id}')" class="btn-sm">
+                <i class="fa-solid fa-eye"></i> Ver Boletín / Calificar
+              </button>
+            </td>
           </tr>
-        `).join("");
-      }
+        `;
+      }).join("");
+    }
 
-      const insight = rc.current_ai_insight;
-      const badge = document.getElementById("aiRiskBadge");
-      const summary = document.getElementById("aiExecSummary");
-      const planGrid = document.getElementById("aiActionPlanGrid");
+    function inspectStudentFromRoster(enrollmentId) {
+      selectedEnrollmentId = enrollmentId;
+      const sel = document.getElementById("studentSelectorDropdown");
+      if (sel) sel.value = enrollmentId;
+      loadSelectedStudentReportCard();
+      switchTab("tab-notas");
+    }
 
-      if (insight) {
-        badge.className = `ai-badge risk-${insight.risk_level}`;
-        badge.textContent = `RIESGO ${insight.risk_level}`;
-        summary.textContent = insight.executive_summary;
-        planGrid.classList.remove("hidden");
+    function renderAttendanceSheet(ov) {
+      const sheetBody = document.getElementById("attendanceSheetBody");
+      ov.enrolled_students.forEach(s => {
+        if (!attendanceDraft[s.enrollment_id]) {
+          attendanceDraft[s.enrollment_id] = { status: "PRESENT", obs: "" };
+        }
+      });
 
-        document.getElementById("aiTeacherActions").innerHTML =
-          insight.suggested_action_plan.acciones_docente.map(a => `<li>${a}</li>`).join("");
-        document.getElementById("aiStudentActions").innerHTML =
-          insight.suggested_action_plan.acciones_estudiante.map(a => `<li>${a}</li>`).join("");
+      sheetBody.innerHTML = ov.enrolled_students.map(s => {
+        const st = attendanceDraft[s.enrollment_id]?.status || "PRESENT";
+        const obs = attendanceDraft[s.enrollment_id]?.obs || "";
+        return `
+          <tr>
+            <td style="font-weight:700; color:#a5b4fc;">${s.student_code}</td>
+            <td>
+              <div style="font-weight:700; color:#fff;">${s.student_full_name}</div>
+              <div style="font-size:11px; color:#94a3b8;">${s.program_name}</div>
+            </td>
+            <td>
+              <span style="color:#34d399;">${s.present_count} Pres.</span> •
+              <span style="color:#fb7185; font-weight:700;">${s.unexcused_absent_count} Fallas</span> •
+              <span style="color:#fcd34d;">${s.late_count} Ret.</span>
+            </td>
+            <td>
+              <strong style="color:${Number(s.absence_percentage) >= 15 ? '#fb7185' : '#38bdf8'};">
+                ${Number(s.absence_percentage).toFixed(1)}%
+              </strong>
+            </td>
+            <td>
+              <div class="att-radio-group" id="attGroup-${s.enrollment_id}">
+                <button type="button" onclick="setStudentAttendance('${s.enrollment_id}', 'PRESENT')" class="att-opt ${st === 'PRESENT' ? 'selected-PRESENT' : ''}">
+                  <i class="fa-solid fa-check"></i> Presente
+                </button>
+                <button type="button" onclick="setStudentAttendance('${s.enrollment_id}', 'ABSENT')" class="att-opt ${st === 'ABSENT' ? 'selected-ABSENT' : ''}">
+                  <i class="fa-solid fa-xmark"></i> Inasistencia
+                </button>
+                <button type="button" onclick="setStudentAttendance('${s.enrollment_id}', 'LATE')" class="att-opt ${st === 'LATE' ? 'selected-LATE' : ''}">
+                  <i class="fa-solid fa-clock"></i> Llegada Tarde
+                </button>
+                <button type="button" onclick="setStudentAttendance('${s.enrollment_id}', 'EXCUSED')" class="att-opt ${st === 'EXCUSED' ? 'selected-EXCUSED' : ''}">
+                  <i class="fa-solid fa-file-medical"></i> Excusa
+                </button>
+              </div>
+            </td>
+            <td>
+              <input type="text" placeholder="Observación o motivo..." value="${obs}"
+                onchange="setStudentAttendanceObs('${s.enrollment_id}', this.value)" />
+            </td>
+          </tr>
+        `;
+      }).join("");
+
+      const histBody = document.getElementById("attendanceHistoryBody");
+      histBody.innerHTML = ov.recent_attendances.map(a => {
+        const badgeMap = {
+          PRESENT: "risk-BAJO",
+          ABSENT: "risk-CRITICO",
+          LATE: "risk-MEDIO",
+          EXCUSED: "risk-ALTO"
+        };
+        return `
+          <tr>
+            <td style="font-weight:700;">${a.session_date}</td>
+            <td style="color:#a5b4fc;">${a.student_code}</td>
+            <td style="font-weight:600; color:#fff;">${a.student_full_name}</td>
+            <td><span class="badge ${badgeMap[a.status] || 'risk-BAJO'}">${a.status_label_es}</span></td>
+            <td style="color:#94a3b8;">${a.observations || 'Sin observaciones'}</td>
+          </tr>
+        `;
+      }).join("");
+    }
+
+    function setStudentAttendance(enrollmentId, status) {
+      if (!attendanceDraft[enrollmentId]) attendanceDraft[enrollmentId] = { status: "PRESENT", obs: "" };
+      attendanceDraft[enrollmentId].status = status;
+      renderAttendanceSheet(overviewData);
+    }
+
+    function setStudentAttendanceObs(enrollmentId, obs) {
+      if (!attendanceDraft[enrollmentId]) attendanceDraft[enrollmentId] = { status: "PRESENT", obs: "" };
+      attendanceDraft[enrollmentId].obs = obs;
+    }
+
+    function markAllAttendance(status) {
+      Object.keys(attendanceDraft).forEach(k => {
+        attendanceDraft[k].status = status;
+      });
+      renderAttendanceSheet(overviewData);
+    }
+
+    async function saveBulkAttendance() {
+      const btn = document.getElementById("btnSaveAttendanceSheet");
+      btn.disabled = true;
+      btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Guardando Planilla y Evaluando IA...`;
+      try {
+        const sessionDate = document.getElementById("attSessionDate").value;
+        const topicId = document.getElementById("attTopicSelect").value || null;
+        const records = overviewData.enrolled_students.map(s => ({
+          enrollment_id: s.enrollment_id,
+          status: attendanceDraft[s.enrollment_id]?.status || "PRESENT",
+          observations: attendanceDraft[s.enrollment_id]?.obs || "Registro desde planilla oficial docente."
+        }));
+
+        await apiFetch("/api/v1/academic/attendances/bulk", {
+          method: "POST",
+          body: JSON.stringify({
+            session_date: sessionDate,
+            syllabus_topic_id: topicId,
+            records
+          })
+        });
+        showToast("Planilla de asistencia guardada y alertas tempranas IA actualizadas.");
+        setTimeout(refreshAllData, 800);
+      } catch (err) {
+        alert("No fue posible guardar la asistencia: " + err.message);
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = `<i class="fa-solid fa-floppy-disk"></i> Guardar Planilla de Asistencia y Evaluar IA`;
       }
     }
 
-    async function submitGrade(e) {
+    function populateStudentSelector(students) {
+      const sel = document.getElementById("studentSelectorDropdown");
+      sel.innerHTML = students.map(s =>
+        `<option value="${s.enrollment_id}" ${s.enrollment_id === selectedEnrollmentId ? 'selected' : ''}>
+          ${s.student_code} — ${s.student_full_name} (Promedio: ${Number(s.current_weighted_average).toFixed(2)} | Riesgo IA: ${s.risk_level || 'BAJO'})
+        </option>`
+      ).join("");
+    }
+
+    async function onSelectStudentEnrollment(enrollmentId) {
+      selectedEnrollmentId = enrollmentId;
+      await loadSelectedStudentReportCard();
+    }
+
+    async function loadSelectedStudentReportCard() {
+      if (!selectedEnrollmentId) return;
+      try {
+        const rc = await apiFetch(`/api/v1/grades/enrollments/${selectedEnrollmentId}/report-card`);
+        document.getElementById("rcStudentSubtitle").textContent =
+          `Estudiante: ${rc.student_full_name} (${rc.student_code}) • Asignatura: ${rc.subject_name} (${rc.subject_code} - Grupo ${rc.group_code})`;
+
+        const avg = Number(rc.current_weighted_average);
+        document.getElementById("rcAvg").textContent = avg.toFixed(2);
+        document.getElementById("rcAvg").style.color = avg >= 3.0 ? "#34d399" : "#fb7185";
+        document.getElementById("rcStatusText").textContent =
+          avg >= 3.0 ? "Aprobando corte actual" : "Por debajo de 3.00 (En riesgo)";
+
+        document.getElementById("rcEvalPct").textContent = `${Number(rc.evaluated_weight_percentage).toFixed(0)}%`;
+        document.getElementById("rcRemPct").textContent = `Restante: ${Number(rc.remaining_weight_percentage).toFixed(0)}%`;
+        document.getElementById("rcNeeded").textContent = Number(rc.minimum_score_needed_in_remaining).toFixed(2);
+        document.getElementById("rcAbsPct").textContent = `${Number(rc.attendance_summary.absence_percentage).toFixed(1)}%`;
+        document.getElementById("rcAbsCount").textContent =
+          `${rc.attendance_summary.unexcused_absent_count} fallas / ${rc.attendance_summary.present_count} asistencias`;
+
+        const tbody = document.getElementById("rcGradesBody");
+        if (!rc.grades.length) {
+          tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; padding:16px; color:#64748b;">El estudiante aún no tiene calificaciones registradas.</td></tr>`;
+        } else {
+          tbody.innerHTML = rc.grades.map(g => `
+            <tr>
+              <td style="font-weight:700; color:#a5b4fc;">Corte ${g.evaluation_cut}</td>
+              <td style="font-weight:600; color:#fff;">${g.evaluation_name}</td>
+              <td style="color:#94a3b8;">${g.syllabus_topic_title || 'General'}</td>
+              <td>${Number(g.weight_percentage).toFixed(0)}%</td>
+              <td style="font-weight:800; color:${g.is_passing_score ? '#34d399' : '#fb7185'};">${Number(g.score).toFixed(2)}</td>
+              <td style="color:#cbd5e1;">+${Number(g.weighted_contribution).toFixed(2)}</td>
+              <td style="color:#94a3b8; font-size:11.5px;">${g.teacher_observations || '-'}</td>
+            </tr>
+          `).join("");
+        }
+
+        const ins = rc.current_ai_insight;
+        const rBadge = document.getElementById("rcRiskBadge");
+        if (ins) {
+          rBadge.className = `badge risk-${ins.risk_level}`;
+          rBadge.textContent = `NIVEL DE RIESGO: ${ins.risk_level}`;
+          document.getElementById("rcAiSummary").textContent = ins.executive_summary;
+          document.getElementById("rcTeacherActions").innerHTML =
+            ins.suggested_action_plan.acciones_docente.map(a => `<li>${a}</li>`).join("");
+          document.getElementById("rcStudentActions").innerHTML =
+            ins.suggested_action_plan.acciones_estudiante.map(a => `<li>${a}</li>`).join("");
+        } else {
+          rBadge.className = "badge risk-BAJO";
+          rBadge.textContent = "SIN DIAGNÓSTICO PREVIO";
+          document.getElementById("rcAiSummary").textContent =
+            "Registra una calificación en el formulario izquierdo para generar el diagnóstico del Copiloto de IA.";
+          document.getElementById("rcTeacherActions").innerHTML = "";
+          document.getElementById("rcStudentActions").innerHTML = "";
+        }
+      } catch (err) {
+        console.warn("Aviso al cargar boletín:", err.message);
+      }
+    }
+
+    async function submitGradeForm(e) {
       e.preventDefault();
       const btn = document.getElementById("btnSubmitGrade");
       btn.disabled = true;
-      btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Guardando y ejecutando Copiloto IA...`;
+      btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Registrando Nota y Ejecutando Copiloto IA...`;
       try {
         await apiFetch("/api/v1/grades", {
           method: "POST",
           body: JSON.stringify({
-            enrollment_id: activeEnrollmentId,
-            syllabus_topic_id: document.getElementById("evalTopicSelect").value || null,
-            evaluation_cut: parseInt(document.getElementById("evalCut").value, 10),
-            evaluation_name: document.getElementById("evalName").value,
-            weight_percentage: parseFloat(document.getElementById("evalWeight").value),
-            score: parseFloat(document.getElementById("evalScore").value),
-            teacher_observations: document.getElementById("evalObs").value
+            enrollment_id: selectedEnrollmentId,
+            syllabus_topic_id: document.getElementById("gradeTopicSelect").value || null,
+            evaluation_cut: parseInt(document.getElementById("gradeCutInput").value, 10),
+            evaluation_name: document.getElementById("gradeNameInput").value,
+            weight_percentage: parseFloat(document.getElementById("gradeWeightInput").value),
+            score: parseFloat(document.getElementById("gradeScoreInput").value),
+            teacher_observations: document.getElementById("gradeObsInput").value
           })
         });
-        const randSuffix = Math.floor(Math.random() * 90 + 10);
-        document.getElementById("evalName").value = `Evaluación Continua #${randSuffix}`;
-        setTimeout(loadReportCard, 900);
+        const suffix = Math.floor(Math.random() * 89 + 10);
+        document.getElementById("gradeNameInput").value = `Actividad Evaluativa #${suffix}`;
+        showToast("Calificación registrada. Actualizando diagnóstico de IA...");
+        setTimeout(refreshAllData, 900);
       } catch (err) {
-        alert(err.message);
+        alert("No se pudo registrar la calificación: " + err.message);
       } finally {
         btn.disabled = false;
-        btn.innerHTML = `<i class="fa-solid fa-bolt"></i> Registrar Nota y Disparar Diagnóstico IA`;
+        btn.innerHTML = `<i class="fa-solid fa-bolt"></i> Guardar Calificación y Actualizar Diagnóstico IA`;
       }
     }
 
-    async function registerQuickAbsence() {
+    async function loadSyllabusAndOfferings() {
+      if (!activeSubjectId) return;
+      syllabusData = await apiFetch(`/api/v1/syllabus/subjects/${activeSubjectId}`);
+      const offerings = await apiFetch("/api/v1/academic/course-offerings");
+
+      // Poblar selectores de temas y unidades
+      const selects = ["attTopicSelect", "gradeTopicSelect", "aiCurrTopicSelect"];
+      selects.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.innerHTML = "";
+      });
+      const unitSel = document.getElementById("newTopicUnitSelect");
+      unitSel.innerHTML = "";
+
+      syllabusData.units.forEach(u => {
+        unitSel.add(new Option(`Unidad ${u.unit_number}: ${u.title}`, u.id));
+        u.topics.forEach(t => {
+          const label = `U${u.unit_number}.T${t.topic_number} — ${t.title}`;
+          selects.forEach(id => {
+            document.getElementById(id)?.add(new Option(label, t.id));
+          });
+        });
+      });
+
+      document.getElementById("syllabusStatsBadge").textContent =
+        `${syllabusData.total_units} Unidades • ${syllabusData.total_topics} Temas (${syllabusData.vectorized_topics_count} Vectorizados en pgvector)`;
+
+      document.getElementById("syllabusTreeContainer").innerHTML = syllabusData.units.map(u => `
+        <div style="background:#080e1c; border:1px solid #1e293b; border-radius:12px; padding:14px; display:flex; flex-direction:column; gap:10px;">
+          <div style="display:flex; justify-content:space-between; align-items:center;">
+            <strong style="color:#a5b4fc; font-size:14px;">Unidad ${u.unit_number}: ${u.title}</strong>
+            <span style="font-size:11.5px; color:#94a3b8;">Duración estimada: ${u.estimated_weeks} semanas</span>
+          </div>
+          <div style="font-size:12px; color:#cbd5e1;"><strong>Objetivo de Aprendizaje:</strong> ${u.learning_objective}</div>
+          <div style="display:flex; flex-direction:column; gap:8px;">
+            ${u.topics.map(t => `
+              <div style="background:#111c33; border:1px solid #263554; border-radius:10px; padding:11px; display:flex; justify-content:space-between; align-items:flex-start; gap:12px; flex-wrap:wrap;">
+                <div style="flex:1;">
+                  <div style="font-weight:700; color:#fff;">Tema ${u.unit_number}.${t.topic_number}: ${t.title}</div>
+                  <div style="font-size:12px; color:#94a3b8; margin-top:3px;">${t.content_description}</div>
+                  <div style="margin-top:6px; display:flex; gap:5px; flex-wrap:wrap;">
+                    ${(t.key_concepts || []).map(c => `<span class="perm-chip" style="font-size:10.5px;">${c}</span>`).join("")}
+                  </div>
+                </div>
+                <span class="badge ${t.is_vectorized ? 'risk-BAJO' : 'risk-MEDIO'}">
+                  <i class="fa-solid fa-database"></i> ${t.is_vectorized ? 'Vectorizado (768d)' : 'Indexando'}
+                </span>
+              </div>
+            `).join("")}
+          </div>
+        </div>
+      `).join("");
+
+      document.getElementById("offeringsContainer").innerHTML = offerings.map(o => `
+        <div style="background:#080e1c; border:1px solid #1e293b; border-radius:12px; padding:14px; display:flex; flex-direction:column; gap:8px;">
+          <div style="display:flex; justify-content:space-between; align-items:center;">
+            <strong style="color:#fff; font-size:14px;">${o.subject_code} — ${o.subject_name} (Grupo ${o.group_code})</strong>
+            <span class="badge risk-BAJO">Período ${o.academic_period_code}</span>
+          </div>
+          <div style="font-size:12px; color:#cbd5e1;">
+            <strong>Docente Titular:</strong> ${o.teacher_full_name} •
+            <strong>Matriculados:</strong> ${o.enrolled_count} / ${o.max_capacity} cupos •
+            <strong>Sesiones Planeadas:</strong> ${o.total_planned_sessions}
+          </div>
+          <div style="display:flex; gap:8px; flex-wrap:wrap; margin-top:4px;">
+            ${o.schedule_blocks.map(b => `
+              <span class="perm-chip" style="border-color:#6366f1; color:#c7d2fe;">
+                <i class="fa-regular fa-clock"></i> ${DAY_NAMES_ES[b.day] || b.day}: ${b.start_time} a ${b.end_time} (Aula: ${b.classroom})
+              </span>
+            `).join("")}
+          </div>
+        </div>
+      `).join("");
+    }
+
+    async function submitNewSyllabusTopic(e) {
+      e.preventDefault();
       try {
-        const randomDay = String(Math.floor(Math.random() * 27) + 1).padStart(2, "0");
-        const randomMonth = String(Math.floor(Math.random() * 4) + 8).padStart(2, "0");
-        await apiFetch("/api/v1/academic/attendances", {
+        const concepts = document.getElementById("newTopicConcepts").value
+          .split(",")
+          .map(s => s.trim())
+          .filter(Boolean);
+        await apiFetch("/api/v1/syllabus/topics", {
           method: "POST",
           body: JSON.stringify({
-            enrollment_id: activeEnrollmentId,
-            syllabus_topic_id: document.getElementById("evalTopicSelect").value || null,
-            session_date: `2026-${randomMonth}-${randomDay}`,
-            status: "ABSENT",
-            observations: "Inasistencia registrada desde consola interactiva."
+            unit_id: document.getElementById("newTopicUnitSelect").value,
+            topic_number: parseInt(document.getElementById("newTopicNumber").value, 10),
+            title: document.getElementById("newTopicTitle").value,
+            content_description: document.getElementById("newTopicDesc").value,
+            key_concepts: concepts,
+            bibliography_references: "Bibliografía Oficial del Curso SoftEdu"
           })
         });
-        setTimeout(loadReportCard, 900);
+        showToast("Tema del sílabo creado y vectorizado en pgvector.");
+        setTimeout(loadSyllabusAndOfferings, 700);
       } catch (err) {
-        alert(err.message);
+        alert("No se pudo crear el tema: " + err.message);
       }
     }
 
-    async function generateCurricularProposal() {
-      const topicId = document.getElementById("currTopicSelect").value;
-      const box = document.getElementById("curricularResult");
-      box.innerHTML = `<span><i class="fa-solid fa-spinner fa-spin" style="color:#c084fc"></i> Generando planeación, rúbrica y banco de preguntas con el motor de IA...</span>`;
+    async function renderDirectoryAndSecretaria(ov) {
+      const teachers = await apiFetch("/api/v1/academic/teachers");
+      document.getElementById("teachersDirectoryBox").innerHTML = teachers.map(t => `
+        <div style="background:#080e1c; border:1px solid #1e293b; border-radius:11px; padding:12px;">
+          <div style="display:flex; justify-content:space-between;">
+            <strong style="color:#fff;">${t.full_name}</strong>
+            <span class="badge risk-BAJO">${t.employee_code}</span>
+          </div>
+          <div style="font-size:12px; color:#a5b4fc; margin-top:2px;">${t.academic_degree} • ${t.specialization}</div>
+          <div style="font-size:11.5px; color:#94a3b8; margin-top:4px;">
+            Departamento: ${t.department} • Correo: ${t.email} • Carga máx: ${t.max_weekly_hours}h/sem
+          </div>
+        </div>
+      `).join("");
+
+      const defaultPasswords = {
+        RECTOR: "rector123",
+        COORDINADOR: "coordinador123",
+        SECRETARIA: "secretaria123",
+        ORIENTADOR: "orientador123",
+        DOCENTE: "docente123",
+        TEACHER: "docente123",
+        ESTUDIANTE: "estudiante123",
+        STUDENT: "estudiante123",
+        ADMIN: "admin12345"
+      };
+
+      document.getElementById("directoryTableBody").innerHTML = ov.institutional_directory.map(u => {
+        const pwd = defaultPasswords[u.role] || "estudiante123";
+        return `
+          <tr>
+            <td><span class="badge risk-BAJO">${u.role_label_es}</span></td>
+            <td style="font-weight:700; color:#fff;">${u.full_name}</td>
+            <td style="color:#cbd5e1;">${u.job_title}</td>
+            <td style="color:#94a3b8;">${u.department_area}</td>
+            <td>${u.document_number}</td>
+            <td style="color:#a5b4fc;">${u.email}</td>
+            <td>
+              <button onclick="quickLogin('${u.email}', '${pwd}')" class="btn-sm" style="border-color:#6366f1; color:#c7d2fe;">
+                <i class="fa-solid fa-right-to-bracket"></i> Entrar con esta Cuenta
+              </button>
+            </td>
+          </tr>
+        `;
+      }).join("");
+    }
+
+    async function submitNewStudent(e) {
+      e.preventDefault();
       try {
-        const data = await apiFetch(`/api/v1/syllabus/topics/${topicId}/curricular-assistant`, {
+        await apiFetch("/api/v1/academic/students", {
+          method: "POST",
+          body: JSON.stringify({
+            first_name: document.getElementById("stuFirstName").value,
+            last_name: document.getElementById("stuLastName").value,
+            email: document.getElementById("stuEmail").value,
+            document_number: document.getElementById("stuDoc").value,
+            student_code: document.getElementById("stuCode").value,
+            program_name: document.getElementById("stuProgram").value,
+            current_semester: 6,
+            enrollment_cohort: "2026-2",
+            guardian_name: document.getElementById("stuGuardian").value,
+            guardian_phone: document.getElementById("stuGuardianPhone").value
+          })
+        });
+        showToast("Estudiante inscrito y matriculado exitosamente en el curso activo.");
+        e.target.reset();
+        await refreshAllData();
+      } catch (err) {
+        alert("No se pudo matricular al estudiante: " + err.message);
+      }
+    }
+
+    function renderPsychRiskCards(ov) {
+      const box = document.getElementById("psychRiskCardsContainer");
+      box.innerHTML = ov.enrolled_students.map(s => {
+        const risk = s.risk_level || "BAJO";
+        const plan = s.ai_action_plan || { acciones_docente: [], acciones_estudiante: [] };
+        return `
+          <div style="background:#080e1c; border:1px solid #1e293b; border-radius:13px; padding:15px; display:flex; flex-direction:column; gap:9px;">
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+              <div>
+                <strong style="color:#fff; font-size:14px;">${s.student_full_name} (${s.student_code})</strong>
+                <div style="font-size:11.5px; color:#94a3b8;">Acudiente: ${s.guardian_name || 'N/A'} (${s.guardian_phone || ''})</div>
+              </div>
+              <span class="badge risk-${risk}">RIESGO ${risk}</span>
+            </div>
+            <div style="font-size:12px; color:#e2e8f0;">${s.ai_executive_summary || 'Sin diagnóstico registrado.'}</div>
+            <div style="font-size:11.5px; color:#a5b4fc;">
+              <strong>Factores Detectados:</strong> ${(s.ai_detected_factors || []).join(" | ")}
+            </div>
+            <div style="font-size:11.5px; color:#6ee7b7;">
+              <strong>Acción Sugerida:</strong> ${(plan.acciones_docente || [])[0] || 'Seguimiento continuo.'}
+            </div>
+          </div>
+        `;
+      }).join("");
+    }
+
+    async function runCurricularAssistant() {
+      const topicId = document.getElementById("aiCurrTopicSelect").value;
+      const diff = document.getElementById("aiCurrDiffSelect").value;
+      const out = document.getElementById("aiCurricularOutput");
+      out.innerHTML = `<i class="fa-solid fa-spinner fa-spin" style="color:#c084fc;"></i> Generando planeación de clase, rúbrica analítica y preguntas tipo test con IA...`;
+      try {
+        const res = await apiFetch(`/api/v1/syllabus/topics/${topicId}/curricular-assistant`, {
           method: "POST",
           body: JSON.stringify({
             session_duration_minutes: 120,
             num_quiz_questions: 3,
-            difficulty_level: "INTERMEDIO"
+            difficulty_level: diff
           })
         });
-        const p = data.curricular_proposal;
-        box.innerHTML = `
+        const p = res.curricular_proposal;
+        out.innerHTML = `
           <div style="font-weight:800; color:#d8b4fe; font-size:14px;">${p.titulo_sesion_propuesta}</div>
-          <div style="color:#94a3b8;">${p.objetivo_aprendizaje_especifico}</div>
-          <div style="font-weight:700; color:#fff; margin-top:4px;">Fases de la Clase:</div>
-          <ul style="padding-left:18px; display:flex; flex-direction:column; gap:4px;">
-            ${p.fases_planeacion_clase.map(f => `<li><strong style="color:#c084fc">${f.fase} (${f.duracion_minutos} min):</strong> ${f.actividad_docente}</li>`).join("")}
+          <div style="color:#cbd5e1; margin-top:4px;"><strong>Objetivo:</strong> ${p.objetivo_aprendizaje_especifico}</div>
+          <div style="font-weight:700; color:#fff; margin-top:8px;">1. Fases de la Planeación Didáctica:</div>
+          <ul style="padding-left:18px; margin-top:4px; display:flex; flex-direction:column; gap:4px;">
+            ${p.fases_planeacion_clase.map(f => `<li><strong style="color:#a5b4fc;">${f.fase} (${f.duracion_minutos} min):</strong> ${f.actividad_docente}</li>`).join("")}
           </ul>
-          <div style="font-weight:700; color:#fff; margin-top:4px;">Pregunta Tipo Test Generada (${p.banco_preguntas_test[0].nivel_taxonomia_bloom}):</div>
-          <div class="quiz-card">
-            <div style="font-weight:600; color:#f8fafc; margin-bottom:6px;">${p.banco_preguntas_test[0].enunciado}</div>
-            ${p.banco_preguntas_test[0].opciones.map((op, i) => `<div style="margin-top:3px; color:${i === p.banco_preguntas_test[0].indice_respuesta_correcta ? '#34d399' : '#94a3b8'}; font-weight:${i === p.banco_preguntas_test[0].indice_respuesta_correcta ? '700' : '400'};">${op}</div>`).join("")}
-          </div>
+          <div style="font-weight:700; color:#fff; margin-top:8px;">2. Rúbrica Analítica (Escala 0.0 a 5.0):</div>
+          <ul style="padding-left:18px; margin-top:4px;">
+            ${p.rubrica_evaluacion.map(r => `<li><strong>${r.criterio} (${r.peso_porcentual}%):</strong> Excelente (4.5-5.0): ${r.nivel_excelente_45_a_50}</li>`).join("")}
+          </ul>
+          <div style="font-weight:700; color:#fff; margin-top:8px;">3. Banco de Preguntas Tipo Test (Taxonomía de Bloom):</div>
+          ${p.banco_preguntas_test.map((q, idx) => `
+            <div style="background:#111c33; border:1px solid #263554; border-radius:9px; padding:10px; margin-top:6px;">
+              <div style="font-weight:700; color:#fff;">${idx + 1}. [${q.nivel_taxonomia_bloom}] ${q.enunciado}</div>
+              ${q.opciones.map((op, i) => `<div style="margin-top:3px; color:${i === q.indice_respuesta_correcta ? '#34d399' : '#94a3b8'}; font-weight:${i === q.indice_respuesta_correcta ? '700' : '400'};">${op}</div>`).join("")}
+              <div style="font-size:11px; color:#a5b4fc; margin-top:5px;"><strong>Justificación:</strong> ${q.justificacion_pedagogica}</div>
+            </div>
+          `).join("")}
         `;
       } catch (err) {
-        box.innerHTML = `<span style="color:#fb7185">${err.message}</span>`;
+        out.innerHTML = `<span style="color:#fb7185;">${err.message}</span>`;
       }
     }
 
-    async function askRagTutor() {
-      const q = document.getElementById("ragQuestionInput").value;
-      const box = document.getElementById("ragResult");
-      box.innerHTML = `<span><i class="fa-solid fa-spinner fa-spin" style="color:#38bdf8"></i> Ejecutando búsqueda vectorial en pgvector y generando respuesta fundamentada...</span>`;
+    async function runRagTutor() {
+      const q = document.getElementById("aiRagInput").value;
+      const out = document.getElementById("aiRagOutput");
+      out.innerHTML = `<i class="fa-solid fa-spinner fa-spin" style="color:#38bdf8;"></i> Buscando vectores en pgvector y construyendo respuesta fundamentada...`;
       try {
-        const data = await apiFetch("/api/v1/syllabus/rag-tutor/ask", {
+        const res = await apiFetch("/api/v1/syllabus/rag-tutor/ask", {
           method: "POST",
           body: JSON.stringify({
             subject_id: activeSubjectId,
@@ -1099,32 +2095,32 @@
             top_k_topics: 2
           })
         });
-        const r = data.ai_tutor_response;
-        box.innerHTML = `
+        const r = res.ai_tutor_response;
+        out.innerHTML = `
           <div style="display:flex; justify-content:space-between; align-items:center;">
-            <strong style="color:#7dd3fc;">Fuentes recuperadas de pgvector:</strong>
-            <span class="tag-mini" style="color:#6ee7b7; border-color:rgba(16,185,129,0.35); background:rgba(16,185,129,0.15);">En Sílabo: ${r.esta_dentro_del_silabo ? 'SÍ' : 'NO'}</span>
+            <strong style="color:#7dd3fc;">Temas del Sílabo Recuperados (pgvector):</strong>
+            <span class="badge risk-BAJO">Dentro del Sílabo: ${r.esta_dentro_del_silabo ? 'SÍ' : 'NO'}</span>
           </div>
-          <div>
-            ${data.retrieved_syllabus_sources.map(s => `
-              <div class="source-row">
-                <span>U${s.unit_number}.T${s.topic_number}: <strong>${s.topic_title}</strong></span>
-                <span style="color:#38bdf8; font-weight:700; font-size:11.5px;">Similitud: ${(s.cosine_similarity * 100).toFixed(1)}%</span>
+          <div style="margin-top:6px; display:flex; flex-direction:column; gap:5px;">
+            ${res.retrieved_syllabus_sources.map(s => `
+              <div style="background:#111c33; border:1px solid #263554; border-radius:8px; padding:7px 10px; display:flex; justify-content:space-between;">
+                <span>Unidad ${s.unit_number}. Tema ${s.topic_number}: <strong>${s.topic_title}</strong></span>
+                <strong style="color:#38bdf8;">Similitud: ${(s.cosine_similarity * 100).toFixed(1)}%</strong>
               </div>
             `).join("")}
           </div>
-          <div style="color:#f1f5f9; line-height:1.55; margin-top:4px;">${r.respuesta_tutor}</div>
-          <div style="background:rgba(49,46,129,0.35); border:1px solid rgba(99,102,241,0.35); border-radius:9px; padding:10px; color:#c7d2fe; margin-top:4px;">
-            <strong>Reto de Autoevaluación:</strong> ${r.ejercicio_autoevaluacion_sugerido}
+          <div style="color:#f8fafc; margin-top:8px; line-height:1.55;">${r.respuesta_tutor}</div>
+          <div style="background:rgba(49,46,129,0.35); border:1px solid rgba(99,102,241,0.4); border-radius:9px; padding:10px; margin-top:8px; color:#c7d2fe;">
+            <strong>Ejercicio de Autoevaluación Sugerido:</strong> ${r.ejercicio_autoevaluacion_sugerido}
           </div>
         `;
       } catch (err) {
-        box.innerHTML = `<span style="color:#fb7185">${err.message}</span>`;
+        out.innerHTML = `<span style="color:#fb7185;">${err.message}</span>`;
       }
     }
 
     window.addEventListener("DOMContentLoaded", () => {
-      quickLogin("docente@softedu.edu.co", "docente123");
+      quickLogin("rector@softedu.edu.co", "rector123", "tab-rectoria");
     });
   </script>
 </body>

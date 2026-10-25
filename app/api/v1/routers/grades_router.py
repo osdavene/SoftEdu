@@ -159,7 +159,7 @@ async def get_enrollment_report_card(
 
     # Control adicional de aislamiento de datos para rol STUDENT
     if (
-        current_user.role == UserRole.STUDENT
+        current_user.role in (UserRole.STUDENT, UserRole.ESTUDIANTE)
         and current_user.student_profile is not None
         and report_card.student_id != current_user.student_profile.id
     ):

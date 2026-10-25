@@ -92,7 +92,7 @@ class StudentAcademicContextDTO(BaseModel):
     model_config = ConfigDict(frozen=True)
 
     enrollment_id: uuid.UUID
-    triggered_by_grade_id: uuid.UUID
+    triggered_by_grade_id: uuid.UUID | None = None
     student_full_name: str
     student_code: str
     current_semester: int
@@ -118,7 +118,7 @@ class StudentAIInsightResponse(BaseModel):
 
     id: uuid.UUID
     enrollment_id: uuid.UUID
-    triggered_by_grade_id: uuid.UUID | None
+    triggered_by_grade_id: uuid.UUID | None = None
     risk_level: RiskLevel
     accumulated_weighted_average: Decimal
     evaluated_weight_percentage: Decimal
