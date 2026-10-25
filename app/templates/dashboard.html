@@ -760,7 +760,7 @@
     </div>
 
     <div class="topbar-right">
-      <!-- Badge de Colegio Activo y Calendario -->
+      <!-- Badge de Colegio Activo y Calendario (Visible para directivos y docentes del colegio) -->
       <div class="school-active-badge" id="badge-school-meta">
         <i class="fa-solid fa-school"></i>
         <span id="school-name-text">Colegio Gimnasio San Ángel</span>
@@ -784,9 +784,9 @@
   </header>
 
   <!-- =====================================================================
-       3. NAVEGACIÓN PRINCIPAL (PESTAÑAS ERP SEGÚN ROLES)
+       3. NAVEGACIÓN PRINCIPAL (PESTAÑAS SEGÚN ROLES RBAC)
        ===================================================================== -->
-  <nav class="erp-nav">
+  <nav class="erp-nav" id="main-erp-nav">
     <button class="nav-tab active" id="tab-btn-superpanel" onclick="switchTab('superpanel')">
       <i class="fa-solid fa-tower-broadcast"></i> SuperPanel Colegios (SaaS)
     </button>
@@ -816,9 +816,48 @@
   <main class="main-container">
 
     <!-- -------------------------------------------------------------
-         PESTAÑA 0: SUPERPANEL DE COLEGIOS (SAAS MULTI-COLEGIO)
+         PESTAÑA 0: SUPERPANEL DE COLEGIOS (EXCLUSIVO SUPERADMIN SAAS)
          ------------------------------------------------------------- -->
     <div id="tab-superpanel" class="tab-content active">
+      
+      <!-- Banner de Privacidad y Cumplimiento Legal Habeas Data -->
+      <div style="background: rgba(99, 102, 241, 0.12); border: 1px solid rgba(99, 102, 241, 0.35); border-radius: 12px; padding: 14px 18px; margin-bottom: 20px; display: flex; align-items: center; gap: 14px;">
+        <i class="fa-solid fa-shield-halved" style="font-size: 26px; color: #818cf8;"></i>
+        <div style="font-size: 13px; color: #cbd5e1; line-height: 1.5;">
+          <strong style="color: #fff;">Principio de Privacidad por Diseño (Ley 1581 de 2012 / Habeas Data):</strong>
+          Como SuperAdmin de infraestructura SaaS, su perfil administra los colegios clientes, la activación de grados y el nombramiento de Rectores. De conformidad con las leyes de protección de datos de menores de edad, <strong>no tiene acceso a expedientes personales, calificaciones ni llamadas a lista de los estudiantes</strong>. La custodia pedagógica pertenece a cada colegio.
+        </div>
+      </div>
+
+      <!-- KPIs Agregados Globales del SaaS -->
+      <div class="kpi-grid">
+        <div class="kpi-card">
+          <div class="kpi-label">Colegios Activos</div>
+          <div class="kpi-value" id="saas-kpi-schools">0</div>
+          <div class="kpi-sub">Instituciones educativas en el SaaS</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">Colegios Calendario A</div>
+          <div class="kpi-value" id="saas-kpi-cal-a" style="color: #6ee7b7;">0</div>
+          <div class="kpi-sub">Ciclo Febrero a Noviembre</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">Colegios Calendario B</div>
+          <div class="kpi-value" id="saas-kpi-cal-b" style="color: #7dd3fc;">0</div>
+          <div class="kpi-sub">Ciclo Septiembre a Junio</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">Población Estudiantil Global</div>
+          <div class="kpi-value" id="saas-kpi-students" style="color: #fcd34d;">0</div>
+          <div class="kpi-sub">Conteo estadístico en la plataforma</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">Docentes Totales</div>
+          <div class="kpi-value" id="saas-kpi-teachers" style="color: #d8b4fe;">0</div>
+          <div class="kpi-sub">Cuerpo profesoral agregado</div>
+        </div>
+      </div>
+
       <div class="card">
         <div class="card-header">
           <div>
@@ -909,7 +948,7 @@
               </div>
 
               <div id="school-grades-selector-host">
-                <!-- Se pobla dinámicamente desde el catálogo de 16 grados -->
+                <!-- Se pobla dinámicamente desde el catálogo de 15 grados -->
               </div>
             </div>
 
@@ -1385,6 +1424,80 @@
 
   </main>
 
+  <!-- MODAL: GESTIONAR GRADOS DE UN COLEGIO (SUPERADMIN) -->
+  <div id="modal-manage-grades" style="display: none; position: fixed; inset: 0; z-index: 99999; background: rgba(0,0,0,0.75); backdrop-filter: blur(8px); align-items: center; justify-content: center; padding: 20px;">
+    <div style="background: #0f172a; border: 1px solid #3b82f6; border-radius: 16px; max-width: 680px; width: 100%; padding: 24px; max-height: 90vh; overflow-y: auto;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+        <h4 style="color: #fff; font-size: 17px; font-weight: 700;">
+          <i class="fa-solid fa-sliders" style="color: #818cf8;"></i> Gestionar Grados Habilitados (Maternal a 11°)
+        </h4>
+        <button class="btn-secondary" style="padding: 4px 8px;" onclick="closeModal('modal-manage-grades')"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <div style="font-size: 13px; color: var(--text-muted); margin-bottom: 14px;" id="modal-grades-school-title">
+        Colegio Seleccionado
+      </div>
+      <input type="hidden" id="modal-grades-school-id" />
+
+      <div class="grade-selector-container" id="modal-grades-host">
+        <!-- Render checkboxes -->
+      </div>
+
+      <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px;">
+        <button class="btn-secondary" onclick="closeModal('modal-manage-grades')">Cancelar</button>
+        <button class="btn-primary" onclick="submitUpdateSchoolGrades()"><i class="fa-solid fa-check"></i> Guardar Grados Activos</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: ASIGNAR / CAMBIAR RECTOR (SUPERADMIN) -->
+  <div id="modal-assign-rector" style="display: none; position: fixed; inset: 0; z-index: 99999; background: rgba(0,0,0,0.75); backdrop-filter: blur(8px); align-items: center; justify-content: center; padding: 20px;">
+    <div style="background: #0f172a; border: 1px solid #3b82f6; border-radius: 16px; max-width: 580px; width: 100%; padding: 24px;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+        <h4 style="color: #fff; font-size: 17px; font-weight: 700;">
+          <i class="fa-solid fa-user-tie" style="color: #818cf8;"></i> Nombrar / Reemplazar Rector(a)
+        </h4>
+        <button class="btn-secondary" style="padding: 4px 8px;" onclick="closeModal('modal-assign-rector')"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <div style="font-size: 13px; color: var(--text-muted); margin-bottom: 14px;" id="modal-rector-school-title">
+        Colegio Seleccionado
+      </div>
+      <input type="hidden" id="modal-rector-school-id" />
+
+      <form onsubmit="submitAssignRector(event)">
+        <div class="form-grid-2">
+          <div class="form-group">
+            <label class="form-label">Nombres del Rector(a)</label>
+            <input type="text" id="asg-rec-first-name" class="form-control" required />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Apellidos del Rector(a)</label>
+            <input type="text" id="asg-rec-last-name" class="form-control" required />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Documento de Identidad (CC)</label>
+            <input type="text" id="asg-rec-doc" class="form-control" required />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Correo Institucional</label>
+            <input type="email" id="asg-rec-email" class="form-control" required />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Contraseña Inicial</label>
+            <input type="text" id="asg-rec-pass" class="form-control" value="SoftEdu2026*" required />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Teléfono Móvil</label>
+            <input type="text" id="asg-rec-phone" class="form-control" />
+          </div>
+        </div>
+        <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 16px;">
+          <button type="button" class="btn-secondary" onclick="closeModal('modal-assign-rector')">Cancelar</button>
+          <button type="submit" class="btn-primary"><i class="fa-solid fa-check"></i> Designar Rector</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
   <!-- NOTIFICACIÓN TOAST -->
   <div id="toast-notification"></div>
 
@@ -1398,12 +1511,10 @@
     let gradesCatalog = [];
 
     document.addEventListener('DOMContentLoaded', async () => {
-      // Set default date to today
       const todayStr = new Date().toISOString().split('T')[0];
       const dateInput = document.getElementById('att-session-date');
       if (dateInput) dateInput.value = todayStr;
 
-      // Check if session token exists
       const token = sessionStorage.getItem('softedu_token');
       if (!token) {
         showLoginScreen(true);
@@ -1510,6 +1621,8 @@
 
       // Update header details
       renderHeaderMeta();
+      // Apply strict RBAC navigation visibility
+      applyRolePermissionsUI();
       // Render SuperPanel Colegios
       renderSuperPanelSchools();
       // Render Grade Selectors in Forms
@@ -1520,14 +1633,85 @@
       renderWeeklyScheduleGrid();
     }
 
+    function applyRolePermissionsUI() {
+      if (!currentUser) return;
+      const role = currentUser.role;
+      const isSuperAdmin = (role === 'SUPERADMIN');
+
+      const superpanelBtn = document.getElementById('tab-btn-superpanel');
+      const rectoriaBtn = document.getElementById('tab-btn-rectoria');
+      const asistenciaBtn = document.getElementById('tab-btn-asistencia');
+      const calificacionesBtn = document.getElementById('tab-btn-calificaciones');
+      const horariosBtn = document.getElementById('tab-btn-horarios');
+      const secretariaBtn = document.getElementById('tab-btn-secretaria');
+      const copilotoBtn = document.getElementById('tab-btn-copiloto');
+
+      if (isSuperAdmin) {
+        // SuperAdmin ONLY sees the SuperPanel SaaS
+        if (superpanelBtn) superpanelBtn.style.display = 'inline-flex';
+        if (rectoriaBtn) rectoriaBtn.style.display = 'none';
+        if (asistenciaBtn) asistenciaBtn.style.display = 'none';
+        if (calificacionesBtn) calificacionesBtn.style.display = 'none';
+        if (horariosBtn) horariosBtn.style.display = 'none';
+        if (secretariaBtn) secretariaBtn.style.display = 'none';
+        if (copilotoBtn) copilotoBtn.style.display = 'none';
+        switchTab('superpanel');
+      } else if (role === 'RECTOR') {
+        if (superpanelBtn) superpanelBtn.style.display = 'none';
+        if (rectoriaBtn) rectoriaBtn.style.display = 'inline-flex';
+        if (asistenciaBtn) asistenciaBtn.style.display = 'inline-flex';
+        if (calificacionesBtn) calificacionesBtn.style.display = 'inline-flex';
+        if (horariosBtn) horariosBtn.style.display = 'inline-flex';
+        if (secretariaBtn) secretariaBtn.style.display = 'inline-flex';
+        if (copilotoBtn) copilotoBtn.style.display = 'inline-flex';
+        switchTab('rectoria');
+      } else if (role === 'COORDINADOR' || role === 'SECRETARIA' || role === 'ORIENTADOR') {
+        if (superpanelBtn) superpanelBtn.style.display = 'none';
+        if (rectoriaBtn) rectoriaBtn.style.display = 'inline-flex';
+        if (asistenciaBtn) asistenciaBtn.style.display = 'inline-flex';
+        if (calificacionesBtn) calificacionesBtn.style.display = 'inline-flex';
+        if (horariosBtn) horariosBtn.style.display = 'inline-flex';
+        if (secretariaBtn) secretariaBtn.style.display = 'inline-flex';
+        if (copilotoBtn) copilotoBtn.style.display = 'inline-flex';
+        switchTab(role === 'SECRETARIA' ? 'secretaria' : 'rectoria');
+      } else if (role === 'DOCENTE' || role === 'TEACHER') {
+        if (superpanelBtn) superpanelBtn.style.display = 'none';
+        if (rectoriaBtn) rectoriaBtn.style.display = 'none';
+        if (asistenciaBtn) asistenciaBtn.style.display = 'inline-flex';
+        if (calificacionesBtn) calificacionesBtn.style.display = 'inline-flex';
+        if (horariosBtn) horariosBtn.style.display = 'inline-flex';
+        if (secretariaBtn) secretariaBtn.style.display = 'none';
+        if (copilotoBtn) copilotoBtn.style.display = 'inline-flex';
+        switchTab('asistencia');
+      } else if (role === 'ESTUDIANTE' || role === 'STUDENT') {
+        if (superpanelBtn) superpanelBtn.style.display = 'none';
+        if (rectoriaBtn) rectoriaBtn.style.display = 'none';
+        if (asistenciaBtn) asistenciaBtn.style.display = 'none';
+        if (calificacionesBtn) calificacionesBtn.style.display = 'inline-flex';
+        if (horariosBtn) horariosBtn.style.display = 'inline-flex';
+        if (secretariaBtn) secretariaBtn.style.display = 'none';
+        if (copilotoBtn) copilotoBtn.style.display = 'inline-flex';
+        switchTab('calificaciones');
+      }
+    }
+
     function renderHeaderMeta() {
-      const school = globalOverview.active_school;
-      if (school) {
-        document.getElementById('header-school-name').textContent = `${school.name} — DANE: ${school.dane_code}`;
-        document.getElementById('school-name-text').textContent = school.name;
-        const pill = document.getElementById('school-calendar-pill');
-        pill.textContent = school.calendar_label_es || school.calendar_type;
-        pill.className = `calendar-pill ${school.calendar_type === 'CALENDARIO_B' ? 'cal-b' : 'cal-a'}`;
+      const isSuperAdmin = currentUser && currentUser.role === 'SUPERADMIN';
+      const badgeMeta = document.getElementById('badge-school-meta');
+
+      if (isSuperAdmin) {
+        document.getElementById('header-school-name').textContent = 'Consola Central de Infraestructura SaaS (Multi-Colegio)';
+        if (badgeMeta) badgeMeta.style.display = 'none';
+      } else {
+        if (badgeMeta) badgeMeta.style.display = 'inline-flex';
+        const school = globalOverview.active_school;
+        if (school) {
+          document.getElementById('header-school-name').textContent = `${school.name} — DANE: ${school.dane_code}`;
+          document.getElementById('school-name-text').textContent = school.name;
+          const pill = document.getElementById('school-calendar-pill');
+          pill.textContent = school.calendar_label_es || school.calendar_type;
+          pill.className = `calendar-pill ${school.calendar_type === 'CALENDARIO_B' ? 'cal-b' : 'cal-a'}`;
+        }
       }
 
       if (currentUser) {
@@ -1541,6 +1725,20 @@
       if (!container) return;
 
       const schools = globalOverview.schools || [];
+
+      // Update SaaS aggregated KPIs
+      let calACount = 0;
+      let calBCount = 0;
+      schools.forEach(s => {
+        if (s.calendar_type === 'CALENDARIO_B') calBCount++;
+        else calACount++;
+      });
+      document.getElementById('saas-kpi-schools').textContent = schools.length;
+      document.getElementById('saas-kpi-cal-a').textContent = calACount;
+      document.getElementById('saas-kpi-cal-b').textContent = calBCount;
+      document.getElementById('saas-kpi-students').textContent = globalOverview.total_students || 0;
+      document.getElementById('saas-kpi-teachers').textContent = globalOverview.total_teachers || 0;
+
       if (schools.length === 0) {
         container.innerHTML = '<div style="color: var(--text-muted); padding: 16px;">No hay colegios registrados aún.</div>';
         return;
@@ -1563,23 +1761,33 @@
               </div>
             </div>
 
+            <!-- Población Escolar Agregada (Sin exponer datos de menores) -->
+            <div style="background: rgba(99, 102, 241, 0.08); border: 1px solid rgba(99, 102, 241, 0.25); border-radius: 8px; padding: 10px 12px; font-size: 12.5px; margin-bottom: 12px; display: flex; justify-content: space-between;">
+              <div><i class="fa-solid fa-users" style="color: #818cf8;"></i> Alumnos: <strong>${sch.total_students_count}</strong></div>
+              <div><i class="fa-solid fa-chalkboard-user" style="color: #6ee7b7;"></i> Docentes: <strong>${sch.total_teachers_count}</strong></div>
+              <div><i class="fa-solid fa-book-open" style="color: #7dd3fc;"></i> Grados: <strong>${enabledCount}</strong></div>
+            </div>
+
             <div style="background: #131e36; border-radius: 8px; padding: 10px 12px; font-size: 12.5px; margin-bottom: 12px;">
               <div><i class="fa-solid fa-user-tie" style="color: #818cf8;"></i> Rector(a): <strong>${sch.rector_full_name || 'Sin Rector Asignado'}</strong></div>
               <div style="color: var(--text-muted); font-size: 11.5px; margin-top: 2px;">${sch.rector_email || 'Configure el rector institucional'}</div>
             </div>
 
-            <!-- Grados Activos y Control de Activación -->
+            <!-- Grados Activos -->
             <div style="font-size: 12.5px; color: #cbd5e1; margin-bottom: 10px;">
               <i class="fa-solid fa-graduation-cap" style="color: #6ee7b7;"></i>
-              <strong>${enabledCount} Grados Activos:</strong>
+              <strong>${enabledCount} Grados Activos (Maternal a 11°):</strong>
               <div style="font-size: 11.5px; color: var(--text-muted); margin-top: 4px; max-height: 50px; overflow-y: auto;">
                 ${(sch.enabled_grades || []).map(g => `<span class="badge badge-info" style="margin: 2px 2px 0 0; font-size: 10px;">${g}</span>`).join('')}
               </div>
             </div>
 
-            <div style="border-top: 1px solid #1e293b; padding-top: 12px; display: flex; gap: 8px; justify-content: flex-end;">
-              <button class="btn-secondary" style="padding: 6px 12px; font-size: 12px;" onclick="openGradesModal('${sch.id}', '${sch.name}')">
-                <i class="fa-solid fa-sliders"></i> Gestionar Grados (Maternal a 11°)
+            <div style="border-top: 1px solid #1e293b; padding-top: 12px; display: flex; gap: 8px; justify-content: flex-end; flex-wrap: wrap;">
+              <button class="btn-secondary" style="padding: 6px 12px; font-size: 12px;" onclick="openAssignRectorModal('${sch.id}', '${sch.name}')">
+                <i class="fa-solid fa-user-gear"></i> Cambiar Rector
+              </button>
+              <button class="btn-primary" style="padding: 6px 12px; font-size: 12px;" onclick="openGradesModal('${sch.id}', '${sch.name}')">
+                <i class="fa-solid fa-sliders"></i> Gestionar Grados
               </button>
             </div>
           </div>
@@ -1588,10 +1796,8 @@
     }
 
     function renderGradeSelectors() {
-      // 1. Selector en formulario de Crear Colegio
       const host = document.getElementById('school-grades-selector-host');
       if (host && gradesCatalog.length > 0) {
-        // Group by stage
         const stages = {};
         gradesCatalog.forEach(g => {
           if (!stages[g.stage]) stages[g.stage] = [];
@@ -1615,7 +1821,6 @@
         host.innerHTML = html;
       }
 
-      // 2. Selector en formulario de Matrícula (Solo grados activos de la escuela actual)
       const stuGradeSelect = document.getElementById('stu-grade');
       if (stuGradeSelect) {
         const activeSchool = globalOverview.active_school;
@@ -1626,7 +1831,6 @@
           .join('');
       }
 
-      // 3. Filtro en Horarios
       const schedFilter = document.getElementById('schedule-filter-grade');
       if (schedFilter) {
         schedFilter.innerHTML = '<option value="ALL">-- Ver Todos los Grados --</option>' +
@@ -1661,7 +1865,6 @@
       const phone = document.getElementById('sch-phone').value.trim();
       const resolution_men = document.getElementById('sch-resolution').value.trim();
 
-      // Collect checked grades
       const checkedBoxes = document.querySelectorAll('input[name="school-create-grade"]:checked');
       const enabled_grades = Array.from(checkedBoxes).map(cb => cb.value);
 
@@ -1697,6 +1900,111 @@
       } catch (err) {
         showToast(err.message, 'error');
       }
+    }
+
+    // Modal de Gestión de Grados
+    function openGradesModal(schoolId, schoolName) {
+      const sch = (globalOverview.schools || []).find(s => s.id === schoolId);
+      if (!sch) return;
+
+      document.getElementById('modal-grades-school-id').value = schoolId;
+      document.getElementById('modal-grades-school-title').textContent = `Institución: ${schoolName} (${sch.calendar_label_es})`;
+
+      const host = document.getElementById('modal-grades-host');
+      const enabledSet = new Set(sch.enabled_grades || []);
+
+      const stages = {};
+      gradesCatalog.forEach(g => {
+        if (!stages[g.stage]) stages[g.stage] = [];
+        stages[g.stage].push(g);
+      });
+
+      let html = '';
+      for (const [stageName, grades] of Object.entries(stages)) {
+        html += `<div class="grade-stage-header">${stageName}</div><div class="grade-checkboxes-grid">`;
+        grades.forEach(g => {
+          const isChecked = enabledSet.has(g.code) ? 'checked' : '';
+          html += `
+            <label class="grade-check-pill">
+              <input type="checkbox" name="modal-edit-grade" value="${g.code}" ${isChecked} />
+              <span><strong>${g.short_name}</strong></span>
+            </label>
+          `;
+        });
+        html += '</div>';
+      }
+      host.innerHTML = html;
+
+      document.getElementById('modal-manage-grades').style.display = 'flex';
+    }
+
+    async function submitUpdateSchoolGrades() {
+      const schoolId = document.getElementById('modal-grades-school-id').value;
+      const checked = document.querySelectorAll('input[name="modal-edit-grade"]:checked');
+      const enabled_grades = Array.from(checked).map(cb => cb.value);
+
+      if (enabled_grades.length === 0) {
+        showToast('Debe activar al menos un grado escolar.', 'error');
+        return;
+      }
+
+      try {
+        const resp = await fetch(`${API_BASE}/academic/schools/${schoolId}/grades`, {
+          method: 'PATCH',
+          headers: getAuthHeaders(),
+          body: JSON.stringify({ enabled_grades })
+        });
+
+        const data = await resp.json();
+        if (!resp.ok) throw new Error(data.detail || 'Error al actualizar grados');
+
+        showToast(`Grados actualizados exitosamente (${enabled_grades.length} grados activos).`, 'success');
+        closeModal('modal-manage-grades');
+        await loadPlatformData();
+      } catch (err) {
+        showToast(err.message, 'error');
+      }
+    }
+
+    // Modal de Nombramiento de Rector
+    function openAssignRectorModal(schoolId, schoolName) {
+      document.getElementById('modal-rector-school-id').value = schoolId;
+      document.getElementById('modal-rector-school-title').textContent = `Institución: ${schoolName}`;
+      document.getElementById('modal-assign-rector').style.display = 'flex';
+    }
+
+    async function submitAssignRector(event) {
+      event.preventDefault();
+      const schoolId = document.getElementById('modal-rector-school-id').value;
+      const first_name = document.getElementById('asg-rec-first-name').value.trim();
+      const last_name = document.getElementById('asg-rec-last-name').value.trim();
+      const document_number = document.getElementById('asg-rec-doc').value.trim();
+      const email = document.getElementById('asg-rec-email').value.trim();
+      const password = document.getElementById('asg-rec-pass').value;
+      const phone_number = document.getElementById('asg-rec-phone').value.trim();
+
+      try {
+        const resp = await fetch(`${API_BASE}/academic/schools/${schoolId}/rector`, {
+          method: 'POST',
+          headers: getAuthHeaders(),
+          body: JSON.stringify({ first_name, last_name, document_number, email, password, phone_number })
+        });
+
+        const data = await resp.json();
+        if (!resp.ok) throw new Error(data.detail || 'Error al asignar rector');
+
+        showToast(`Rector(a) ${first_name} ${last_name} nombrado(a) exitosamente.`, 'success');
+        closeModal('modal-assign-rector');
+        event.target.reset();
+        await loadPlatformData();
+      } catch (err) {
+        showToast(err.message, 'error');
+      }
+    }
+
+    function closeModal(id) {
+      const m = document.getElementById(id);
+      if (m) m.style.display = 'none';
     }
 
     async function handleCreateStaff(event) {
@@ -1774,7 +2082,7 @@
       document.getElementById('kpi-att').textContent = `${globalOverview.global_attendance_percentage}%`;
       document.getElementById('kpi-risk-critical').textContent = (globalOverview.risk_distribution && globalOverview.risk_distribution['CRITICO']) || 0;
 
-      // 1. Planilla Masiva de Asistencia
+      // 1. Planilla Masiva de Asistencia (Solo institucional)
       const attTable = document.getElementById('bulk-attendance-table-body');
       const enrolled = globalOverview.enrolled_students || [];
       if (attTable) {
@@ -1839,7 +2147,7 @@
         }).join('');
       }
 
-      // 3. Directorio de Personal y Comunidad
+      // 3. Directorio de Personal
       const dirTable = document.getElementById('directory-table-body');
       const dir = globalOverview.institutional_directory || [];
       if (dirTable) {
@@ -1865,9 +2173,6 @@
       const gridBody = document.getElementById('weekly-schedule-grid-body');
       if (!gridBody) return;
 
-      const filterGrade = document.getElementById('schedule-filter-grade') ? document.getElementById('schedule-filter-grade').value : 'ALL';
-
-      // Bloques de horario escolar estándar
       const timeSlots = [
         { start: '07:00', end: '08:30', isBreak: false, name: 'Bloque 1' },
         { start: '08:30', end: '10:00', isBreak: false, name: 'Bloque 2' },
@@ -2002,7 +2307,6 @@
     }
 
     async function simulateUserSwitch(email) {
-      // Direct login simulation for testing
       try {
         const resp = await fetch(`${API_BASE}/auth/login`, {
           method: 'POST',
@@ -2059,7 +2363,6 @@
       }, 4500);
     }
 
-    // AI Simulation Placeholders
     function runAiRiskDiagnostic() {
       const p = document.getElementById('ai-results-panel');
       const h = document.getElementById('ai-results-host');
@@ -2068,9 +2371,9 @@
       h.innerHTML = `
         <div style="background:#131e36; padding:16px; border-radius:8px;">
           <div style="color:#6ee7b7; font-weight:700;"><i class="fa-solid fa-check-circle"></i> Evaluación Predictiva Exitosa</div>
-          <p style="margin-top:6px;">Se han procesado las notas de los 5 estudiantes matriculados y sus asistencias por sesión.</p>
+          <p style="margin-top:6px;">Se han procesado las notas de los estudiantes matriculados y sus asistencias por sesión.</p>
           <div style="margin-top:8px;">• <strong>1 Estudiante en Riesgo Crítico</strong> (Mateo Gómez - Promedio 2.14, 22.5% inasistencias). Recomendación: Citación a acudientes y nivelación remedial según Decreto 1290.</div>
-          <div style="margin-top:4px;">• <strong>4 Estudiantes en Desempeño Aprobatorio y Superior</strong> (Laura Rodríguez, Valentina Herrera, Sebastián Vargas, Isabella Morales).</div>
+          <div style="margin-top:4px;">• <strong>Estudiantes en Desempeño Aprobatorio y Superior</strong> (Laura Rodríguez, Valentina Herrera, Sebastián Vargas, Isabella Morales).</div>
         </div>
       `;
       p.style.display = 'block';

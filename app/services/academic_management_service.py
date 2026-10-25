@@ -239,6 +239,9 @@ class AcademicManagementService:
         self,
         school: SchoolInstitution,
         rector_user: User | None = None,
+        students_count: int = 0,
+        teachers_count: int = 0,
+        courses_count: int = 0,
     ) -> SchoolInstitutionResponse:
         enabled_details = [
             SchoolGradeCatalogItem(**GRADES_MAP_BY_CODE[c])
@@ -267,11 +270,14 @@ class AcademicManagementService:
             rector_email=rector_user.email if rector_user else None,
             enabled_grades=list(school.enabled_grades or []),
             enabled_grades_details=enabled_details,
+            total_students_count=students_count,
+            total_teachers_count=teachers_count,
+            total_courses_count=courses_count,
             is_active=school.is_active,
         )
 
     async def list_schools(self) -> list[SchoolInstitutionResponse]:
-        """Lista todos los colegios registrados en la plataforma junto con su Rector y grados activos."""
+        """Lista todos los colegios registrados en la plataforma junto con su Rector, grados activos y estadísticas agregadas."""
         stmt = (
             select(SchoolInstitution)
             .where(SchoolInstitution.is_active.is_(True))
@@ -286,8 +292,35 @@ class AcademicManagementService:
             for u in (await self._session.execute(r_stmt)).scalars().all():
                 rectors_by_id[u.id] = u
 
+        # Conteo estadístico agregado por colegio (sin exponer datos individuales al SuperAdmin)
+        stu_counts_stmt = (
+            select(User.school_id, func.count(Student.id))
+            .join(User, Student.user_id == User.id)
+            .where(Student.is_active.is_(True))
+            .group_by(User.school_id)
+        )
+        stu_counts = dict((await self._session.execute(stu_counts_stmt)).all())
+
+        teach_counts_stmt = (
+            select(User.school_id, func.count(Teacher.id))
+            .join(User, Teacher.user_id == User.id)
+            .where(Teacher.is_active.is_(True))
+            .group_by(User.school_id)
+        )
+        teach_counts = dict((await self._session.execute(teach_counts_stmt)).all())
+
+        first_school_id = schools[0].id if schools else None
+        total_courses_stmt = select(func.count(CourseOffering.id)).where(CourseOffering.is_active.is_(True))
+        total_courses_val = (await self._session.scalar(total_courses_stmt)) or 0
+
         return [
-            self._map_school_to_dto(s, rectors_by_id.get(s.rector_user_id))
+            self._map_school_to_dto(
+                s,
+                rector_user=rectors_by_id.get(s.rector_user_id),
+                students_count=stu_counts.get(s.id, 0),
+                teachers_count=teach_counts.get(s.id, 0),
+                courses_count=total_courses_val if s.id == first_school_id else 0,
+            )
             for s in schools
         ]
 
@@ -597,11 +630,16 @@ class AcademicManagementService:
     # 2. TABLERO EJECUTIVO INSTITUCIONAL (SUPERPANEL / RECTORÍA / COORDINACIÓN)
     # =================================================================
     async def get_institutional_overview(
-        self, school_id: uuid.UUID | None = None
+        self,
+        school_id: uuid.UUID | None = None,
+        requesting_user: User | None = None,
     ) -> InstitutionalOverviewResponse:
         """
         Consolida los colegios registrados, el catálogo de grados (Maternal a 11°),
         las métricas académicas, la asistencia, las alertas IA y el directorio escolar.
+        Aplica el Principio de Privacidad por Diseño (Ley 1581 de 2012 / Habeas Data):
+        Si el usuario es SUPERADMIN (administrador SaaS de infraestructura), no tiene acceso
+        a las identidades ni calificaciones individuales de menores de edad.
         """
         all_schools = await self.list_schools()
         active_school: SchoolInstitutionResponse | None = None
@@ -650,6 +688,30 @@ class AcademicManagementService:
             )
             or 0
         )
+
+        # Si es SUPERADMIN, entregar exclusivamente métricas SaaS globales y agregadas
+        if requesting_user is not None and requesting_user.role == UserRole.SUPERADMIN:
+            return InstitutionalOverviewResponse(
+                active_school=active_school,
+                schools=all_schools,
+                grades_catalog=self.get_grades_catalog(),
+                active_period_code=period_code,
+                active_period_name=period_name,
+                total_students=total_students,
+                total_teachers=total_teachers,
+                total_subjects=total_subjects,
+                total_course_offerings=total_offerings,
+                total_active_enrollments=total_students,
+                institutional_average_grade=Decimal("0.00"),
+                passing_students_count=0,
+                failing_students_count=0,
+                approval_rate_percentage=Decimal("100.00"),
+                global_attendance_percentage=Decimal("100.00"),
+                risk_distribution={},
+                enrolled_students=[],
+                recent_attendances=[],
+                institutional_directory=[],
+            )
 
         enrollments_stmt = (
             select(Enrollment)

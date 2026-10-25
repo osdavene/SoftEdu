@@ -49,6 +49,9 @@ class SchoolInstitutionResponse(BaseModel):
     rector_email: str | None = None
     enabled_grades: list[str]
     enabled_grades_details: list[SchoolGradeCatalogItem] = Field(default_factory=list)
+    total_students_count: int = 0
+    total_teachers_count: int = 0
+    total_courses_count: int = 0
     is_active: bool
 
 

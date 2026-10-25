@@ -144,7 +144,7 @@ async def create_school_staff(
     payload: SchoolStaffCreateRequest,
     service: Annotated[AcademicManagementService, Depends(get_management_service)],
     current_user: Annotated[
-        User, Depends(require_roles(UserRole.SUPERADMIN, UserRole.RECTOR, UserRole.ADMIN))
+        User, Depends(require_roles(UserRole.RECTOR, UserRole.ADMIN))
     ],
 ) -> UserProfileResponse:
     """Permite al Rector(a) conformar su equipo directivo y administrativo institucional."""
@@ -166,7 +166,9 @@ async def get_institutional_overview(
     school_id: uuid.UUID | None = Query(default=None, description="Filtrar métricas por ID de Colegio"),
 ) -> InstitutionalOverviewResponse:
     """Consolida métricas escolares, lista de colegios, grados activos, estudiantes y directorio."""
-    return await service.get_institutional_overview(school_id=school_id)
+    return await service.get_institutional_overview(
+        school_id=school_id, requesting_user=_current_user
+    )
 
 
 # =====================================================================
