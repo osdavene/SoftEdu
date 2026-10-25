@@ -1,0 +1,45 @@
+name: 🚀 Despliegue Automático a AWS (SoftEdu AI-Powered LMS/SIS)
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    name: Desplegar SoftEdu (Python FastAPI + pgvector) en Servidor AWS
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 📥 Clonar repositorio
+        uses: actions/checkout@v4
+
+      - name: 🔐 Ejecutar Despliegue en AWS vía SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.AWS_HOST }}
+          username: ${{ secrets.AWS_USER }}
+          key: ${{ secrets.AWS_SSH_KEY }}
+          port: ${{ secrets.AWS_PORT || 22 }}
+          script_stop: true
+          script: |
+            echo "🚀 Iniciando despliegue de SoftEdu AI-Powered LMS/SIS (Python FastAPI) en AWS..."
+            SITE_DIR="${{ secrets.AWS_SITE_DIR || '/home/softedu/htdocs/softedu.duckdns.org' }}"
+            SITE_USER="${{ secrets.AWS_SITE_USER || 'softedu' }}"
+
+            sudo git config --global --add safe.directory "$SITE_DIR"
+
+            sudo -u "$SITE_USER" bash << EOF
+            set -e
+            cd "$SITE_DIR"
+            git fetch origin main
+            git reset --hard origin/main
+            if [ ! -d ".venv" ]; then
+              python3 -m venv .venv
+            fi
+            .venv/bin/pip install --upgrade pip
+            .venv/bin/pip install -r requirements.txt
+            EOF
+
+            sudo systemctl restart softedu.service
+            echo "✅ ¡Despliegue de SoftEdu AI-Powered LMS/SIS completado con éxito en AWS!"

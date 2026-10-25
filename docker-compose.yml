@@ -1,0 +1,43 @@
+services:
+  db:
+    image: pgvector/pgvector:pg16
+    container_name: softedu_postgres_pgvector
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-7420}
+      POSTGRES_DB: ${POSTGRES_DB:-softedu_db}
+    ports:
+      - "5432:5432"
+    volumes:
+      - softedu_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-softedu_db}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: softedu_backend_api
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      POSTGRES_HOST: db
+      POSTGRES_PORT: 5432
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-7420}
+      POSTGRES_DB: ${POSTGRES_DB:-softedu_db}
+      AI_PROVIDER: ${AI_PROVIDER:-gemini}
+      AI_API_KEY: ${AI_API_KEY:-AIzaSyDummyKeyForDevelopmentReplaceInEnv}
+      AI_MODEL_NAME: ${AI_MODEL_NAME:-gemini-2.5-flash}
+      JWT_SECRET_KEY: ${JWT_SECRET_KEY:-softedu-enterprise-jwt-secret-key-2026-aws-production-ready}
+    ports:
+      - "8000:8000"
+
+volumes:
+  softedu_pgdata:
