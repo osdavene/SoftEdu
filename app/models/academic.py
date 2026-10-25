@@ -320,12 +320,265 @@ class Student(Base, AuditMixin):
         comment="Código o sección del grupo escolar (ej: 6-1, 6-2, 6-3, 11-1)",
     )
 
+    # Campos Oficiales SIMAT / MEN y Ficha Médica (Maternal a 11°)
+    document_type: Mapped[str] = mapped_column(
+        String(15), default="TI", nullable=False, comment="Tipo de documento (RC, TI, CC, PEP, PPT, CE)"
+    )
+    blood_type: Mapped[str] = mapped_column(
+        String(10), default="O+", nullable=False, comment="Grupo sanguíneo y factor RH"
+    )
+    health_provider_eps: Mapped[str] = mapped_column(
+        String(120), default="Sura EPS", nullable=False, comment="Entidad prestadora de salud (EPS)"
+    )
+    socioeconomic_stratum: Mapped[int] = mapped_column(
+        Integer, default=3, nullable=False, comment="Estrato socioeconómico según DANE (1 a 6)"
+    )
+    ethnicity: Mapped[str] = mapped_column(
+        String(80), default="Ninguna", nullable=False, comment="Pertenencia étnica o afrocolombiana"
+    )
+    disability_condition: Mapped[str] = mapped_column(
+        String(100), default="Ninguna", nullable=False, comment="Condición de discapacidad o capacidad excepcional"
+    )
+    medical_notes_allergies: Mapped[str | None] = mapped_column(
+        Text, nullable=True, comment="Ficha médica, alergias y cuidados especiales (vital en Primera Infancia)"
+    )
+    is_financial_paz_salvo: Mapped[bool] = mapped_column(
+        Boolean, default=True, nullable=False, comment="Estado de Paz y Salvo financiero/administrativo"
+    )
+
     # Relaciones
     user: Mapped["User"] = relationship("User", back_populates="student_profile")
     classroom_group: Mapped["ClassroomGroup | None"] = relationship("ClassroomGroup", back_populates="students")
     enrollments: Mapped[list["Enrollment"]] = relationship(
         "Enrollment", back_populates="student"
     )
+    guardians: Mapped[list["Guardian"]] = relationship(
+        "Guardian", back_populates="student", cascade="all, delete-orphan"
+    )
+    documents: Mapped[list["StudentDocument"]] = relationship(
+        "StudentDocument", back_populates="student", cascade="all, delete-orphan"
+    )
+    graduation_requirement: Mapped["GraduationRequirement | None"] = relationship(
+        "GraduationRequirement", back_populates="student", uselist=False, cascade="all, delete-orphan"
+    )
+    certificates: Mapped[list["OfficialCertificate"]] = relationship(
+        "OfficialCertificate", back_populates="student", cascade="all, delete-orphan"
+    )
+
+
+# =====================================================================
+# 1.1 SECRETARÍA ACADÉMICA: ACUDIENTES, DOCUMENTOS Y REQUISITOS DE LEY
+# =====================================================================
+class Guardian(Base, AuditMixin):
+    """
+    Acudientes, Padres y Responsables Legales/Financieros del Estudiante.
+    Permite separar al acudiente de la ficha del alumno (un padre puede tener varios hijos).
+    """
+
+    __tablename__ = "guardians"
+
+    id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
+    )
+    student_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("students.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    first_name: Mapped[str] = mapped_column(String(100), nullable=False)
+    last_name: Mapped[str] = mapped_column(String(100), nullable=False)
+    document_type: Mapped[str] = mapped_column(String(15), default="CC", nullable=False)
+    document_number: Mapped[str] = mapped_column(String(40), index=True, nullable=False)
+    phone: Mapped[str] = mapped_column(String(40), nullable=False)
+    email: Mapped[str | None] = mapped_column(String(150), nullable=True)
+    relationship_type: Mapped[str] = mapped_column(
+        String(40), default="MADRE", nullable=False, comment="MADRE, PADRE, ACUDIENTE_LEGAL, OTRO"
+    )
+    is_financial_responsible: Mapped[bool] = mapped_column(
+        Boolean, default=True, nullable=False, comment="Firma contrato/pagaré de matrícula"
+    )
+    is_authorized_pickup: Mapped[bool] = mapped_column(
+        Boolean, default=True, nullable=False, comment="Autorizado para retirar al menor (Maternal/Preescolar)"
+    )
+
+    # Relaciones
+    student: Mapped["Student"] = relationship("Student", back_populates="guardians")
+
+
+class StudentDocument(Base, AuditMixin):
+    """
+    Checklist Documental Oficial de Matrícula según Nivel Educativo (Maternal a 11°).
+    Controla el estado de entrega y verificación legal de cada requisito.
+    """
+
+    __tablename__ = "student_documents"
+
+    id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
+    )
+    student_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("students.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    document_name: Mapped[str] = mapped_column(
+        String(150),
+        nullable=False,
+        comment="Ej: Carnet de Vacunas, Registro Civil, Certificados de 5° a 10°, Paz y Salvo",
+    )
+    document_stage: Mapped[str] = mapped_column(
+        String(30),
+        default="GENERAL",
+        nullable=False,
+        comment="PREESCOLAR, PRIMARIA, BACHILLERATO, MEDIA, GENERAL",
+    )
+    status: Mapped[str] = mapped_column(
+        String(30),
+        default="PENDIENTE",
+        nullable=False,
+        comment="PENDIENTE, CARGADO, APROBADO, RECHAZADO",
+    )
+    file_url: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    observations: Mapped[str | None] = mapped_column(Text, nullable=True)
+    verified_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    verified_by_user: Mapped[str | None] = mapped_column(String(150), nullable=True)
+
+    # Relaciones
+    student: Mapped["Student"] = relationship("Student", back_populates="documents")
+
+
+class GraduationRequirement(Base, AuditMixin):
+    """
+    Control Legal de Requisitos para Graduación de Bachilleres (Grados 10° y 11°).
+    Obligatorio para la expedición de Acta de Grado y Diploma según normatividad MEN.
+    """
+
+    __tablename__ = "graduation_requirements"
+
+    id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
+    )
+    student_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("students.id", ondelete="CASCADE"),
+        unique=True,
+        nullable=False,
+    )
+    social_service_hours: Mapped[int] = mapped_column(
+        Integer, default=0, nullable=False, comment="Horas cumplidas de Servicio Social Estudiantil (mín 80)"
+    )
+    social_service_approved: Mapped[bool] = mapped_column(
+        Boolean, default=False, nullable=False, comment="Verificación y aprobación formal de Secretaría"
+    )
+    icfes_registration_code: Mapped[str | None] = mapped_column(
+        String(60), nullable=True, comment="Número de Registro oficial Prueba ICFES Saber 11"
+    )
+    icfes_score: Mapped[int | None] = mapped_column(
+        Integer, nullable=True, comment="Puntaje global obtenido en Saber 11 (sobre 500)"
+    )
+    prior_certificates_complete: Mapped[bool] = mapped_column(
+        Boolean, default=False, nullable=False, comment="Certificados oficiales de 5° a 10° completos en legajo"
+    )
+    administrative_paz_salvo: Mapped[bool] = mapped_column(
+        Boolean, default=True, nullable=False, comment="Paz y salvo institucional (Biblioteca, Pensión, Almacén)"
+    )
+    diploma_folio_number: Mapped[str | None] = mapped_column(
+        String(50), nullable=True, comment="Número de Folio en Libro de Actas de Grado"
+    )
+    diploma_book_number: Mapped[str | None] = mapped_column(
+        String(50), nullable=True, comment="Número de Libro de Registro de Diplomas"
+    )
+    graduation_status: Mapped[str] = mapped_column(
+        String(40), default="EN_PROCESO", nullable=False, comment="EN_PROCESO, APTO_PARA_GRADO, GRADUADO"
+    )
+
+    # Relaciones
+    student: Mapped["Student"] = relationship("Student", back_populates="graduation_requirement")
+
+
+class GradingWindow(Base, AuditMixin):
+    """
+    Control de Ventanilla de Calificaciones por Período Académico.
+    Determina si los docentes tienen habilitada la carga o si requiere extemporaneidad de Secretaría.
+    """
+
+    __tablename__ = "grading_windows"
+
+    id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
+    )
+    school_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("schools.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    academic_period_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("academic_periods.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    period_label: Mapped[str] = mapped_column(
+        String(100), nullable=False, comment="Ej: 'Primer Período Lectivo 2026'"
+    )
+    is_open: Mapped[bool] = mapped_column(
+        Boolean, default=True, nullable=False, comment="Indica si la ventanilla está abierta para carga de notas"
+    )
+    closing_date: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, comment="Fecha y hora de cierre oficial"
+    )
+    extemporaneous_active: Mapped[bool] = mapped_column(
+        Boolean, default=False, nullable=False, comment="Indica si hay extemporaneidad habilitada por Secretaría"
+    )
+
+    # Relaciones
+    school: Mapped["SchoolInstitution"] = relationship("SchoolInstitution")
+    academic_period: Mapped["AcademicPeriod"] = relationship("AcademicPeriod")
+
+
+class OfficialCertificate(Base, AuditMixin):
+    """
+    Registro y Trazabilidad de Constancias y Certificados Oficiales Emitidos.
+    Incluye código único de verificación y validador de autenticidad institucional.
+    """
+
+    __tablename__ = "official_certificates"
+
+    id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
+    )
+    school_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("schools.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    student_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("students.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    certificate_type: Mapped[str] = mapped_column(
+        String(40), nullable=False, comment="CONSTANCIA_ESTUDIO, CERTIFICADO_NOTAS, ACTA_GRADO"
+    )
+    verification_code: Mapped[str] = mapped_column(
+        String(60), unique=True, index=True, nullable=False, comment="Código único de validación (ej: CERT-2026-X89J2)"
+    )
+    issued_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=datetime.utcnow, nullable=False
+    )
+    recipient_entity: Mapped[str] = mapped_column(
+        String(180), default="A QUIEN PUEDA INTERESAR", nullable=False
+    )
+    content_html: Mapped[str | None] = mapped_column(Text, nullable=True)
+    is_valid: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+
+    # Relaciones
+    student: Mapped["Student"] = relationship("Student", back_populates="certificates")
 
 
 # =====================================================================

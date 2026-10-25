@@ -492,10 +492,19 @@ class StudentCreateRequest(BaseModel):
     birth_date: date | None = None
     guardian_name: str | None = Field(default=None, max_length=150)
     guardian_phone: str | None = Field(default=None, max_length=40)
+    # Campos Oficiales SIMAT / MEN y Ficha Médica
+    document_type: str = Field(default="TI", max_length=15, description="RC, TI, CC, PEP, PPT, CE")
+    blood_type: str = Field(default="O+", max_length=10, description="Grupo sanguíneo y factor RH")
+    health_provider_eps: str = Field(default="Sura EPS", max_length=120)
+    socioeconomic_stratum: int = Field(default=3, ge=1, le=6)
+    ethnicity: str = Field(default="Ninguna", max_length=80)
+    disability_condition: str = Field(default="Ninguna", max_length=100)
+    medical_notes_allergies: str | None = Field(default=None, max_length=800)
+    is_financial_paz_salvo: bool = True
 
 
 class StudentResponse(BaseModel):
-    """DTO de salida de la ficha estudiantil."""
+    """DTO de salida de la ficha estudiantil con datos sociodemográficos SIMAT."""
 
     id: uuid.UUID
     user_id: uuid.UUID
@@ -511,7 +520,139 @@ class StudentResponse(BaseModel):
     birth_date: date | None
     guardian_name: str | None = None
     guardian_phone: str | None = None
+    document_type: str = "TI"
+    blood_type: str = "O+"
+    health_provider_eps: str = "Sura EPS"
+    socioeconomic_stratum: int = 3
+    ethnicity: str = "Ninguna"
+    disability_condition: str = "Ninguna"
+    medical_notes_allergies: str | None = None
+    is_financial_paz_salvo: bool = True
     is_active: bool
+
+
+# =====================================================================
+# 2.1 SECRETARÍA ACADÉMICA: ACUDIENTES, EXPEDIENTES, GRADOS Y CONSTANCIAS
+# =====================================================================
+class GuardianResponse(BaseModel):
+    id: uuid.UUID
+    student_id: uuid.UUID
+    first_name: str
+    last_name: str
+    full_name: str
+    document_type: str
+    document_number: str
+    phone: str
+    email: str | None = None
+    relationship_type: str
+    is_financial_responsible: bool
+    is_authorized_pickup: bool
+
+
+class GuardianCreateRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
+    first_name: str = Field(..., min_length=2, max_length=100)
+    last_name: str = Field(..., min_length=2, max_length=100)
+    document_type: str = Field(default="CC", max_length=15)
+    document_number: str = Field(..., min_length=5, max_length=40)
+    phone: str = Field(..., min_length=7, max_length=40)
+    email: str | None = None
+    relationship_type: str = Field(default="MADRE", max_length=40)
+    is_financial_responsible: bool = True
+    is_authorized_pickup: bool = True
+
+
+class StudentDocumentResponse(BaseModel):
+    id: uuid.UUID
+    student_id: uuid.UUID
+    document_name: str
+    document_stage: str
+    status: str
+    file_url: str | None = None
+    observations: str | None = None
+    verified_at: datetime | None = None
+    verified_by_user: str | None = None
+
+
+class StudentDocumentStatusUpdateRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
+    status: Literal["PENDIENTE", "CARGADO", "APROBADO", "RECHAZADO"]
+    observations: str | None = None
+    verified_by_user: str | None = "Secretaría Académica"
+
+
+class GraduationRequirementResponse(BaseModel):
+    id: uuid.UUID
+    student_id: uuid.UUID
+    social_service_hours: int
+    social_service_approved: bool
+    icfes_registration_code: str | None = None
+    icfes_score: int | None = None
+    prior_certificates_complete: bool
+    administrative_paz_salvo: bool
+    diploma_folio_number: str | None = None
+    diploma_book_number: str | None = None
+    graduation_status: str
+
+
+class GraduationRequirementUpdateRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
+    social_service_hours: int | None = Field(default=None, ge=0, le=300)
+    social_service_approved: bool | None = None
+    icfes_registration_code: str | None = None
+    icfes_score: int | None = Field(default=None, ge=0, le=500)
+    prior_certificates_complete: bool | None = None
+    administrative_paz_salvo: bool | None = None
+    diploma_folio_number: str | None = None
+    diploma_book_number: str | None = None
+    graduation_status: str | None = None
+
+
+class GradingWindowResponse(BaseModel):
+    id: uuid.UUID
+    school_id: uuid.UUID
+    academic_period_id: uuid.UUID
+    period_label: str
+    is_open: bool
+    closing_date: datetime
+    extemporaneous_active: bool
+
+
+class GradingWindowToggleRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    is_open: bool
+    extemporaneous_active: bool = False
+
+
+class OfficialCertificateResponse(BaseModel):
+    id: uuid.UUID
+    school_id: uuid.UUID
+    student_id: uuid.UUID
+    student_full_name: str
+    student_code: str
+    student_grade_label: str
+    student_group_code: str
+    certificate_type: str
+    verification_code: str
+    issued_at: datetime
+    recipient_entity: str
+    content_html: str | None = None
+    is_valid: bool
+
+
+class OfficialCertificateGenerateRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
+    student_id: uuid.UUID
+    certificate_type: Literal["CONSTANCIA_ESTUDIO", "CERTIFICADO_NOTAS", "ACTA_GRADO"] = "CONSTANCIA_ESTUDIO"
+    recipient_entity: str = Field(default="A QUIEN PUEDA INTERESAR", max_length=180)
+
+
+class StudentDossierResponse(BaseModel):
+    student: StudentResponse
+    guardians: list[GuardianResponse] = Field(default_factory=list)
+    documents: list[StudentDocumentResponse] = Field(default_factory=list)
+    graduation_requirement: GraduationRequirementResponse | None = None
+    certificates: list[OfficialCertificateResponse] = Field(default_factory=list)
 
 
 class AttendanceCreateRequest(BaseModel):

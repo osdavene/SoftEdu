@@ -4,13 +4,13 @@ columnas y semilla completa de Colegios K-12 (Maternal a Grado 11°), Calendario
 SuperAdmin Global, Rectores, Coordinación, Secretaría, Psicoorientación, Docentes y Estudiantes.
 """
 
-from datetime import date
+from datetime import date, datetime, timezone
 from decimal import Decimal
 import logging
 from typing import Any
 import uuid
 
-from sqlalchemy import select, text
+from sqlalchemy import func, select, text
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -33,11 +33,16 @@ from app.models.academic import (
     Enrollment,
     EnrollmentStatus,
     Grade,
+    GradingWindow,
+    GraduationRequirement,
+    Guardian,
+    OfficialCertificate,
     RiskLevel,
     SCHOOL_GRADES_CATALOG,
     SchoolInstitution,
     Student,
     StudentAIInsight,
+    StudentDocument,
     Subject,
     SyllabusTopic,
     SyllabusUnit,
@@ -141,6 +146,91 @@ async def _ensure_schema_columns_upgraded(conn: Any) -> None:
             'meta_nota_restante_sugerida', 3.0
         )
         WHERE suggested_action_plan IS NOT NULL AND (suggested_action_plan ? 'plan_docente' OR suggested_action_plan ? 'plan_estudiante');
+        """,
+        "ALTER TABLE students ADD COLUMN IF NOT EXISTS document_type VARCHAR(15) DEFAULT 'TI';",
+        "ALTER TABLE students ADD COLUMN IF NOT EXISTS blood_type VARCHAR(10) DEFAULT 'O+';",
+        "ALTER TABLE students ADD COLUMN IF NOT EXISTS health_provider_eps VARCHAR(120) DEFAULT 'Sura EPS';",
+        "ALTER TABLE students ADD COLUMN IF NOT EXISTS socioeconomic_stratum INTEGER DEFAULT 3;",
+        "ALTER TABLE students ADD COLUMN IF NOT EXISTS ethnicity VARCHAR(80) DEFAULT 'Ninguna';",
+        "ALTER TABLE students ADD COLUMN IF NOT EXISTS disability_condition VARCHAR(100) DEFAULT 'Ninguna';",
+        "ALTER TABLE students ADD COLUMN IF NOT EXISTS medical_notes_allergies TEXT;",
+        "ALTER TABLE students ADD COLUMN IF NOT EXISTS is_financial_paz_salvo BOOLEAN DEFAULT true;",
+        """
+        CREATE TABLE IF NOT EXISTS guardians (
+            id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+            student_id UUID REFERENCES students(id) ON DELETE CASCADE,
+            first_name VARCHAR(100) NOT NULL,
+            last_name VARCHAR(100) NOT NULL,
+            document_type VARCHAR(15) DEFAULT 'CC' NOT NULL,
+            document_number VARCHAR(40) NOT NULL,
+            phone VARCHAR(40) NOT NULL,
+            email VARCHAR(150),
+            relationship_type VARCHAR(40) DEFAULT 'MADRE' NOT NULL,
+            is_financial_responsible BOOLEAN DEFAULT true NOT NULL,
+            is_authorized_pickup BOOLEAN DEFAULT true NOT NULL,
+            created_at TIMESTAMPTZ DEFAULT now() NOT NULL,
+            updated_at TIMESTAMPTZ DEFAULT now() NOT NULL
+        );
+        """,
+        """
+        CREATE TABLE IF NOT EXISTS student_documents (
+            id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+            student_id UUID REFERENCES students(id) ON DELETE CASCADE,
+            document_name VARCHAR(150) NOT NULL,
+            document_stage VARCHAR(30) DEFAULT 'GENERAL' NOT NULL,
+            status VARCHAR(30) DEFAULT 'PENDIENTE' NOT NULL,
+            file_url VARCHAR(255),
+            observations TEXT,
+            verified_at TIMESTAMPTZ,
+            verified_by_user VARCHAR(150),
+            created_at TIMESTAMPTZ DEFAULT now() NOT NULL,
+            updated_at TIMESTAMPTZ DEFAULT now() NOT NULL
+        );
+        """,
+        """
+        CREATE TABLE IF NOT EXISTS graduation_requirements (
+            id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+            student_id UUID UNIQUE REFERENCES students(id) ON DELETE CASCADE,
+            social_service_hours INTEGER DEFAULT 0 NOT NULL,
+            social_service_approved BOOLEAN DEFAULT false NOT NULL,
+            icfes_registration_code VARCHAR(60),
+            icfes_score INTEGER,
+            prior_certificates_complete BOOLEAN DEFAULT false NOT NULL,
+            administrative_paz_salvo BOOLEAN DEFAULT true NOT NULL,
+            diploma_folio_number VARCHAR(50),
+            diploma_book_number VARCHAR(50),
+            graduation_status VARCHAR(40) DEFAULT 'EN_PROCESO' NOT NULL,
+            created_at TIMESTAMPTZ DEFAULT now() NOT NULL,
+            updated_at TIMESTAMPTZ DEFAULT now() NOT NULL
+        );
+        """,
+        """
+        CREATE TABLE IF NOT EXISTS grading_windows (
+            id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+            school_id UUID REFERENCES schools(id) ON DELETE CASCADE,
+            academic_period_id UUID REFERENCES academic_periods(id) ON DELETE CASCADE,
+            period_label VARCHAR(100) NOT NULL,
+            is_open BOOLEAN DEFAULT true NOT NULL,
+            closing_date TIMESTAMPTZ NOT NULL,
+            extemporaneous_active BOOLEAN DEFAULT false NOT NULL,
+            created_at TIMESTAMPTZ DEFAULT now() NOT NULL,
+            updated_at TIMESTAMPTZ DEFAULT now() NOT NULL
+        );
+        """,
+        """
+        CREATE TABLE IF NOT EXISTS official_certificates (
+            id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+            school_id UUID REFERENCES schools(id) ON DELETE CASCADE,
+            student_id UUID REFERENCES students(id) ON DELETE CASCADE,
+            certificate_type VARCHAR(40) NOT NULL,
+            verification_code VARCHAR(60) UNIQUE NOT NULL,
+            issued_at TIMESTAMPTZ DEFAULT now() NOT NULL,
+            recipient_entity VARCHAR(180) DEFAULT 'A QUIEN PUEDA INTERESAR' NOT NULL,
+            content_html TEXT,
+            is_valid BOOLEAN DEFAULT true NOT NULL,
+            created_at TIMESTAMPTZ DEFAULT now() NOT NULL,
+            updated_at TIMESTAMPTZ DEFAULT now() NOT NULL
+        );
         """,
     ]
     for stmt_sql in alter_statements:
@@ -1060,6 +1150,132 @@ async def _seed_institutional_records(session: AsyncSession) -> None:
                     is_current_insight=True,
                 )
                 session.add_all([g1_m, g2_m, a1_m, a2_m, insight_m])
+
+    # 8. MÓDULOS DE SECRETARÍA ACADÉMICA (SIMAT, Acudientes, Legajo Documental y Requisitos de Grado)
+    existing_window = (
+        await session.execute(
+            select(GradingWindow).where(GradingWindow.school_id == school_1.id)
+        )
+    ).scalars().first()
+    if existing_window is None and period_1:
+        win_1 = GradingWindow(
+            school_id=school_1.id,
+            academic_period_id=period_1.id,
+            period_label="Período 1 - Primer Semestre 2026",
+            is_open=True,
+            closing_date=datetime(2026, 4, 15, 23, 59, 59, tzinfo=timezone.utc),
+            extemporaneous_active=False,
+        )
+        session.add(win_1)
+
+    # Requisitos de Grado 11° y Legajos Documentales
+    if laura_student:
+        laura_student.document_type = "TI"
+        laura_student.blood_type = "O+"
+        laura_student.health_provider_eps = "Sura EPS"
+        laura_student.socioeconomic_stratum = 4
+        laura_student.medical_notes_allergies = "Rinitis alérgica estacional. No presenta restricciones físicas."
+        
+        ex_g_laura = (await session.execute(select(Guardian).where(Guardian.student_id == laura_student.id))).scalars().first()
+        if not ex_g_laura:
+            g_laura = Guardian(
+                student_id=laura_student.id,
+                first_name="Andrés Felipe",
+                last_name="Rodríguez Peña",
+                document_type="CC",
+                document_number="79845120",
+                phone="+57 310 450 7890",
+                email="andres.rodriguez@familycorp.com",
+                relationship_type="PADRE",
+                is_financial_responsible=True,
+                is_authorized_pickup=True,
+            )
+            session.add(g_laura)
+
+        ex_req_laura = (await session.execute(select(GraduationRequirement).where(GraduationRequirement.student_id == laura_student.id))).scalars().first()
+        if not ex_req_laura:
+            req_laura = GraduationRequirement(
+                student_id=laura_student.id,
+                social_service_hours=80,
+                social_service_approved=True,
+                icfes_registration_code="AC2026109923",
+                icfes_score=382,
+                prior_certificates_complete=True,
+                administrative_paz_salvo=True,
+                diploma_folio_number="F-102",
+                diploma_book_number="LIB-2026-01",
+                graduation_status="APTO_PARA_GRADO",
+            )
+            session.add(req_laura)
+
+        doc_count_l = (await session.execute(select(func.count(StudentDocument.id)).where(StudentDocument.student_id == laura_student.id))).scalar() or 0
+        if doc_count_l == 0:
+            docs_laura = [
+                StudentDocument(student_id=laura_student.id, document_name="Tarjeta de Identidad (TI)", document_stage="MEDIA", status="APROBADO", verified_by_user="Secretaría General", observations="Documento vigente."),
+                StudentDocument(student_id=laura_student.id, document_name="Certificados de Notas 5° a 10°", document_stage="MEDIA", status="APROBADO", verified_by_user="Secretaría General", observations="Convalidación completa."),
+                StudentDocument(student_id=laura_student.id, document_name="Constancia de Servicio Social (80h)", document_stage="MEDIA", status="APROBADO", verified_by_user="Secretaría General", observations="80 horas cumplidas en Cruz Roja."),
+                StudentDocument(student_id=laura_student.id, document_name="Paz y Salvo Administrativo y Financiero", document_stage="MEDIA", status="APROBADO", verified_by_user="Tesorería", observations="Pensión al día."),
+            ]
+            session.add_all(docs_laura)
+
+        ex_cert = (await session.execute(select(OfficialCertificate).where(OfficialCertificate.student_id == laura_student.id))).scalars().first()
+        if not ex_cert:
+            cert_l = OfficialCertificate(
+                school_id=school_1.id,
+                student_id=laura_student.id,
+                certificate_type="CONSTANCIA_ESTUDIO",
+                verification_code="CONST-2026-LROD-8821",
+                recipient_entity="CAJA DE COMPENSACIÓN FAMILIAR COMFACOR",
+                content_html="<p>La Secretaría Académica hace constar que la estudiante Laura Sofía Rodríguez Peña se encuentra legalmente matriculada en Grado 11°A.</p>",
+                is_valid=True,
+            )
+            session.add(cert_l)
+
+    if mateo_student:
+        mateo_student.document_type = "TI"
+        mateo_student.blood_type = "A+"
+        mateo_student.health_provider_eps = "Sanitas EPS"
+        mateo_student.socioeconomic_stratum = 3
+        mateo_student.is_financial_paz_salvo = False
+
+        ex_g_mateo = (await session.execute(select(Guardian).where(Guardian.student_id == mateo_student.id))).scalars().first()
+        if not ex_g_mateo:
+            g_mat = Guardian(
+                student_id=mateo_student.id,
+                first_name="Claudia Patricia",
+                last_name="Forero Gómez",
+                document_type="CC",
+                document_number="52789123",
+                phone="+57 312 998 7766",
+                email="claudia.forero@gmail.com",
+                relationship_type="MADRE",
+                is_financial_responsible=True,
+                is_authorized_pickup=True,
+            )
+            session.add(g_mat)
+
+        ex_req_mat = (await session.execute(select(GraduationRequirement).where(GraduationRequirement.student_id == mateo_student.id))).scalars().first()
+        if not ex_req_mat:
+            req_mat = GraduationRequirement(
+                student_id=mateo_student.id,
+                social_service_hours=45,
+                social_service_approved=False,
+                icfes_registration_code="AC2026109924",
+                prior_certificates_complete=True,
+                administrative_paz_salvo=False,
+                graduation_status="EN_PROCESO",
+            )
+            session.add(req_mat)
+
+        doc_count_m = (await session.execute(select(func.count(StudentDocument.id)).where(StudentDocument.student_id == mateo_student.id))).scalar() or 0
+        if doc_count_m == 0:
+            docs_mateo = [
+                StudentDocument(student_id=mateo_student.id, document_name="Tarjeta de Identidad (TI)", document_stage="MEDIA", status="APROBADO", verified_by_user="Secretaría General"),
+                StudentDocument(student_id=mateo_student.id, document_name="Certificados de Notas 5° a 10°", document_stage="MEDIA", status="APROBADO", verified_by_user="Secretaría General"),
+                StudentDocument(student_id=mateo_student.id, document_name="Constancia de Servicio Social (80h)", document_stage="MEDIA", status="PENDIENTE", observations="Faltan 35 horas de las 80 reglamentarias."),
+                StudentDocument(student_id=mateo_student.id, document_name="Paz y Salvo Administrativo y Financiero", document_stage="MEDIA", status="RECHAZADO", observations="Pendiente entrega de paz y salvo de biblioteca."),
+            ]
+            session.add_all(docs_mateo)
 
     await session.commit()
     logger.info("Ecosistema institucional SoftEdu K-12 (Colegios Calendario A y B, SuperAdmin, Rectores, Docentes y Estudiantes) sembrado exitosamente.")

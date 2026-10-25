@@ -1160,6 +1160,69 @@
       }
     }
 
+    /* SUB-PESTAÑAS DE SECRETARÍA ACADÉMICA */
+    .sec-subtab-bar {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-bottom: 20px;
+      padding: 6px;
+      background: #090e1a;
+      border: 1px solid #1e293b;
+      border-radius: 12px;
+    }
+
+    .sec-subtab-pill {
+      background: transparent;
+      color: #94a3b8;
+      border: none;
+      padding: 9px 16px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      transition: all 0.2s ease;
+    }
+
+    .sec-subtab-pill:hover {
+      background: #1e293b;
+      color: #f1f5f9;
+    }
+
+    .sec-subtab-pill.active {
+      background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+      color: #ffffff;
+      box-shadow: 0 4px 12px rgba(37, 99, 235, 0.35);
+    }
+
+    .doc-status-badge {
+      font-size: 11px;
+      font-weight: 700;
+      padding: 3px 9px;
+      border-radius: 6px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+    }
+    .doc-status-badge.aprobado { background: rgba(16, 185, 129, 0.2); color: #6ee7b7; border: 1px solid #10b981; }
+    .doc-status-badge.pendiente { background: rgba(245, 158, 11, 0.2); color: #fde68a; border: 1px solid #f59e0b; }
+    .doc-status-badge.rechazado { background: rgba(239, 68, 68, 0.2); color: #fca5a5; border: 1px solid #ef4444; }
+
+    .certificate-paper {
+      background: #ffffff;
+      color: #0f172a;
+      border-radius: 8px;
+      padding: 30px;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.4);
+      max-width: 700px;
+      margin: 0 auto;
+    }
+
     /* ALERTA / TOAST NOTIFICATION */
     #toast-notification {
       position: fixed;
@@ -1940,110 +2003,392 @@
          ------------------------------------------------------------- -->
     <div id="tab-secretaria" class="tab-content">
       
-      <!-- 1. GESTIÓN DE SALONES Y GRUPOS POR GRADO (6-1, 6-2, 6-3, 11-1...) -->
-      <div class="card">
-        <div class="card-header">
-          <div>
-            <div class="card-title">
-              <i class="fa-solid fa-shapes" style="color: #60a5fa;"></i>
-              Salones y Grupos por Grado Escolar (Cursos 6-1, 6-2, 6-3, 11-1...)
+      <!-- Barra de Módulos de Secretaría Académica (Maternal a 11°) -->
+      <div class="sec-subtab-bar">
+        <button id="sec-subtab-btn-salones" class="sec-subtab-pill active" onclick="switchSecSubTab('salones')">
+          <i class="fa-solid fa-shapes"></i> 1. Salones y Matrícula SIMAT
+        </button>
+        <button id="sec-subtab-btn-expedientes" class="sec-subtab-pill" onclick="switchSecSubTab('expedientes')">
+          <i class="fa-solid fa-folder-open"></i> 2. Legajo y Expediente Documental
+        </button>
+        <button id="sec-subtab-btn-grad11" class="sec-subtab-pill" onclick="switchSecSubTab('grad11')">
+          <i class="fa-solid fa-user-graduate"></i> 3. Control Grado 11° (Servicio Social e ICFES)
+        </button>
+        <button id="sec-subtab-btn-constancias" class="sec-subtab-pill" onclick="switchSecSubTab('constancias')">
+          <i class="fa-solid fa-certificate"></i> 4. Constancias y Certificados Oficiales
+        </button>
+        <button id="sec-subtab-btn-ventanilla" class="sec-subtab-pill" onclick="switchSecSubTab('ventanilla')">
+          <i class="fa-solid fa-clock-rotate-left"></i> 5. Ventanilla de Calificaciones
+        </button>
+        <button class="sec-subtab-pill" onclick="downloadSimatCsv()" style="background: rgba(16, 185, 129, 0.15); color: #6ee7b7; border: 1px solid rgba(16, 185, 129, 0.3);">
+          <i class="fa-solid fa-file-csv"></i> 6. Descargar Plano SIMAT (CSV)
+        </button>
+      </div>
+
+      <!-- =============================================================
+           SUB-PANEL 1: SALONES Y FORMALIZACIÓN DE MATRÍCULA SIMAT
+           ============================================================= -->
+      <div id="sec-subpanel-salones">
+        <!-- 1. GESTIÓN DE SALONES Y GRUPOS POR GRADO (6-1, 6-2, 6-3, 11-1...) -->
+        <div class="card" style="margin-bottom: 20px;">
+          <div class="card-header">
+            <div>
+              <div class="card-title">
+                <i class="fa-solid fa-shapes" style="color: #60a5fa;"></i>
+                Salones y Grupos por Grado Escolar (Cursos 6-1, 6-2, 6-3, 11-1...)
+              </div>
+              <div style="font-size: 13px; color: var(--text-muted); margin-top: 3px;">
+                Organización de cursos según estándares del MEN / SIMAT. La Secretaría puede crear cuantas secciones requiera cada grado.
+              </div>
             </div>
-            <div style="font-size: 13px; color: var(--text-muted); margin-top: 3px;">
-              Organización de cursos según estándares del MEN / SIMAT. La Secretaría puede crear cuantas secciones requiera cada grado.
+            <div>
+              <button class="btn-primary" onclick="openCreateGroupModal()" style="background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);">
+                <i class="fa-solid fa-plus-circle"></i> + Crear Salón / Grupo (ej: 6-1, 6-2)
+              </button>
             </div>
           </div>
-          <div>
-            <button class="btn-primary" onclick="openCreateGroupModal()" style="background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);">
-              <i class="fa-solid fa-plus-circle"></i> + Crear Salón / Grupo (ej: 6-1, 6-2)
-            </button>
+
+          <!-- Barra de Filtros Rápidos por Grado Escolar -->
+          <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 18px; align-items: center;" id="group-grade-filter-bar">
+            <span style="font-size: 12px; font-weight: 700; color: #94a3b8; margin-right: 4px;">Filtrar por Grado:</span>
+            <button class="grade-pill-filter active" onclick="filterClassroomGroups('ALL', this)">Todos los Grados</button>
+          </div>
+
+          <!-- Grid de Grupos / Salones Creados -->
+          <div id="classroom-groups-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(290px, 1fr)); gap: 16px;">
+            <!-- Poblado dinámicamente -->
           </div>
         </div>
 
-        <!-- Barra de Filtros Rápidos por Grado Escolar -->
-        <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 18px; align-items: center;" id="group-grade-filter-bar">
-          <span style="font-size: 12px; font-weight: 700; color: #94a3b8; margin-right: 4px;">Filtrar por Grado:</span>
-          <button class="grade-pill-filter active" onclick="filterClassroomGroups('ALL', this)">Todos los Grados</button>
-        </div>
+        <!-- 2. FORMALIZACIÓN DE MATRÍCULA CON CAMPOS LEGALES SIMAT Y FICHA MÉDICA -->
+        <div class="card">
+          <div class="card-header">
+            <div>
+              <div class="card-title">
+                <i class="fa-solid fa-id-card" style="color: #a78bfa;"></i>
+                Formalización Oficial de Matrícula (Estándar SIMAT / MEN y Ficha Médica)
+              </div>
+              <div style="font-size: 13px; color: var(--text-muted); margin-top: 3px;">
+                Registro legal del estudiante, asignación de salón, verificación de acudiente y ficha médica para Primera Infancia.
+              </div>
+            </div>
+          </div>
 
-        <!-- Grid de Grupos / Salones Creados -->
-        <div id="classroom-groups-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(290px, 1fr)); gap: 16px;">
-          <!-- Poblado dinámicamente -->
+          <form onsubmit="handleCreateStudent(event)">
+            <h4 style="font-size: 14px; color: #93c5fd; margin-bottom: 12px; border-bottom: 1px solid #1e293b; padding-bottom: 6px;">
+              <i class="fa-solid fa-school"></i> 1. Ubicación Académica y Código
+            </h4>
+            <div class="form-grid-3" style="margin-bottom: 18px;">
+              <div class="form-group">
+                <label class="form-label">Grado Escolar Activo *</label>
+                <select id="stu-grade" class="form-control" onchange="onStudentGradeChange()" required>
+                  <!-- Poblado dinámicamente según grados activos del colegio -->
+                </select>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Salón / Grupo Asignado *</label>
+                <select id="stu-group-code" class="form-control" required>
+                  <!-- Poblado según grupos del grado seleccionado: 6-1, 6-2, 6-3... -->
+                </select>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Código Estudiantil *</label>
+                <input type="text" id="stu-code" class="form-control" placeholder="COL-2026-104" required />
+              </div>
+            </div>
+
+            <h4 style="font-size: 14px; color: #93c5fd; margin-bottom: 12px; border-bottom: 1px solid #1e293b; padding-bottom: 6px;">
+              <i class="fa-solid fa-user"></i> 2. Identificación y Variables Demográficas SIMAT
+            </h4>
+            <div class="form-grid-3" style="margin-bottom: 18px;">
+              <div class="form-group">
+                <label class="form-label">Nombres del Estudiante *</label>
+                <input type="text" id="stu-first-name" class="form-control" placeholder="Camilo Andrés" required />
+              </div>
+              <div class="form-group">
+                <label class="form-label">Apellidos del Estudiante *</label>
+                <input type="text" id="stu-last-name" class="form-control" placeholder="Suárez Forero" required />
+              </div>
+              <div class="form-group">
+                <label class="form-label">Tipo de Documento *</label>
+                <select id="stu-doc-type" class="form-control" required>
+                  <option value="TI">Tarjeta de Identidad (TI)</option>
+                  <option value="RC">Registro Civil de Nacimiento (RC)</option>
+                  <option value="CC">Cédula de Ciudadanía (CC)</option>
+                  <option value="PPT">Permiso por Protección Temporal (PPT)</option>
+                  <option value="PEP">Permiso Especial de Permanencia (PEP)</option>
+                  <option value="CE">Cédula de Extranjería (CE)</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Número de Documento *</label>
+                <input type="text" id="stu-doc" class="form-control" placeholder="1025890126" required />
+              </div>
+              <div class="form-group">
+                <label class="form-label">Fecha de Nacimiento *</label>
+                <input type="date" id="stu-birth" class="form-control" required />
+              </div>
+              <div class="form-group">
+                <label class="form-label">Grupo Sanguíneo y Factor RH *</label>
+                <select id="stu-rh" class="form-control" required>
+                  <option value="O+">O Positivo (O+)</option>
+                  <option value="O-">O Negativo (O-)</option>
+                  <option value="A+">A Positivo (A+)</option>
+                  <option value="A-">A Negativo (A-)</option>
+                  <option value="B+">B Positivo (B+)</option>
+                  <option value="B-">B Negativo (B-)</option>
+                  <option value="AB+">AB Positivo (AB+)</option>
+                  <option value="AB-">AB Negativo (AB-)</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label class="form-label">EPS de Afiliación *</label>
+                <input type="text" id="stu-eps" class="form-control" placeholder="Sura EPS / Sanitas / Compensar" required />
+              </div>
+              <div class="form-group">
+                <label class="form-label">Estrato Socioeconómico (DANE) *</label>
+                <select id="stu-stratum" class="form-control" required>
+                  <option value="1">Estrato 1 (Bajo - Bajo)</option>
+                  <option value="2">Estrato 2 (Bajo)</option>
+                  <option value="3" selected>Estrato 3 (Medio - Bajo)</option>
+                  <option value="4">Estrato 4 (Medio)</option>
+                  <option value="5">Estrato 5 (Medio - Alto)</option>
+                  <option value="6">Estrato 6 (Alto)</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Condición / Discapacidad</label>
+                <input type="text" id="stu-disability" class="form-control" placeholder="Ninguna" value="Ninguna" />
+              </div>
+            </div>
+
+            <h4 style="font-size: 14px; color: #93c5fd; margin-bottom: 12px; border-bottom: 1px solid #1e293b; padding-bottom: 6px;">
+              <i class="fa-solid fa-notes-medical"></i> 3. Ficha Médica y Alergias (Vital en Maternal / Primera Infancia)
+            </h4>
+            <div class="form-group" style="margin-bottom: 18px;">
+              <label class="form-label">Alergias a Medicamentos, Alimentos o Cuidados Especiales</label>
+              <textarea id="stu-medical" class="form-control" rows="2" placeholder="Ej: Alergia a la penicilina y mariscos. En caso de fiebre en Maternal administrar dosis autorizada por médico."></textarea>
+            </div>
+
+            <h4 style="font-size: 14px; color: #93c5fd; margin-bottom: 12px; border-bottom: 1px solid #1e293b; padding-bottom: 6px;">
+              <i class="fa-solid fa-users"></i> 4. Acudiente, Responsable Financiero y Retiro de Menores
+            </h4>
+            <div class="form-grid-3" style="margin-bottom: 18px;">
+              <div class="form-group">
+                <label class="form-label">Nombre del Acudiente Principal *</label>
+                <input type="text" id="stu-guardian-name" class="form-control" placeholder="Dra. Claudia Forero" required />
+              </div>
+              <div class="form-group">
+                <label class="form-label">Teléfono del Acudiente *</label>
+                <input type="text" id="stu-guardian-phone" class="form-control" placeholder="+57 315 777 9900" required />
+              </div>
+              <div class="form-group">
+                <label class="form-label">Parentesco / Relación *</label>
+                <select id="stu-guardian-rel" class="form-control" required>
+                  <option value="MADRE">Madre</option>
+                  <option value="PADRE">Padre</option>
+                  <option value="ACUDIENTE_LEGAL">Representante Legal / Tutor</option>
+                  <option value="OTRO">Familiar Autorizado</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Correo Electrónico Estudiantil *</label>
+                <input type="email" id="stu-email" class="form-control" placeholder="camilo.suarez@gimnasiosanangel.edu.co" required />
+              </div>
+              <div class="form-group">
+                <label class="form-label">Contraseña Inicial *</label>
+                <input type="text" id="stu-pass" class="form-control" value="SoftEdu2026*" required />
+              </div>
+            </div>
+
+            <div style="display: flex; justify-content: flex-end; margin-top: 14px;">
+              <button type="submit" class="btn-primary" style="padding: 11px 22px; background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);">
+                <i class="fa-solid fa-user-check"></i> Formalizar Matrícula Legal y Generar Expediente
+              </button>
+            </div>
+          </form>
         </div>
       </div>
 
-      <!-- 2. FORMALIZACIÓN DE MATRÍCULA Y ASIGNACIÓN DE SALÓN -->
-      <div class="card">
-        <div class="card-header">
-          <div>
-            <div class="card-title">
-              <i class="fa-solid fa-id-card" style="color: #a78bfa;"></i>
-              Formalización de Matrícula Escolar y Asignación de Salón/Grupo
+      <!-- =============================================================
+           SUB-PANEL 2: EXPEDIENTE Y LEGAJO DOCUMENTAL POR ESTUDIANTE
+           ============================================================= -->
+      <div id="sec-subpanel-expedientes" style="display: none;">
+        <div class="card">
+          <div class="card-header" style="flex-wrap: wrap; gap: 12px;">
+            <div>
+              <div class="card-title">
+                <i class="fa-solid fa-folder-open" style="color: #38bdf8;"></i>
+                Expediente y Legajo Documental Escolar
+              </div>
+              <div style="font-size: 13px; color: var(--text-muted); margin-top: 3px;">
+                Auditoría de requisitos documentales por nivel (Carnet de Vacunas en Maternal, Certificados 5°-10° en Media).
+              </div>
             </div>
-            <div style="font-size: 13px; color: var(--text-muted); margin-top: 3px;">
-              Seleccione el grado y el salón asignado (ej. 6-1, 6-2, 6-3) con verificación automática de cupos disponibles.
+            <div style="display: flex; gap: 10px; align-items: center;">
+              <label style="font-size: 12.5px; font-weight: 600; color: #cbd5e1;">Seleccionar Estudiante:</label>
+              <select id="dossier-student-select" class="form-control" style="width: auto; min-width: 260px;" onchange="loadStudentDossier()">
+                <!-- Poblado dinámicamente con los estudiantes -->
+              </select>
+            </div>
+          </div>
+
+          <!-- Contenedor del Expediente Seleccionado -->
+          <div id="dossier-content-host" style="margin-top: 16px;">
+            <div style="text-align: center; padding: 40px; color: #94a3b8;">
+              <i class="fa-solid fa-spinner fa-spin" style="font-size: 24px; margin-bottom: 10px;"></i>
+              <div>Cargando expediente del estudiante...</div>
             </div>
           </div>
         </div>
-
-        <form onsubmit="handleCreateStudent(event)">
-          <div class="form-grid-3">
-            <div class="form-group">
-              <label class="form-label">Grado Escolar Activo *</label>
-              <select id="stu-grade" class="form-control" onchange="onStudentGradeChange()" required>
-                <!-- Poblado dinámicamente según grados activos del colegio -->
-              </select>
-            </div>
-            <div class="form-group">
-              <label class="form-label">Salón / Grupo Asignado *</label>
-              <select id="stu-group-code" class="form-control" required>
-                <!-- Poblado según grupos del grado seleccionado: 6-1, 6-2, 6-3... -->
-              </select>
-            </div>
-            <div class="form-group">
-              <label class="form-label">Código Estudiantil *</label>
-              <input type="text" id="stu-code" class="form-control" placeholder="COL-2026-104" required />
-            </div>
-            <div class="form-group">
-              <label class="form-label">Nombres del Estudiante *</label>
-              <input type="text" id="stu-first-name" class="form-control" placeholder="Camilo Andrés" required />
-            </div>
-            <div class="form-group">
-              <label class="form-label">Apellidos del Estudiante *</label>
-              <input type="text" id="stu-last-name" class="form-control" placeholder="Suárez Forero" required />
-            </div>
-            <div class="form-group">
-              <label class="form-label">Documento de Identidad (TI / RC) *</label>
-              <input type="text" id="stu-doc" class="form-control" placeholder="1025890126" required />
-            </div>
-            <div class="form-group">
-              <label class="form-label">Fecha de Nacimiento</label>
-              <input type="date" id="stu-birth" class="form-control" />
-            </div>
-            <div class="form-group">
-              <label class="form-label">Nombre del Acudiente / Padre *</label>
-              <input type="text" id="stu-guardian-name" class="form-control" placeholder="Dra. Claudia Forero (Madre)" required />
-            </div>
-            <div class="form-group">
-              <label class="form-label">Teléfono del Acudiente *</label>
-              <input type="text" id="stu-guardian-phone" class="form-control" placeholder="+57 315 777 9900" required />
-            </div>
-            <div class="form-group">
-              <label class="form-label">Correo Institucional Estudiantil *</label>
-              <input type="email" id="stu-email" class="form-control" placeholder="camilo.suarez@gimnasiosanangel.edu.co" required />
-            </div>
-            <div class="form-group">
-              <label class="form-label">Contraseña Inicial *</label>
-              <input type="text" id="stu-pass" class="form-control" value="SoftEdu2026*" required />
-            </div>
-          </div>
-
-          <div style="display: flex; justify-content: flex-end; margin-top: 14px;">
-            <button type="submit" class="btn-primary" style="padding: 10px 20px;">
-              <i class="fa-solid fa-user-plus"></i> Formalizar Matrícula en el Salón
-            </button>
-          </div>
-        </form>
       </div>
+
+      <!-- =============================================================
+           SUB-PANEL 3: CONTROL DE GRADO 11° (SERVICIO SOCIAL E ICFES)
+           ============================================================= -->
+      <div id="sec-subpanel-grad11" style="display: none;">
+        <div class="card">
+          <div class="card-header">
+            <div>
+              <div class="card-title">
+                <i class="fa-solid fa-user-graduate" style="color: #fbbf24;"></i>
+                Control de Requisitos de Grado (Grado 11° - Educación Media)
+              </div>
+              <div style="font-size: 13px; color: var(--text-muted); margin-top: 3px;">
+                Cumplimiento de 80 horas de Servicio Social Estudiantil Obligatorio, Registro ICFES Saber 11 y Paz y Salvo para Acta de Grado.
+              </div>
+            </div>
+            <div>
+              <button class="btn-secondary" onclick="loadGraduationRequirementsTable()">
+                <i class="fa-solid fa-arrows-rotate"></i> Refrescar Lista
+              </button>
+            </div>
+          </div>
+
+          <div class="table-container">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Estudiante</th>
+                  <th>Salón</th>
+                  <th>Servicio Social (Mín 80h)</th>
+                  <th>Reg. Saber 11</th>
+                  <th>Puntaje</th>
+                  <th>Certificados 5°-10°</th>
+                  <th>Paz y Salvo</th>
+                  <th>Dictamen Oficial</th>
+                  <th>Acción</th>
+                </tr>
+              </thead>
+              <tbody id="graduation-table-body">
+                <!-- Poblado dinámicamente -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- =============================================================
+           SUB-PANEL 4: CONSTANCIAS Y CERTIFICADOS OFICIALES CON QR
+           ============================================================= -->
+      <div id="sec-subpanel-constancias" style="display: none;">
+        <div class="form-grid-2" style="margin-bottom: 20px;">
+          <!-- Formulario de Emisión -->
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title">
+                <i class="fa-solid fa-file-signature" style="color: #60a5fa;"></i> Emisión Oficial de Constancias
+              </div>
+            </div>
+            <form onsubmit="handleGenerateCertificate(event)">
+              <div class="form-group" style="margin-bottom: 14px;">
+                <label class="form-label">Estudiante Destinatario *</label>
+                <select id="cert-student-id" class="form-control" required>
+                  <!-- Poblado dinámicamente -->
+                </select>
+              </div>
+              <div class="form-group" style="margin-bottom: 14px;">
+                <label class="form-label">Tipo de Certificación *</label>
+                <select id="cert-type" class="form-control" required>
+                  <option value="CONSTANCIA_ESTUDIO">Constancia de Estudio Vigente</option>
+                  <option value="CERTIFICADO_NOTAS">Certificado de Calificaciones</option>
+                  <option value="ACTA_GRADO">Acta de Grado de Bachiller</option>
+                </select>
+              </div>
+              <div class="form-group" style="margin-bottom: 18px;">
+                <label class="form-label">Entidad Requirente / Destino *</label>
+                <input type="text" id="cert-recipient" class="form-control" placeholder="Ej: Caja de Compensación Familiar Comfacor / EPS / Embajada" required />
+              </div>
+              <button type="submit" class="btn-primary" style="width: 100%; background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);">
+                <i class="fa-solid fa-stamp"></i> Generar Constancia Oficial con Verificación
+              </button>
+            </form>
+          </div>
+
+          <!-- Validador de Certificados Emitidos -->
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title">
+                <i class="fa-solid fa-qrcode" style="color: #34d399;"></i> Validador de Autenticidad QR
+              </div>
+            </div>
+            <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 14px;">
+              Ingrese el código alfanumérico impreso en cualquier constancia para verificar su autenticidad sin necesidad de llamadas telefónicas.
+            </p>
+            <div style="display: flex; gap: 8px; margin-bottom: 16px;">
+              <input type="text" id="cert-verify-code" class="form-control" placeholder="Ej: CERT-2026-LROD-8821" />
+              <button class="btn-secondary" onclick="verifyCertificateByCode()">
+                <i class="fa-solid fa-magnifying-glass"></i> Validar
+              </button>
+            </div>
+            <div id="cert-verify-result" style="display: none; padding: 14px; border-radius: 8px;"></div>
+          </div>
+        </div>
+
+        <!-- Vista previa de la constancia emitida -->
+        <div id="certificate-preview-container" class="card" style="display: none; background: #0f172a; border-color: #3b82f6;">
+          <div class="card-header">
+            <div class="card-title" style="color: #93c5fd;">
+              <i class="fa-solid fa-print"></i> Vista Previa de la Constancia Oficial
+            </div>
+            <div style="display: flex; gap: 8px;">
+              <button class="btn-primary" onclick="printCertificateView()">
+                <i class="fa-solid fa-print"></i> Imprimir Constancia Oficial
+              </button>
+              <button class="btn-secondary" onclick="document.getElementById('certificate-preview-container').style.display='none'">
+                Cerrar
+              </button>
+            </div>
+          </div>
+          <div id="certificate-preview-host" style="padding: 20px;">
+            <!-- Contenido HTML de la constancia -->
+          </div>
+        </div>
+      </div>
+
+      <!-- =============================================================
+           SUB-PANEL 5: CONTROL DE VENTANILLA DE NOTAS Y PERÍODOS
+           ============================================================= -->
+      <div id="sec-subpanel-ventanilla" style="display: none;">
+        <div class="card">
+          <div class="card-header">
+            <div>
+              <div class="card-title">
+                <i class="fa-solid fa-clock-rotate-left" style="color: #f59e0b;"></i>
+                Ventanilla de Calificaciones por Período Lectivo
+              </div>
+              <div style="font-size: 13px; color: var(--text-muted); margin-top: 3px;">
+                Controle las fechas de apertura y cierre para que los docentes suban notas. Las notas cerradas solo pueden modificarse con autorización de Secretaría.
+              </div>
+            </div>
+          </div>
+
+          <div id="grading-windows-container">
+            <!-- Poblado dinámicamente -->
+          </div>
+        </div>
+      </div>
+
     </div>
 
     <!-- -------------------------------------------------------------
@@ -2240,6 +2585,65 @@
           <button type="button" class="btn-secondary" onclick="closeModal('modal-add-schedule-block')">Cancelar</button>
           <button type="submit" class="btn-primary" style="background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);">
             <i class="fa-solid fa-calendar-check"></i> Guardar en Malla Horaria
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: ACTUALIZAR REQUISITOS DE GRADO 11° (SECRETARÍA ACADÉMICA) -->
+  <div id="modal-edit-graduation-req" style="display: none; position: fixed; inset: 0; z-index: 99999; background: rgba(0,0,0,0.8); backdrop-filter: blur(8px); align-items: center; justify-content: center; padding: 20px;">
+    <div style="background: #0f172a; border: 1px solid #3b82f6; border-radius: 16px; max-width: 580px; width: 100%; padding: 26px; box-shadow: 0 25px 60px -15px rgba(0,0,0,0.9);">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px;">
+        <h4 style="color: #fff; font-size: 17px; font-weight: 700; display: flex; align-items: center; gap: 9px;">
+          <i class="fa-solid fa-user-graduate" style="color: #fbbf24;"></i> Requisitos Legales de Grado 11°
+        </h4>
+        <button class="btn-secondary" style="padding: 4px 8px;" onclick="closeModal('modal-edit-graduation-req')"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+
+      <div style="font-size: 13px; color: #94a3b8; margin-bottom: 18px;" id="modal-grad-student-name">
+        Estudiante: Cargando...
+      </div>
+      <input type="hidden" id="modal-grad-student-id" />
+
+      <form onsubmit="submitUpdateGraduationRequirement(event)">
+        <div class="form-grid-2" style="margin-bottom: 14px;">
+          <div class="form-group">
+            <label class="form-label">Horas Servicio Social (Mín 80) *</label>
+            <input type="number" id="modal-grad-hours" class="form-control" min="0" max="250" required />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Reg. ICFES Saber 11</label>
+            <input type="text" id="modal-grad-icfes-code" class="form-control" placeholder="AC2026109923" />
+          </div>
+        </div>
+
+        <div class="form-grid-2" style="margin-bottom: 14px;">
+          <div class="form-group">
+            <label class="form-label">Puntaje Global Saber 11 (/500)</label>
+            <input type="number" id="modal-grad-score" class="form-control" min="0" max="500" placeholder="Ej: 380" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Folio en Libro de Grados</label>
+            <input type="text" id="modal-grad-folio" class="form-control" placeholder="Folio F-102" />
+          </div>
+        </div>
+
+        <div style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px; background: #131e36; padding: 14px; border-radius: 8px;">
+          <label style="display: flex; align-items: center; gap: 8px; font-size: 13px; color: #e2e8f0; cursor: pointer;">
+            <input type="checkbox" id="modal-grad-certs-ok" style="accent-color: #3b82f6; width: 16px; height: 16px;" />
+            Certificados oficiales de 5° a 10° completos y convalidados en legajo
+          </label>
+          <label style="display: flex; align-items: center; gap: 8px; font-size: 13px; color: #e2e8f0; cursor: pointer;">
+            <input type="checkbox" id="modal-grad-paz-salvo" style="accent-color: #3b82f6; width: 16px; height: 16px;" />
+            Paz y Salvo Administrativo y Financiero Institucional (Tesorería / Biblioteca)
+          </label>
+        </div>
+
+        <div style="display: flex; justify-content: flex-end; gap: 10px;">
+          <button type="button" class="btn-secondary" onclick="closeModal('modal-edit-graduation-req')">Cancelar</button>
+          <button type="submit" class="btn-primary" style="background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);">
+            <i class="fa-solid fa-check"></i> Guardar Requisitos de Grado
           </button>
         </div>
       </form>
@@ -2472,6 +2876,9 @@
       // Render Weekly Schedule Grid & Perspectives (Grupos, Docentes, Aulas)
       populateScheduleSelectors();
       renderWeeklyScheduleGrid();
+      // Poblado de Secretaría Académica (Expedientes, Ventanillas y Constancias)
+      await populateSecretariaSelectors();
+      await loadGradingWindows();
     }
 
     function applyRolePermissionsUI() {
@@ -3201,20 +3608,30 @@
       const email = document.getElementById('stu-email').value.trim();
       const password = document.getElementById('stu-pass').value;
 
+      // Variables Oficiales SIMAT / MEN y Ficha Médica
+      const document_type = document.getElementById('stu-doc-type') ? document.getElementById('stu-doc-type').value : 'TI';
+      const blood_type = document.getElementById('stu-rh') ? document.getElementById('stu-rh').value : 'O+';
+      const health_provider_eps = document.getElementById('stu-eps') ? document.getElementById('stu-eps').value.trim() : 'Sura EPS';
+      const socioeconomic_stratum = document.getElementById('stu-stratum') ? parseInt(document.getElementById('stu-stratum').value, 10) : 3;
+      const disability_condition = document.getElementById('stu-disability') ? document.getElementById('stu-disability').value.trim() : 'Ninguna';
+      const medical_notes_allergies = document.getElementById('stu-medical') ? document.getElementById('stu-medical').value.trim() : null;
+
       try {
         const resp = await fetch(`${API_BASE}/academic/students`, {
           method: 'POST',
           headers: getAuthHeaders(),
           body: JSON.stringify({
             grade_level_code, group_code, student_code, first_name, last_name, document_number,
-            birth_date, guardian_name, guardian_phone, email, password
+            birth_date, guardian_name, guardian_phone, email, password,
+            document_type, blood_type, health_provider_eps, socioeconomic_stratum,
+            disability_condition, medical_notes_allergies
           })
         });
 
         const data = await resp.json();
         if (!resp.ok) throw new Error(data.detail || 'Error al matricular estudiante');
 
-        showToast(`Estudiante ${first_name} ${last_name} matriculado(a) exitosamente en ${grade_level_code} — Salón ${group_code}.`, 'success');
+        showToast(`Estudiante ${first_name} ${last_name} matriculado(a) exitosamente en ${grade_level_code} — Salón ${group_code}. Expediente legal generado.`, 'success');
         event.target.reset();
         await loadPlatformData();
       } catch (err) {
@@ -3960,6 +4377,594 @@
         </div>
       `;
       p.style.display = 'block';
+    }
+
+    // =========================================================================
+    // 6. MÓDULO INTEGRAL DE SECRETARÍA ACADÉMICA (MATERNAL A 11°)
+    //    Estándares: SIMAT, Ley 115, Decreto 1290, Servicio Social e ICFES
+    // =========================================================================
+    let secretariaStudentsList = [];
+
+    function switchSecSubTab(tabKey) {
+      const subtabs = ['salones', 'expedientes', 'grad11', 'constancias', 'ventanilla'];
+      subtabs.forEach(key => {
+        const btn = document.getElementById(`sec-subtab-btn-${key}`);
+        const panel = document.getElementById(`sec-subpanel-${key}`);
+        if (btn) btn.classList.toggle('active', key === tabKey);
+        if (panel) panel.style.display = (key === tabKey ? 'block' : 'none');
+      });
+
+      if (tabKey === 'expedientes') {
+        loadStudentDossier();
+      } else if (tabKey === 'grad11') {
+        loadGraduationRequirementsTable();
+      } else if (tabKey === 'ventanilla') {
+        loadGradingWindows();
+      }
+    }
+
+    async function populateSecretariaSelectors() {
+      try {
+        const resp = await fetch(`${API_BASE}/academic/students`, { headers: getAuthHeaders() });
+        if (!resp.ok) return;
+        secretariaStudentsList = await resp.json();
+
+        const dossierSelect = document.getElementById('dossier-student-select');
+        const certSelect = document.getElementById('cert-student-id');
+
+        if (dossierSelect) {
+          dossierSelect.innerHTML = secretariaStudentsList.map(s => 
+            `<option value="${s.id}">${s.full_name} (${s.student_code} — ${s.grade_level_code || '11°'} Salón ${s.group_code || '11-1'})</option>`
+          ).join('');
+        }
+
+        if (certSelect) {
+          certSelect.innerHTML = secretariaStudentsList.map(s => 
+            `<option value="${s.id}">${s.full_name} (${s.student_code} — ${s.grade_level_code || '11°'})</option>`
+          ).join('');
+        }
+
+        if (secretariaStudentsList.length > 0 && dossierSelect && dossierSelect.value) {
+          loadStudentDossier();
+        }
+      } catch (err) {
+        console.error("Error al poblar selectores de secretaría:", err);
+      }
+    }
+
+    async function loadStudentDossier() {
+      const sel = document.getElementById('dossier-student-select');
+      const host = document.getElementById('dossier-content-host');
+      if (!sel || !host) return;
+
+      const studentId = sel.value;
+      if (!studentId) {
+        host.innerHTML = '<div style="text-align: center; color: var(--text-muted); padding: 30px;">Seleccione un estudiante de la lista institucional.</div>';
+        return;
+      }
+
+      host.innerHTML = `
+        <div style="text-align: center; padding: 30px; color: #94a3b8;">
+          <i class="fa-solid fa-spinner fa-spin" style="font-size: 20px; margin-bottom: 8px;"></i>
+          <div>Cargando expediente digital del estudiante...</div>
+        </div>
+      `;
+
+      try {
+        const resp = await fetch(`${API_BASE}/academic/students/${studentId}/dossier`, { headers: getAuthHeaders() });
+        if (!resp.ok) throw new Error("No se pudo cargar el legajo del estudiante.");
+        const dossier = await resp.json();
+
+        const st = dossier.student;
+        const guardians = dossier.guardians || [];
+        const docs = dossier.documents || [];
+        const grad = dossier.graduation_requirement;
+
+        const statusBadge = (s) => {
+          if (s === 'APROBADO') return '<span class="doc-status-badge badge-aprobado"><i class="fa-solid fa-check"></i> Aprobado</span>';
+          if (s === 'RECHAZADO') return '<span class="doc-status-badge badge-rechazado"><i class="fa-solid fa-xmark"></i> Rechazado</span>';
+          if (s === 'CARGADO') return '<span class="doc-status-badge badge-cargado"><i class="fa-solid fa-file-arrow-up"></i> Cargado</span>';
+          return '<span class="doc-status-badge badge-pendiente"><i class="fa-solid fa-clock"></i> Pendiente</span>';
+        };
+
+        const pazSalvoBadge = st.is_financial_paz_salvo 
+          ? '<span class="badge badge-success"><i class="fa-solid fa-check-circle"></i> Paz y Salvo Financiero</span>'
+          : '<span class="badge badge-danger"><i class="fa-solid fa-ban"></i> Bloqueo Administrativo / Cartera</span>';
+
+        let medicalHtml = '';
+        if (st.medical_notes_allergies && st.medical_notes_allergies.trim()) {
+          medicalHtml = `
+            <div style="margin-top: 14px; background: rgba(244, 63, 94, 0.1); border: 1px solid rgba(244, 63, 94, 0.3); border-radius: 8px; padding: 12px; color: #fecdd3; font-size: 13px;">
+              <div style="font-weight: 700; display: flex; align-items: center; gap: 6px; margin-bottom: 4px; color: #f43f5e;">
+                <i class="fa-solid fa-heart-pulse"></i> Ficha Médica de Alerta (Alergias / Cuidados Especiales):
+              </div>
+              ${st.medical_notes_allergies}
+            </div>
+          `;
+        }
+
+        let guardiansHtml = '';
+        if (guardians.length === 0) {
+          guardiansHtml = `<div style="font-size: 13px; color: var(--text-muted); padding: 8px 0;">No hay acudientes adicionales registrados para este alumno.</div>`;
+        } else {
+          guardiansHtml = guardians.map(g => `
+            <div style="background: #131e36; border: 1px solid #1e293b; border-radius: 8px; padding: 12px; margin-bottom: 8px; font-size: 13px;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                <strong><i class="fa-solid fa-user-shield" style="color: #60a5fa;"></i> ${g.full_name} (${g.relationship_type})</strong>
+                <div>
+                  ${g.is_financial_responsible ? '<span class="badge badge-purple" style="font-size: 10px;">Resp. Financiero</span> ' : ''}
+                  ${g.is_authorized_pickup ? '<span class="badge badge-info" style="font-size: 10px;">Autorizado Retiro</span>' : ''}
+                </div>
+              </div>
+              <div style="color: var(--text-muted); font-size: 12px;">
+                Doc: ${g.document_type || 'CC'} ${g.document_number} • Tel: <strong>${g.phone || 'N/A'}</strong> • Email: ${g.email || 'N/A'}
+              </div>
+            </div>
+          `).join('');
+        }
+
+        let docsHtml = '';
+        if (docs.length === 0) {
+          docsHtml = `<div style="font-size: 13px; color: var(--text-muted); padding: 12px 0;">No hay requisitos documentales configurados para el nivel escolar de este estudiante.</div>`;
+        } else {
+          docsHtml = docs.map(d => `
+            <div class="doc-checklist-item">
+              <div style="flex: 1;">
+                <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px; flex-wrap: wrap;">
+                  <strong style="color: #fff; font-size: 13.5px;">${d.document_name}</strong>
+                  ${statusBadge(d.status)}
+                  <span class="badge badge-info" style="font-size: 10px;">${d.document_stage}</span>
+                </div>
+                <div style="font-size: 12px; color: var(--text-muted);">
+                  ${d.observations ? `<strong>Observación:</strong> ${d.observations} • ` : ''}
+                  ${d.verified_by_user ? `Verificado por: <em>${d.verified_by_user}</em>` : 'Sin verificar'}
+                </div>
+              </div>
+              <div style="display: flex; gap: 6px;">
+                <button class="btn-primary" style="padding: 4px 10px; font-size: 11px; background: #059669;" onclick="updateDocumentStatus('${d.id}', 'APROBADO')">
+                  <i class="fa-solid fa-check"></i> Aprobar
+                </button>
+                <button class="btn-secondary" style="padding: 4px 10px; font-size: 11px; color: #fca5a5;" onclick="updateDocumentStatus('${d.id}', 'RECHAZADO')">
+                  <i class="fa-solid fa-xmark"></i> Rechazar
+                </button>
+              </div>
+            </div>
+          `).join('');
+        }
+
+        let gradCardHtml = '';
+        if (grad) {
+          const pctHours = Math.min(100, Math.round((grad.social_service_hours / 80) * 100));
+          const isApto = grad.graduation_status === 'APTO_PARA_GRADO';
+          gradCardHtml = `
+            <div class="card" style="margin-top: 18px; background: #080d19; border: 1px solid #3b82f6;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                <h4 style="font-size: 14px; color: #fbbf24; font-weight: 700; display: flex; align-items: center; gap: 7px;">
+                  <i class="fa-solid fa-user-graduate"></i> Requisitos de Grado 11° y Servicio Social (Ley 115)
+                </h4>
+                <span class="badge ${isApto ? 'badge-success' : 'badge-warning'}">
+                  ${isApto ? 'APTO PARA GRADO' : 'EN PROCESO'}
+                </span>
+              </div>
+              <div class="form-grid-3" style="font-size: 12.5px; margin-bottom: 10px;">
+                <div>Horas Servicio Social: <strong>${grad.social_service_hours} / 80h</strong> (${pctHours}%)</div>
+                <div>Registro ICFES: <strong>${grad.icfes_registration_code || 'Pendiente'}</strong></div>
+                <div>Puntaje Saber 11: <strong>${grad.icfes_score ? grad.icfes_score + ' pts' : 'Sin presentar'}</strong></div>
+                <div>Certificados 5°-10°: <strong>${grad.prior_certificates_complete ? 'Completos' : 'Incompletos'}</strong></div>
+                <div>Paz y Salvo Institucional: <strong>${grad.administrative_paz_salvo ? 'Al Día' : 'Pendiente'}</strong></div>
+                <div>Folio Acta: <strong>${grad.diploma_folio_number || 'Por asignar'}</strong></div>
+              </div>
+              <div style="height: 6px; background: #1e293b; border-radius: 4px; overflow: hidden; margin-top: 6px;">
+                <div style="width: ${pctHours}%; height: 100%; background: ${pctHours >= 100 ? '#10b981' : '#f59e0b'};"></div>
+              </div>
+            </div>
+          `;
+        }
+
+        host.innerHTML = `
+          <div style="display: grid; grid-template-columns: 1.1fr 1fr; gap: 20px;">
+            <!-- Columna Izquierda: Ficha SIMAT y Acudientes -->
+            <div>
+              <div class="card" style="background: #090e1a; border: 1px solid #1e293b; margin-bottom: 16px;">
+                <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px;">
+                  <div>
+                    <h3 style="font-size: 17px; color: #fff; font-weight: 700;">${st.full_name}</h3>
+                    <div style="font-size: 12.5px; color: #94a3b8; margin-top: 2px;">
+                      <code>${st.student_code}</code> • Grado: <strong>${st.grade_level_code || '11°'}</strong> — Salón <strong>${st.group_code || '11-1'}</strong>
+                    </div>
+                  </div>
+                  ${pazSalvoBadge}
+                </div>
+                
+                <div class="form-grid-2" style="font-size: 12.5px; gap: 8px;">
+                  <div><span style="color: var(--text-muted);">Documento:</span> <strong>${st.document_type || 'TI'} ${st.document_number}</strong></div>
+                  <div><span style="color: var(--text-muted);">RH / Sanguíneo:</span> <strong>${st.blood_type || 'O+'}</strong></div>
+                  <div><span style="color: var(--text-muted);">EPS:</span> <strong>${st.health_provider_eps || 'Sura EPS'}</strong></div>
+                  <div><span style="color: var(--text-muted);">Estrato DANE:</span> <strong>Estrato ${st.socioeconomic_stratum || 3}</strong></div>
+                  <div><span style="color: var(--text-muted);">Fecha Nac.:</span> <strong>${st.birth_date || 'N/A'}</strong></div>
+                  <div><span style="color: var(--text-muted);">Discapacidad:</span> <strong>${st.disability_condition || 'Ninguna'}</strong></div>
+                </div>
+
+                ${medicalHtml}
+              </div>
+
+              <div class="card" style="background: #090e1a; border: 1px solid #1e293b; margin-bottom: 0;">
+                <h4 style="font-size: 13.5px; color: #93c5fd; font-weight: 700; margin-bottom: 10px; display: flex; align-items: center; gap: 6px;">
+                  <i class="fa-solid fa-users"></i> Acudientes y Responsables Legales Registrados
+                </h4>
+                ${guardiansHtml}
+              </div>
+
+              ${gradCardHtml}
+            </div>
+
+            <!-- Columna Derecha: Checklist Documental Dinámico -->
+            <div>
+              <div class="card" style="background: #090e1a; border: 1px solid #1e293b; margin-bottom: 0;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px;">
+                  <h4 style="font-size: 14px; color: #38bdf8; font-weight: 700; display: flex; align-items: center; gap: 6px;">
+                    <i class="fa-solid fa-list-check"></i> Checklist Documental Dinámico (${st.grade_level_code || 'Grado'})
+                  </h4>
+                  <span style="font-size: 12px; color: var(--text-muted);">${docs.filter(d => d.status === 'APROBADO').length} de ${docs.length} Aprobados</span>
+                </div>
+                ${docsHtml}
+              </div>
+            </div>
+          </div>
+        `;
+      } catch (err) {
+        host.innerHTML = `<div style="color: #f87171; padding: 20px;"><i class="fa-solid fa-circle-exclamation"></i> Error al cargar el expediente: ${err.message}</div>`;
+      }
+    }
+
+    async function updateDocumentStatus(docId, newStatus) {
+      try {
+        const resp = await fetch(`${API_BASE}/academic/student-documents/${docId}/status`, {
+          method: 'PATCH',
+          headers: getAuthHeaders(),
+          body: JSON.stringify({
+            status: newStatus,
+            observations: newStatus === 'APROBADO' ? 'Documento revisado y aprobado formalmente en Secretaría.' : 'Documento pendiente de subsanar o no legible.',
+            verified_by_user: (currentUser ? currentUser.full_name : 'Secretaría Académica')
+          })
+        });
+        const data = await resp.json();
+        if (!resp.ok) throw new Error(data.detail || "Error al actualizar estado del documento.");
+        showToast(`Documento marcado como ${newStatus}.`, 'success');
+        loadStudentDossier();
+      } catch (err) {
+        showToast(err.message, 'error');
+      }
+    }
+
+    async function loadGraduationRequirementsTable() {
+      const tbody = document.getElementById('graduation-table-body');
+      if (!tbody) return;
+      tbody.innerHTML = `<tr><td colspan="9" style="text-align: center; padding: 20px; color: #94a3b8;"><i class="fa-solid fa-spinner fa-spin"></i> Cargando requisitos de grado 11°...</td></tr>`;
+
+      try {
+        if (secretariaStudentsList.length === 0) {
+          const resp = await fetch(`${API_BASE}/academic/students`, { headers: getAuthHeaders() });
+          if (resp.ok) secretariaStudentsList = await resp.json();
+        }
+
+        const gradStudents = secretariaStudentsList.filter(s => (s.grade_level_code === 'GRADO_11' || s.grade_level_code === 'GRADO_10' || !s.grade_level_code));
+        
+        if (gradStudents.length === 0) {
+          tbody.innerHTML = `<tr><td colspan="9" style="text-align: center; padding: 20px; color: #94a3b8;">No hay estudiantes matriculados en Grado 11° actualmente.</td></tr>`;
+          return;
+        }
+
+        const rows = [];
+        for (const s of gradStudents) {
+          try {
+            const dosResp = await fetch(`${API_BASE}/academic/students/${s.id}/dossier`, { headers: getAuthHeaders() });
+            if (dosResp.ok) {
+              const dos = await dosResp.json();
+              const req = dos.graduation_requirement || {
+                social_service_hours: 0,
+                social_service_approved: false,
+                icfes_registration_code: null,
+                icfes_score: null,
+                prior_certificates_complete: false,
+                administrative_paz_salvo: false,
+                graduation_status: 'EN_PROCESO'
+              };
+              rows.push({ student: s, req });
+            }
+          } catch {
+            // fallback ignore individual error
+          }
+        }
+
+        tbody.innerHTML = rows.map(r => {
+          const s = r.student;
+          const req = r.req;
+          const pct = Math.min(100, Math.round((req.social_service_hours / 80) * 100));
+          const isApto = req.graduation_status === 'APTO_PARA_GRADO';
+          return `
+            <tr>
+              <td>
+                <strong>${s.full_name}</strong><br>
+                <small style="color: var(--text-muted);">${s.student_code} • ${s.document_type || 'TI'} ${s.document_number}</small>
+              </td>
+              <td><span class="badge badge-info">${s.group_code || '11-1'}</span></td>
+              <td>
+                <div style="display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 3px;">
+                  <strong>${req.social_service_hours} / 80h</strong>
+                  <span style="color: ${req.social_service_hours >= 80 ? '#6ee7b7' : '#f59e0b'};">${pct}%</span>
+                </div>
+                <div style="height: 6px; background: #1e293b; border-radius: 4px; overflow: hidden; width: 120px;">
+                  <div style="width: ${pct}%; height: 100%; background: ${req.social_service_hours >= 80 ? '#10b981' : '#f59e0b'};"></div>
+                </div>
+              </td>
+              <td><code>${req.icfes_registration_code || 'Pendiente'}</code></td>
+              <td><strong>${req.icfes_score ? req.icfes_score + ' / 500' : '—'}</strong></td>
+              <td>
+                <span class="badge ${req.prior_certificates_complete ? 'badge-success' : 'badge-danger'}">
+                  ${req.prior_certificates_complete ? 'Completos' : 'Faltantes'}
+                </span>
+              </td>
+              <td>
+                <span class="badge ${req.administrative_paz_salvo ? 'badge-success' : 'badge-danger'}">
+                  ${req.administrative_paz_salvo ? 'Al Día' : 'Deuda'}
+                </span>
+              </td>
+              <td>
+                <span class="badge ${isApto ? 'badge-success' : 'badge-warning'}">
+                  ${isApto ? 'APTO PARA GRADO' : 'EN TRÁMITE'}
+                </span>
+              </td>
+              <td>
+                <button class="btn-primary" style="padding: 4px 10px; font-size: 11.5px;" onclick="openEditGradModal('${s.id}', '${s.full_name}', ${req.social_service_hours}, '${req.icfes_registration_code || ''}', ${req.icfes_score || 0}, ${req.prior_certificates_complete}, ${req.administrative_paz_salvo}, '${req.diploma_folio_number || ''}')">
+                  <i class="fa-solid fa-pen-to-square"></i> Actualizar
+                </button>
+              </td>
+            </tr>
+          `;
+        }).join('');
+      } catch (err) {
+        tbody.innerHTML = `<tr><td colspan="9" style="text-align: center; color: #f87171; padding: 20px;">Error cargando datos: ${err.message}</td></tr>`;
+      }
+    }
+
+    function openEditGradModal(studentId, studentName, hours, icfesCode, icfesScore, certsOk, pazSalvo, folio) {
+      document.getElementById('modal-grad-student-id').value = studentId;
+      document.getElementById('modal-grad-student-name').textContent = `Estudiante: ${studentName}`;
+      document.getElementById('modal-grad-hours').value = hours || 0;
+      document.getElementById('modal-grad-icfes-code').value = icfesCode || '';
+      document.getElementById('modal-grad-score').value = icfesScore || '';
+      document.getElementById('modal-grad-folio').value = folio || '';
+      document.getElementById('modal-grad-certs-ok').checked = !!certsOk;
+      document.getElementById('modal-grad-paz-salvo').checked = !!pazSalvo;
+
+      document.getElementById('modal-edit-graduation-req').style.display = 'flex';
+    }
+
+    async function submitUpdateGraduationRequirement(event) {
+      event.preventDefault();
+      const studentId = document.getElementById('modal-grad-student-id').value;
+      const social_service_hours = parseInt(document.getElementById('modal-grad-hours').value, 10);
+      const icfes_registration_code = document.getElementById('modal-grad-icfes-code').value.trim() || null;
+      const scoreVal = document.getElementById('modal-grad-score').value;
+      const icfes_score = scoreVal ? parseInt(scoreVal, 10) : null;
+      const diploma_folio_number = document.getElementById('modal-grad-folio').value.trim() || null;
+      const prior_certificates_complete = document.getElementById('modal-grad-certs-ok').checked;
+      const administrative_paz_salvo = document.getElementById('modal-grad-paz-salvo').checked;
+
+      try {
+        const resp = await fetch(`${API_BASE}/academic/graduation-requirements/${studentId}`, {
+          method: 'PATCH',
+          headers: getAuthHeaders(),
+          body: JSON.stringify({
+            social_service_hours,
+            social_service_approved: social_service_hours >= 80,
+            icfes_registration_code,
+            icfes_score,
+            prior_certificates_complete,
+            administrative_paz_salvo,
+            diploma_folio_number
+          })
+        });
+        const data = await resp.json();
+        if (!resp.ok) throw new Error(data.detail || "Error al actualizar requisitos de grado.");
+
+        showToast("Requisitos de grado actualizados con éxito.", "success");
+        closeModal('modal-edit-graduation-req');
+        loadGraduationRequirementsTable();
+      } catch (err) {
+        showToast(err.message, "error");
+      }
+    }
+
+    async function handleGenerateCertificate(event) {
+      event.preventDefault();
+      const student_id = document.getElementById('cert-student-id').value;
+      const certificate_type = document.getElementById('cert-type').value;
+      const recipient_entity = document.getElementById('cert-recipient').value.trim();
+
+      try {
+        const resp = await fetch(`${API_BASE}/academic/certificates/generate`, {
+          method: 'POST',
+          headers: getAuthHeaders(),
+          body: JSON.stringify({ student_id, certificate_type, recipient_entity })
+        });
+        const data = await resp.json();
+        if (!resp.ok) throw new Error(data.detail || "Error al emitir constancia.");
+
+        showToast(`Constancia emitida exitosamente. Código: ${data.verification_code}`, "success");
+        
+        const previewContainer = document.getElementById('certificate-preview-container');
+        const previewHost = document.getElementById('certificate-preview-host');
+        if (previewContainer && previewHost) {
+          previewHost.innerHTML = data.content_html;
+          previewContainer.style.display = 'block';
+          previewContainer.scrollIntoView({ behavior: 'smooth' });
+        }
+      } catch (err) {
+        showToast(err.message, "error");
+      }
+    }
+
+    async function verifyCertificateByCode() {
+      const codeInput = document.getElementById('cert-verify-code');
+      const resultBox = document.getElementById('cert-verify-result');
+      if (!codeInput || !resultBox) return;
+
+      const code = codeInput.value.trim();
+      if (!code) {
+        showToast("Ingrese el código de verificación.", "error");
+        return;
+      }
+
+      resultBox.style.display = 'block';
+      resultBox.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Consultando base de datos oficial...';
+
+      try {
+        const resp = await fetch(`${API_BASE}/academic/certificates/verify/${encodeURIComponent(code)}`);
+        const data = await resp.json();
+        if (!resp.ok) {
+          resultBox.style.background = 'rgba(244, 63, 94, 0.15)';
+          resultBox.style.border = '1px solid #f43f5e';
+          resultBox.style.color = '#fecdd3';
+          resultBox.innerHTML = `
+            <div style="font-weight: 700; margin-bottom: 4px;"><i class="fa-solid fa-triangle-exclamation"></i> Documento No Auténtico o No Encontrado</div>
+            <div style="font-size: 12.5px;">El código ingresado no corresponde a ningún documento legal emitido por la institución.</div>
+          `;
+          return;
+        }
+
+        resultBox.style.background = 'rgba(16, 185, 129, 0.15)';
+        resultBox.style.border = '1px solid #10b981';
+        resultBox.style.color = '#a7f3d0';
+        resultBox.innerHTML = `
+          <div style="font-weight: 700; margin-bottom: 4px;"><i class="fa-solid fa-certificate"></i> CERTIFICADO OFICIAL VÁLIDO Y AUTÉNTICO</div>
+          <div style="font-size: 12.5px;">
+            <strong>Estudiante:</strong> ${data.student_full_name} (${data.student_code})<br>
+            <strong>Tipo:</strong> ${data.certificate_type}<br>
+            <strong>Destino:</strong> ${data.recipient_entity}<br>
+            <strong>Emitido el:</strong> ${data.issued_at ? data.issued_at.replace('T', ' ').substring(0, 16) : 'Reciente'}
+          </div>
+        `;
+      } catch (err) {
+        resultBox.innerHTML = `<span style="color: #f87171;">Error al consultar: ${err.message}</span>`;
+      }
+    }
+
+    function printCertificateView() {
+      const host = document.getElementById('certificate-preview-host');
+      if (!host) return;
+      const printWin = window.open('', '', 'width=800,height=900');
+      printWin.document.write(`
+        <!DOCTYPE html>
+        <html>
+          <head>
+            <title>Constancia Oficial SoftEdu</title>
+            <style>
+              body { margin: 0; padding: 24px; font-family: Arial, sans-serif; background: #fff; color: #000; }
+            </style>
+          </head>
+          <body>
+            ${host.innerHTML}
+          </body>
+        </html>
+      `);
+      printWin.document.close();
+      printWin.focus();
+      printWin.print();
+    }
+
+    async function loadGradingWindows() {
+      const container = document.getElementById('grading-windows-container');
+      if (!container) return;
+      container.innerHTML = '<div style="text-align: center; color: var(--text-muted); padding: 20px;"><i class="fa-solid fa-spinner fa-spin"></i> Cargando ventanillas de períodos...</div>';
+
+      try {
+        const resp = await fetch(`${API_BASE}/academic/grading-windows`, { headers: getAuthHeaders() });
+        if (!resp.ok) throw new Error("No se pudieron cargar las ventanillas de notas.");
+        const windows = await resp.json();
+
+        if (windows.length === 0) {
+          container.innerHTML = '<div style="color: var(--text-muted); padding: 16px;">No hay ventanas de notas configuradas para este año lectivo.</div>';
+          return;
+        }
+
+        container.innerHTML = `
+          <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 16px;">
+            ${windows.map(w => {
+              const isOpen = w.is_open;
+              return `
+                <div style="background: #090e1a; border: 1px solid ${isOpen ? '#10b981' : '#f43f5e'}; border-radius: 12px; padding: 18px;">
+                  <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px;">
+                    <div>
+                      <span class="badge ${isOpen ? 'badge-success' : 'badge-danger'}">
+                        ${isOpen ? 'Ventanilla Abierta' : 'Ventanilla Cerrada'}
+                      </span>
+                      <h4 style="font-size: 16px; font-weight: 700; color: #fff; margin-top: 6px;">${w.period_label}</h4>
+                    </div>
+                    <i class="fa-solid ${isOpen ? 'fa-lock-open' : 'fa-lock'}" style="color: ${isOpen ? '#10b981' : '#f43f5e'}; font-size: 20px;"></i>
+                  </div>
+
+                  <div style="font-size: 12.5px; color: var(--text-muted); margin-bottom: 16px;">
+                    <div><i class="fa-solid fa-calendar-xmark"></i> Cierre: <strong>${w.closing_date ? w.closing_date.split('T')[0] : 'Fin de Periodo'}</strong></div>
+                    <div><i class="fa-solid fa-user-clock"></i> Extemporaneidad: <strong>${w.extemporaneous_active ? 'Habilitada' : 'Inactiva'}</strong></div>
+                  </div>
+
+                  <div style="display: flex; gap: 8px;">
+                    <button class="btn-primary" style="flex: 1; padding: 7px; font-size: 12px; background: ${isOpen ? '#dc2626' : '#059669'};" onclick="toggleGradingWindow('${w.id}', ${!isOpen})">
+                      <i class="fa-solid ${isOpen ? 'fa-lock' : 'fa-lock-open'}"></i> ${isOpen ? 'Cerrar Subida de Notas' : 'Abrir para Docentes'}
+                    </button>
+                  </div>
+                </div>
+              `;
+            }).join('')}
+          </div>
+        `;
+      } catch (err) {
+        container.innerHTML = `<div style="color: #f87171; padding: 16px;">${err.message}</div>`;
+      }
+    }
+
+    async function toggleGradingWindow(winId, newIsOpen) {
+      try {
+        const resp = await fetch(`${API_BASE}/academic/grading-windows/${winId}/toggle`, {
+          method: 'PATCH',
+          headers: getAuthHeaders(),
+          body: JSON.stringify({ is_open: newIsOpen, extemporaneous_active: false })
+        });
+        const data = await resp.json();
+        if (!resp.ok) throw new Error(data.detail || "Error al modificar ventanilla.");
+        showToast(`Ventanilla ${newIsOpen ? 'abierta' : 'cerrada'} exitosamente.`, 'success');
+        loadGradingWindows();
+      } catch (err) {
+        showToast(err.message, 'error');
+      }
+    }
+
+    function downloadSimatCsv() {
+      const token = sessionStorage.getItem('softedu_token');
+      fetch(`${API_BASE}/academic/simat/export`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      })
+      .then(response => {
+        if (!response.ok) throw new Error('Error al descargar reporte SIMAT.');
+        return response.blob();
+      })
+      .then(blob => {
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `SIMAT_Oficial_${new Date().getFullYear()}.csv`;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        showToast('Archivo plano oficial SIMAT descargado exitosamente.', 'success');
+      })
+      .catch(err => {
+        showToast(err.message, 'error');
+      });
     }
   </script>
 

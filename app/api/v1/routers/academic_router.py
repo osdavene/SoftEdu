@@ -9,7 +9,7 @@ Horarios Escolares, Alumnos, Matrículas y Planillas de Asistencia con Copiloto 
 from typing import Annotated
 import uuid
 
-from fastapi import APIRouter, BackgroundTasks, Depends, Query, status
+from fastapi import APIRouter, BackgroundTasks, Depends, Query, Response, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.ai.ai_service import AcademicAIService
@@ -27,8 +27,14 @@ from app.schemas.management import (
     ClassroomGroupResponse,
     CourseOfferingCreateRequest,
     CourseOfferingResponse,
-    ScheduleBlockSchema,
+    GradingWindowResponse,
+    GradingWindowToggleRequest,
+    GraduationRequirementResponse,
+    GraduationRequirementUpdateRequest,
     InstitutionalOverviewResponse,
+    OfficialCertificateGenerateRequest,
+    OfficialCertificateResponse,
+    ScheduleBlockSchema,
     SchoolAssignRectorRequest,
     SchoolCreateWithRectorRequest,
     SchoolGradeCatalogItem,
@@ -36,6 +42,9 @@ from app.schemas.management import (
     SchoolStaffCreateRequest,
     SchoolUpdateGradesRequest,
     StudentCreateRequest,
+    StudentDocumentResponse,
+    StudentDocumentStatusUpdateRequest,
+    StudentDossierResponse,
     StudentResponse,
     SubjectCreateRequest,
     SubjectResponse,
@@ -432,3 +441,135 @@ async def register_bulk_attendance(
             context=ctx,
         )
     return results
+
+
+# =====================================================================
+# 4. SECRETARÍA ACADÉMICA (LEGAJOS, SIMAT, CONSTANCIAS, VENTANILLA)
+# =====================================================================
+@router.get(
+    "/students/{student_id}/dossier",
+    response_model=StudentDossierResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Expediente documental completo del estudiante (Checklist, Acudientes y Requisitos de Grado)",
+)
+async def get_student_dossier(
+    student_id: uuid.UUID,
+    service: Annotated[AcademicManagementService, Depends(get_management_service)],
+    _current_user: Annotated[
+        User, Depends(require_roles(UserRole.ADMIN, UserRole.RECTOR, UserRole.SECRETARIA, UserRole.COORDINADOR, UserRole.ORIENTADOR))
+    ],
+) -> StudentDossierResponse:
+    return await service.get_student_dossier(student_id=student_id)
+
+
+@router.patch(
+    "/student-documents/{doc_id}/status",
+    response_model=StudentDocumentResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Aprobar, rechazar o actualizar estado de un documento del legajo del estudiante",
+)
+async def update_student_document_status(
+    doc_id: uuid.UUID,
+    payload: StudentDocumentStatusUpdateRequest,
+    service: Annotated[AcademicManagementService, Depends(get_management_service)],
+    _current_user: Annotated[
+        User, Depends(require_roles(UserRole.ADMIN, UserRole.RECTOR, UserRole.SECRETARIA, UserRole.COORDINADOR))
+    ],
+) -> StudentDocumentResponse:
+    return await service.update_document_status(doc_id=doc_id, payload=payload)
+
+
+@router.patch(
+    "/graduation-requirements/{student_id}",
+    response_model=GraduationRequirementResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Actualizar horas de Servicio Social (80h), ICFES Saber 11 y requisitos de grado",
+)
+async def update_graduation_requirement(
+    student_id: uuid.UUID,
+    payload: GraduationRequirementUpdateRequest,
+    service: Annotated[AcademicManagementService, Depends(get_management_service)],
+    _current_user: Annotated[
+        User, Depends(require_roles(UserRole.ADMIN, UserRole.RECTOR, UserRole.SECRETARIA, UserRole.COORDINADOR))
+    ],
+) -> GraduationRequirementResponse:
+    return await service.update_graduation_requirement(student_id=student_id, payload=payload)
+
+
+@router.get(
+    "/grading-windows",
+    response_model=list[GradingWindowResponse],
+    status_code=status.HTTP_200_OK,
+    summary="Listar ventanillas de notas por período y estado de apertura para docentes",
+)
+async def list_grading_windows(
+    service: Annotated[AcademicManagementService, Depends(get_management_service)],
+    _current_user: Annotated[User, Depends(get_current_active_user)],
+) -> list[GradingWindowResponse]:
+    return await service.list_grading_windows()
+
+
+@router.patch(
+    "/grading-windows/{window_id}/toggle",
+    response_model=GradingWindowResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Abrir o cerrar ventanilla de notas o habilitar extemporaneidad docente",
+)
+async def toggle_grading_window(
+    window_id: uuid.UUID,
+    payload: GradingWindowToggleRequest,
+    service: Annotated[AcademicManagementService, Depends(get_management_service)],
+    _current_user: Annotated[
+        User, Depends(require_roles(UserRole.ADMIN, UserRole.RECTOR, UserRole.SECRETARIA, UserRole.COORDINADOR))
+    ],
+) -> GradingWindowResponse:
+    return await service.toggle_grading_window(window_id=window_id, payload=payload)
+
+
+@router.post(
+    "/certificates/generate",
+    response_model=OfficialCertificateResponse,
+    status_code=status.HTTP_201_CREATED,
+    summary="Generar constancia oficial de estudio o certificado con código de verificación",
+)
+async def generate_official_certificate(
+    payload: OfficialCertificateGenerateRequest,
+    service: Annotated[AcademicManagementService, Depends(get_management_service)],
+    current_user: Annotated[
+        User, Depends(require_roles(UserRole.ADMIN, UserRole.RECTOR, UserRole.SECRETARIA, UserRole.COORDINADOR))
+    ],
+) -> OfficialCertificateResponse:
+    return await service.generate_official_certificate(
+        school_id=current_user.school_id, payload=payload
+    )
+
+
+@router.get(
+    "/certificates/verify/{verification_code}",
+    response_model=OfficialCertificateResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Verificación pública de autenticidad de constancias y certificados escolares",
+)
+async def verify_official_certificate(
+    verification_code: str,
+    service: Annotated[AcademicManagementService, Depends(get_management_service)],
+) -> OfficialCertificateResponse:
+    return await service.verify_official_certificate(verification_code=verification_code)
+
+
+@router.get(
+    "/simat/export",
+    summary="Exportar archivo plano oficial de estudiantes para el SIMAT (Ministerio de Educación)",
+)
+async def export_simat_csv(
+    service: Annotated[AcademicManagementService, Depends(get_management_service)],
+    _current_user: Annotated[
+        User, Depends(require_roles(UserRole.ADMIN, UserRole.RECTOR, UserRole.SECRETARIA, UserRole.COORDINADOR))
+    ],
+) -> Response:
+    csv_content = await service.export_simat_csv()
+    return Response(
+        content=csv_content,
+        media_type="text/csv",
+        headers={"Content-Disposition": "attachment; filename=SIMAT_OFICIAL_ESTUDIANTES_2026.csv"},
+    )

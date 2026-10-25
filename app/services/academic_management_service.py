@@ -28,9 +28,14 @@ from app.models.academic import (
     Enrollment,
     EnrollmentStatus,
     Grade,
+    GradingWindow,
+    GraduationRequirement,
+    Guardian,
+    OfficialCertificate,
     SCHOOL_GRADES_CATALOG,
     SchoolInstitution,
     Student,
+    StudentDocument,
     Subject,
     Teacher,
     User,
@@ -51,8 +56,16 @@ from app.schemas.management import (
     CourseOfferingCreateRequest,
     CourseOfferingResponse,
     EnrolledStudentSummaryItem,
+    GradingWindowResponse,
+    GradingWindowToggleRequest,
+    GraduationRequirementResponse,
+    GraduationRequirementUpdateRequest,
+    GuardianCreateRequest,
+    GuardianResponse,
     InstitutionalOverviewResponse,
     LoginRequest,
+    OfficialCertificateGenerateRequest,
+    OfficialCertificateResponse,
     ScheduleBlockSchema,
     SchoolAssignRectorRequest,
     SchoolCreateWithRectorRequest,
@@ -61,6 +74,9 @@ from app.schemas.management import (
     SchoolStaffCreateRequest,
     SchoolUpdateGradesRequest,
     StudentCreateRequest,
+    StudentDocumentResponse,
+    StudentDocumentStatusUpdateRequest,
+    StudentDossierResponse,
     StudentResponse,
     SubjectCreateRequest,
     SubjectResponse,
@@ -1668,9 +1684,84 @@ class AcademicManagementService:
             birth_date=payload.birth_date,
             guardian_name=payload.guardian_name,
             guardian_phone=payload.guardian_phone,
+            document_type=payload.document_type or "TI",
+            blood_type=payload.blood_type or "O+",
+            health_provider_eps=payload.health_provider_eps or "Sura EPS",
+            socioeconomic_stratum=payload.socioeconomic_stratum or 3,
+            ethnicity=payload.ethnicity or "Ninguna",
+            disability_condition=payload.disability_condition or "Ninguna",
+            medical_notes_allergies=payload.medical_notes_allergies,
+            is_financial_paz_salvo=payload.is_financial_paz_salvo,
         )
         self._session.add(student)
         await self._session.flush()
+
+        # Crear Acudiente si fue diligenciado
+        if payload.guardian_name and payload.guardian_phone:
+            g_parts = payload.guardian_name.strip().split(" ", 1)
+            g_first = g_parts[0]
+            g_last = g_parts[1] if len(g_parts) > 1 else "Familia"
+            guardian = Guardian(
+                student_id=student.id,
+                first_name=g_first,
+                last_name=g_last,
+                document_type="CC",
+                document_number=f"CC-{student.student_code[-4:]}",
+                phone=payload.guardian_phone,
+                relationship_type="MADRE" if "madre" in payload.guardian_name.lower() else "PADRE" if "padre" in payload.guardian_name.lower() else "ACUDIENTE_LEGAL",
+                is_financial_responsible=True,
+                is_authorized_pickup=True,
+            )
+            self._session.add(guardian)
+
+        # Generar Checklist Documental Dinámico según nivel
+        is_early_childhood = grade_code in ["MATERNAL", "PREJARDIN", "JARDIN", "TRANSICION"]
+        is_primary = grade_code.startswith("GRADO_0") and int(grade_code[-1]) <= 5
+        is_media = grade_code in ["GRADO_10", "GRADO_11"]
+
+        if is_early_childhood:
+            init_docs = [
+                ("Carnet de Vacunas y Esquema Completo", "PREESCOLAR"),
+                ("Control de Crecimiento y Desarrollo (EPS)", "PREESCOLAR"),
+                ("Registro Civil de Nacimiento (RC)", "PREESCOLAR"),
+                ("Certificado Médico y Ficha de Alergias", "PREESCOLAR"),
+            ]
+        elif is_primary:
+            init_docs = [
+                ("Documento de Identidad (RC / TI)", "PRIMARIA"),
+                ("Certificado de Notas del Año Anterior", "PRIMARIA"),
+                ("Paz y Salvo Colegio de Procedencia", "PRIMARIA"),
+                ("Certificado de Afiliación a EPS", "PRIMARIA"),
+            ]
+        else:
+            init_docs = [
+                ("Tarjeta de Identidad o Cédula (TI / CC)", "BACHILLERATO"),
+                ("Certificados Oficiales de Notas Años Anteriores", "BACHILLERATO"),
+                ("Paz y Salvo Colegio Anterior", "BACHILLERATO"),
+                ("Certificado EPS y Ficha de Salud", "BACHILLERATO"),
+            ]
+            if is_media:
+                init_docs.append(("Constancia de Servicio Social Estudiantil (80h)", "MEDIA"))
+
+        for doc_name, stage in init_docs:
+            doc_obj = StudentDocument(
+                student_id=student.id,
+                document_name=doc_name,
+                document_stage=stage,
+                status="PENDIENTE",
+            )
+            self._session.add(doc_obj)
+
+        if is_media:
+            grad_req = GraduationRequirement(
+                student_id=student.id,
+                social_service_hours=0,
+                social_service_approved=False,
+                prior_certificates_complete=False,
+                administrative_paz_salvo=True,
+                graduation_status="EN_PROCESO",
+            )
+            self._session.add(grad_req)
 
         # Matricular en la oferta académica correspondiente al grupo
         group_off = (
@@ -1717,6 +1808,14 @@ class AcademicManagementService:
             birth_date=student.birth_date,
             guardian_name=student.guardian_name,
             guardian_phone=student.guardian_phone,
+            document_type=student.document_type,
+            blood_type=student.blood_type,
+            health_provider_eps=student.health_provider_eps,
+            socioeconomic_stratum=student.socioeconomic_stratum,
+            ethnicity=student.ethnicity,
+            disability_condition=student.disability_condition,
+            medical_notes_allergies=student.medical_notes_allergies,
+            is_financial_paz_salvo=student.is_financial_paz_salvo,
             is_active=student.is_active,
         )
 
@@ -1745,6 +1844,14 @@ class AcademicManagementService:
                 birth_date=s.birth_date,
                 guardian_name=s.guardian_name,
                 guardian_phone=s.guardian_phone,
+                document_type=s.document_type or "TI",
+                blood_type=s.blood_type or "O+",
+                health_provider_eps=s.health_provider_eps or "Sura EPS",
+                socioeconomic_stratum=s.socioeconomic_stratum or 3,
+                ethnicity=s.ethnicity or "Ninguna",
+                disability_condition=s.disability_condition or "Ninguna",
+                medical_notes_allergies=s.medical_notes_allergies,
+                is_financial_paz_salvo=s.is_financial_paz_salvo if s.is_financial_paz_salvo is not None else True,
                 is_active=s.is_active,
             )
             for s in students
@@ -2022,3 +2129,453 @@ class AcademicManagementService:
                             "end_time": min(end_a, end_b),
                         }
         return None
+
+    # =========================================================================
+    # 5. SECRETARÍA ACADÉMICA INTEGRAL (LEGAJOS, SIMAT, CONSTANCIAS, VENTANILLA)
+    # =========================================================================
+    async def get_student_dossier(self, student_id: uuid.UUID) -> StudentDossierResponse:
+        """
+        Retorna el legajo documental completo del estudiante: datos personales,
+        SIMAT, acudientes registrados, checklist de documentos y requisitos de grado.
+        """
+        stmt = (
+            select(Student)
+            .options(
+                joinedload(Student.user),
+                selectinload(Student.guardians),
+                selectinload(Student.documents),
+                joinedload(Student.graduation_requirement),
+                selectinload(Student.certificates),
+            )
+            .where(Student.id == student_id)
+        )
+        student = (await self._session.execute(stmt)).scalars().first()
+        if student is None:
+            raise EntityNotFoundError("Student", student_id)
+
+        st_dto = StudentResponse(
+            id=student.id,
+            user_id=student.user_id,
+            full_name=student.user.full_name,
+            email=student.user.email,
+            document_number=student.user.document_number,
+            student_code=student.student_code,
+            grade_level_code=student.grade_level_code or "GRADO_11",
+            group_code=student.group_code or "11-1",
+            program_name=student.program_name,
+            current_semester=student.current_semester,
+            enrollment_cohort=student.enrollment_cohort,
+            birth_date=student.birth_date,
+            guardian_name=student.guardian_name,
+            guardian_phone=student.guardian_phone,
+            document_type=student.document_type or "TI",
+            blood_type=student.blood_type or "O+",
+            health_provider_eps=student.health_provider_eps or "Sura EPS",
+            socioeconomic_stratum=student.socioeconomic_stratum or 3,
+            ethnicity=student.ethnicity or "Ninguna",
+            disability_condition=student.disability_condition or "Ninguna",
+            medical_notes_allergies=student.medical_notes_allergies,
+            is_financial_paz_salvo=student.is_financial_paz_salvo if student.is_financial_paz_salvo is not None else True,
+            is_active=student.is_active,
+        )
+
+        guardians_dto = [
+            GuardianResponse(
+                id=g.id,
+                student_id=g.student_id,
+                first_name=g.first_name,
+                last_name=g.last_name,
+                full_name=f"{g.first_name} {g.last_name}".strip(),
+                document_type=g.document_type,
+                document_number=g.document_number,
+                phone=g.phone,
+                email=g.email,
+                relationship_type=g.relationship_type,
+                is_financial_responsible=g.is_financial_responsible,
+                is_authorized_pickup=g.is_authorized_pickup,
+            )
+            for g in student.guardians
+        ]
+
+        docs_dto = [
+            StudentDocumentResponse(
+                id=d.id,
+                student_id=d.student_id,
+                document_name=d.document_name,
+                document_stage=d.document_stage,
+                status=d.status,
+                file_url=d.file_url,
+                observations=d.observations,
+                verified_at=d.verified_at,
+                verified_by_user=d.verified_by_user,
+            )
+            for d in student.documents
+        ]
+
+        grad_dto = None
+        if student.graduation_requirement:
+            gr = student.graduation_requirement
+            grad_dto = GraduationRequirementResponse(
+                id=gr.id,
+                student_id=gr.student_id,
+                social_service_hours=gr.social_service_hours,
+                social_service_approved=gr.social_service_approved,
+                icfes_registration_code=gr.icfes_registration_code,
+                icfes_score=gr.icfes_score,
+                prior_certificates_complete=gr.prior_certificates_complete,
+                administrative_paz_salvo=gr.administrative_paz_salvo,
+                diploma_folio_number=gr.diploma_folio_number,
+                diploma_book_number=gr.diploma_book_number,
+                graduation_status=gr.graduation_status,
+            )
+
+        certs_dto = [
+            OfficialCertificateResponse(
+                id=c.id,
+                school_id=c.school_id,
+                student_id=c.student_id,
+                student_full_name=student.user.full_name,
+                student_code=student.student_code,
+                student_grade_label=student.grade_level_code or "Grado 11°",
+                student_group_code=student.group_code or "11-1",
+                certificate_type=c.certificate_type,
+                verification_code=c.verification_code,
+                issued_at=c.issued_at,
+                recipient_entity=c.recipient_entity,
+                content_html=c.content_html,
+                is_valid=c.is_valid,
+            )
+            for c in student.certificates
+        ]
+
+        return StudentDossierResponse(
+            student=st_dto,
+            guardians=guardians_dto,
+            documents=docs_dto,
+            graduation_requirement=grad_dto,
+            certificates=certs_dto,
+        )
+
+    async def update_document_status(
+        self, doc_id: uuid.UUID, payload: StudentDocumentStatusUpdateRequest
+    ) -> StudentDocumentResponse:
+        doc = await self._session.get(StudentDocument, doc_id)
+        if doc is None:
+            raise EntityNotFoundError("StudentDocument", doc_id)
+
+        doc.status = payload.status
+        if payload.observations is not None:
+            doc.observations = payload.observations
+        if payload.verified_by_user is not None:
+            doc.verified_by_user = payload.verified_by_user
+        doc.verified_at = datetime.now(timezone.utc)
+
+        await self._session.commit()
+        await self._session.refresh(doc)
+
+        return StudentDocumentResponse(
+            id=doc.id,
+            student_id=doc.student_id,
+            document_name=doc.document_name,
+            document_stage=doc.document_stage,
+            status=doc.status,
+            file_url=doc.file_url,
+            observations=doc.observations,
+            verified_at=doc.verified_at,
+            verified_by_user=doc.verified_by_user,
+        )
+
+    async def update_graduation_requirement(
+        self, student_id: uuid.UUID, payload: GraduationRequirementUpdateRequest
+    ) -> GraduationRequirementResponse:
+        stmt = select(GraduationRequirement).where(GraduationRequirement.student_id == student_id)
+        req = (await self._session.execute(stmt)).scalars().first()
+        if req is None:
+            req = GraduationRequirement(student_id=student_id)
+            self._session.add(req)
+
+        if payload.social_service_hours is not None:
+            req.social_service_hours = payload.social_service_hours
+            if req.social_service_hours >= 80:
+                req.social_service_approved = True
+
+        if payload.social_service_approved is not None:
+            req.social_service_approved = payload.social_service_approved
+
+        if payload.icfes_registration_code is not None:
+            req.icfes_registration_code = payload.icfes_registration_code
+
+        if payload.icfes_score is not None:
+            req.icfes_score = payload.icfes_score
+
+        if payload.prior_certificates_complete is not None:
+            req.prior_certificates_complete = payload.prior_certificates_complete
+
+        if payload.administrative_paz_salvo is not None:
+            req.administrative_paz_salvo = payload.administrative_paz_salvo
+
+        if payload.diploma_folio_number is not None:
+            req.diploma_folio_number = payload.diploma_folio_number
+
+        if payload.diploma_book_number is not None:
+            req.diploma_book_number = payload.diploma_book_number
+
+        if (
+            req.social_service_hours >= 80
+            and req.social_service_approved
+            and req.prior_certificates_complete
+            and req.administrative_paz_salvo
+        ):
+            req.graduation_status = "APTO_PARA_GRADO"
+        elif payload.graduation_status is not None:
+            req.graduation_status = payload.graduation_status
+
+        await self._session.commit()
+        await self._session.refresh(req)
+
+        return GraduationRequirementResponse(
+            id=req.id,
+            student_id=req.student_id,
+            social_service_hours=req.social_service_hours,
+            social_service_approved=req.social_service_approved,
+            icfes_registration_code=req.icfes_registration_code,
+            icfes_score=req.icfes_score,
+            prior_certificates_complete=req.prior_certificates_complete,
+            administrative_paz_salvo=req.administrative_paz_salvo,
+            diploma_folio_number=req.diploma_folio_number,
+            diploma_book_number=req.diploma_book_number,
+            graduation_status=req.graduation_status,
+        )
+
+    async def list_grading_windows(
+        self, school_id: uuid.UUID | None = None
+    ) -> list[GradingWindowResponse]:
+        stmt = select(GradingWindow).order_by(GradingWindow.created_at.asc())
+        if school_id is not None:
+            stmt = stmt.where(GradingWindow.school_id == school_id)
+        windows = (await self._session.execute(stmt)).scalars().all()
+        return [
+            GradingWindowResponse(
+                id=w.id,
+                school_id=w.school_id,
+                academic_period_id=w.academic_period_id,
+                period_label=w.period_label,
+                is_open=w.is_open,
+                closing_date=w.closing_date,
+                extemporaneous_active=w.extemporaneous_active,
+            )
+            for w in windows
+        ]
+
+    async def toggle_grading_window(
+        self, window_id: uuid.UUID, payload: GradingWindowToggleRequest
+    ) -> GradingWindowResponse:
+        win = await self._session.get(GradingWindow, window_id)
+        if win is None:
+            raise EntityNotFoundError("GradingWindow", window_id)
+
+        win.is_open = payload.is_open
+        win.extemporaneous_active = payload.extemporaneous_active
+        await self._session.commit()
+        await self._session.refresh(win)
+
+        return GradingWindowResponse(
+            id=win.id,
+            school_id=win.school_id,
+            academic_period_id=win.academic_period_id,
+            period_label=win.period_label,
+            is_open=win.is_open,
+            closing_date=win.closing_date,
+            extemporaneous_active=win.extemporaneous_active,
+        )
+
+    async def generate_official_certificate(
+        self, school_id: uuid.UUID | None, payload: OfficialCertificateGenerateRequest
+    ) -> OfficialCertificateResponse:
+        student = (
+            await self._session.execute(
+                select(Student).options(joinedload(Student.user)).where(Student.id == payload.student_id)
+            )
+        ).scalars().first()
+        if student is None:
+            raise EntityNotFoundError("Student", payload.student_id)
+
+        if not student.is_financial_paz_salvo:
+            raise BusinessRuleViolationError(
+                message=f"No es posible expedir la constancia para {student.user.full_name}: Presenta bloqueo por cartera / falta de Paz y Salvo administrativo.",
+                rule_code="STUDENT_FINANCIAL_HOLD",
+            )
+
+        rnd = uuid.uuid4().hex[:6].upper()
+        verif_code = f"CERT-{datetime.utcnow().year}-{student.student_code[-4:]}-{rnd}"
+
+        school = None
+        if school_id:
+            school = await self._session.get(SchoolInstitution, school_id)
+        if not school:
+            school = (await self._session.execute(select(SchoolInstitution).limit(1))).scalars().first()
+
+        school_name = school.name if school else "Colegio Bilingüe Gimnasio San Ángel"
+        dane = school.dane_code if school else "311001098452"
+
+        content_html = f"""
+        <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #1e293b; padding: 24px;">
+            <div style="text-align: center; border-bottom: 2px solid #2563eb; padding-bottom: 12px; margin-bottom: 20px;">
+                <h2 style="margin: 0; color: #1e3a8a; text-transform: uppercase;">{school_name}</h2>
+                <p style="margin: 4px 0; font-size: 13px; color: #64748b;">Resolución MEN Oficial • Código DANE: {dane}</p>
+                <h3 style="margin: 12px 0 0 0; color: #0284c7;">SECRETARÍA ACADÉMICA Y DE ADMISIONES</h3>
+            </div>
+            <div style="text-align: center; margin: 30px 0;">
+                <h4 style="letter-spacing: 2px; text-transform: uppercase;">HACE CONSTAR QUE:</h4>
+            </div>
+            <p style="text-align: justify; font-size: 15px;">
+                El(La) estudiante <strong>{student.user.full_name.upper()}</strong>, identificado(a) con 
+                {student.document_type} No. <strong>{student.user.document_number}</strong> y código estudiantil 
+                <strong>{student.student_code}</strong>, se encuentra legalmente <strong>MATRICULADO(A) Y ASISTIENDO</strong> 
+                en esta institución en el grado <strong>{student.grade_level_code}</strong>, Salón <strong>{student.group_code}</strong>, 
+                durante el año lectivo {datetime.utcnow().year}.
+            </p>
+            <p style="text-align: justify; font-size: 14px; color: #475569; margin-top: 20px;">
+                Se expide la presente constancia oficial a solicitud del interesado con destino a: 
+                <strong>{payload.recipient_entity.upper()}</strong>.
+            </p>
+            <div style="margin-top: 40px; display: flex; justify-content: space-between; align-items: flex-end;">
+                <div>
+                    <div style="border-top: 1px solid #94a3b8; width: 220px; text-align: center; padding-top: 5px;">
+                        <strong>Martha Lucía Pineda R.</strong><br>
+                        <span style="font-size: 12px; color: #64748b;">Secretaría Académica General</span>
+                    </div>
+                </div>
+                <div style="text-align: right;">
+                    <div style="font-size: 11px; color: #64748b;">Código de Verificación Oficial:</div>
+                    <code style="font-size: 13px; font-weight: bold; color: #2563eb;">{verif_code}</code>
+                </div>
+            </div>
+        </div>
+        """
+
+        cert = OfficialCertificate(
+            school_id=school.id if school else student.id,
+            student_id=student.id,
+            certificate_type=payload.certificate_type,
+            verification_code=verif_code,
+            recipient_entity=payload.recipient_entity,
+            content_html=content_html,
+            is_valid=True,
+        )
+        self._session.add(cert)
+        await self._session.commit()
+        await self._session.refresh(cert)
+
+        return OfficialCertificateResponse(
+            id=cert.id,
+            school_id=cert.school_id,
+            student_id=cert.student_id,
+            student_full_name=student.user.full_name,
+            student_code=student.student_code,
+            student_grade_label=student.grade_level_code or "Grado Escolar",
+            student_group_code=student.group_code or "11-1",
+            certificate_type=cert.certificate_type,
+            verification_code=cert.verification_code,
+            issued_at=cert.issued_at,
+            recipient_entity=cert.recipient_entity,
+            content_html=cert.content_html,
+            is_valid=cert.is_valid,
+        )
+
+    async def verify_official_certificate(
+        self, verification_code: str
+    ) -> OfficialCertificateResponse:
+        stmt = (
+            select(OfficialCertificate)
+            .options(joinedload(OfficialCertificate.student).joinedload(Student.user))
+            .where(func.upper(OfficialCertificate.verification_code) == verification_code.strip().upper())
+        )
+        cert = (await self._session.execute(stmt)).scalars().first()
+        if cert is None:
+            raise EntityNotFoundError("OfficialCertificate", verification_code)
+
+        st = cert.student
+        return OfficialCertificateResponse(
+            id=cert.id,
+            school_id=cert.school_id,
+            student_id=cert.student_id,
+            student_full_name=st.user.full_name,
+            student_code=st.student_code,
+            student_grade_label=st.grade_level_code or "Grado Escolar",
+            student_group_code=st.group_code or "11-1",
+            certificate_type=cert.certificate_type,
+            verification_code=cert.verification_code,
+            issued_at=cert.issued_at,
+            recipient_entity=cert.recipient_entity,
+            content_html=cert.content_html,
+            is_valid=cert.is_valid,
+        )
+
+    async def export_simat_csv(self, school_id: uuid.UUID | None = None) -> str:
+        stmt = (
+            select(Student)
+            .options(joinedload(Student.user), selectinload(Student.guardians))
+            .where(Student.is_active.is_(True))
+            .order_by(Student.grade_level_code.asc(), Student.group_code.asc())
+        )
+        students = (await self._session.execute(stmt)).scalars().all()
+
+        headers = [
+            "CODIGO_DANE_SEDE",
+            "TIPO_DOCUMENTO",
+            "NUMERO_DOCUMENTO",
+            "PRIMER_NOMBRE",
+            "SEGUNDO_NOMBRE",
+            "PRIMER_APELLIDO",
+            "SEGUNDO_APELLIDO",
+            "FECHA_NACIMIENTO",
+            "FACTOR_RH",
+            "GENERO",
+            "ESTRATO",
+            "EPS_AFILIACION",
+            "GRADO_CODIGO",
+            "SALON_GRUPO",
+            "JORNADA",
+            "PAZ_Y_SALVO",
+            "NOMBRE_ACUDIENTE",
+            "TELEFONO_ACUDIENTE",
+            "DISCAPACIDAD",
+            "ETNIA",
+        ]
+
+        lines = [",".join(headers)]
+        for s in students:
+            names = (s.user.first_name or "").strip().split(" ", 1)
+            f_name = names[0]
+            s_name = names[1] if len(names) > 1 else ""
+
+            surnames = (s.user.last_name or "").strip().split(" ", 1)
+            f_sur = surnames[0]
+            s_sur = surnames[1] if len(surnames) > 1 else ""
+
+            row = [
+                "311001098452",
+                s.document_type or "TI",
+                s.user.document_number,
+                f_name,
+                s_name,
+                f_sur,
+                s_sur,
+                str(s.birth_date or "2009-01-01"),
+                s.blood_type or "O+",
+                "F" if "laura" in f_name.lower() or "valentina" in f_name.lower() or "isabella" in f_name.lower() or "daniela" in f_name.lower() else "M",
+                str(s.socioeconomic_stratum or 3),
+                s.health_provider_eps or "Sura EPS",
+                s.grade_level_code or "GRADO_11",
+                s.group_code or "11-1",
+                "MANANA",
+                "SI" if s.is_financial_paz_salvo else "NO",
+                f'"{s.guardian_name or "Sin acudiente"}"',
+                s.guardian_phone or "No registrado",
+                s.disability_condition or "Ninguna",
+                s.ethnicity or "Ninguna",
+            ]
+            lines.append(",".join(row))
+
+        return "\n".join(lines)
