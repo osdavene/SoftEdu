@@ -402,9 +402,22 @@ class GradesService:
             (i for i in active_insights if i.is_current_insight),
             active_insights[0],
         )
-        action_plan = SuggestedActionPlanSchema.model_validate(
-            current.suggested_action_plan
-        )
+        try:
+            action_plan = SuggestedActionPlanSchema.model_validate(
+                current.suggested_action_plan
+            )
+        except Exception:
+            raw = current.suggested_action_plan if isinstance(current.suggested_action_plan, dict) else {}
+            acciones_doc = raw.get("acciones_docente") or raw.get("plan_docente") or ["Acompañamiento pedagógico."]
+            acciones_est = raw.get("acciones_estudiante") or raw.get("plan_estudiante") or ["Refuerzo académico."]
+            temas = raw.get("temas_refuerzo_prioritarios") or []
+            meta_nota = float(raw.get("meta_nota_restante_sugerida") or 3.0)
+            action_plan = SuggestedActionPlanSchema(
+                acciones_docente=acciones_doc if isinstance(acciones_doc, list) else [str(acciones_doc)],
+                acciones_estudiante=acciones_est if isinstance(acciones_est, list) else [str(acciones_est)],
+                temas_refuerzo_prioritarios=temas if isinstance(temas, list) else [],
+                meta_nota_restante_sugerida=min(5.0, max(0.0, meta_nota)),
+            )
         return StudentAIInsightResponse(
             id=current.id,
             enrollment_id=current.enrollment_id,

@@ -111,6 +111,16 @@ async def _ensure_schema_columns_upgraded(conn: Any) -> None:
         "ALTER TABLE enrollments ALTER COLUMN status TYPE VARCHAR(30) USING status::text;",
         "ALTER TABLE attendances ALTER COLUMN status TYPE VARCHAR(30) USING status::text;",
         "ALTER TABLE student_ai_insights ALTER COLUMN risk_level TYPE VARCHAR(30) USING risk_level::text;",
+        """
+        UPDATE student_ai_insights
+        SET suggested_action_plan = jsonb_build_object(
+            'acciones_docente', COALESCE(suggested_action_plan->'acciones_docente', suggested_action_plan->'plan_docente', '["Acompañamiento pedagógico."]'::jsonb),
+            'acciones_estudiante', COALESCE(suggested_action_plan->'acciones_estudiante', suggested_action_plan->'plan_estudiante', '["Refuerzo escolar."]'::jsonb),
+            'temas_refuerzo_prioritarios', COALESCE(suggested_action_plan->'temas_refuerzo_prioritarios', '[]'::jsonb),
+            'meta_nota_restante_sugerida', 3.0
+        )
+        WHERE suggested_action_plan IS NOT NULL AND (suggested_action_plan ? 'plan_docente' OR suggested_action_plan ? 'plan_estudiante');
+        """,
     ]
     for stmt_sql in alter_statements:
         try:
@@ -770,13 +780,15 @@ async def _seed_institutional_records(session: AsyncSession) -> None:
                     absence_percentage=Decimal("0.00"),
                     detected_factors=["Excelente asimilación conceptual", "Asistencia perfecta (100%)"],
                     suggested_action_plan={
-                        "plan_estudiante": [
+                        "acciones_estudiante": [
                             "Continuar con el banco de ejercicios avanzados de optimización.",
                             "Postularse como monitora académica de apoyo a sus compañeros de grado.",
                         ],
-                        "plan_docente": [
+                        "acciones_docente": [
                             "Proponerle retos de nivel olimpiada matemática colombiana para profundizar.",
                         ],
+                        "temas_refuerzo_prioritarios": ["Optimización y Límites"],
+                        "meta_nota_restante_sugerida": 3.0,
                     },
                     executive_summary="Rendimiento académico superior. Demuestra dominio total de las competencias evaluadas sin registrar inasistencias.",
                     llm_model_used="google/gemini-2.0-pro (Copiloto SoftEdu)",
@@ -828,15 +840,17 @@ async def _seed_institutional_records(session: AsyncSession) -> None:
                         "Vacíos graves en conceptos previos de factorización y formas indeterminadas",
                     ],
                     suggested_action_plan={
-                        "plan_estudiante": [
+                        "acciones_estudiante": [
                             "Asistir obligatoriamente a las tutorías de nivelación de los martes a las 14:30.",
                             "Completar la guía de refuerzo remedial de límites con apoyo del Tutor IA.",
                             "Justificar de inmediato las inasistencias con la coordinación de convivencia.",
                         ],
-                        "plan_docente": [
+                        "acciones_docente": [
                             "Citar urgentemente a los padres de familia / acudientes ante orientación escolar.",
                             "Aplicar evaluación remedial de recuperación según Decreto 1290 MEN.",
                         ],
+                        "temas_refuerzo_prioritarios": ["Límites Indeterminados 0/0", "Factorización"],
+                        "meta_nota_restante_sugerida": 3.8,
                     },
                     executive_summary="Alerta de Riesgo Académico Crítico. El estudiante reprueba las evaluaciones del primer corte y acumula un alto porcentaje de inasistencias injustificadas.",
                     llm_model_used="google/gemini-2.0-pro (Copiloto SoftEdu)",

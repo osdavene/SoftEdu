@@ -1443,7 +1443,14 @@
           body: JSON.stringify({ email, password })
         });
 
-        const data = await resp.json();
+        const textResp = await resp.text();
+        let data;
+        try {
+          data = JSON.parse(textResp);
+        } catch {
+          throw new Error('Error del servidor al procesar la autenticación.');
+        }
+
         if (!resp.ok) {
           throw new Error(data.detail || 'Correo o contraseña incorrectos.');
         }
@@ -1483,10 +1490,22 @@
       });
 
       if (resp.status === 401) {
-        throw new Error("No autorizado");
+        throw new Error("Sesión expirada o no autorizada.");
       }
 
-      globalOverview = await resp.json();
+      const text = await resp.text();
+      let overviewData;
+      try {
+        overviewData = JSON.parse(text);
+      } catch {
+        throw new Error("Error del servidor al procesar la información académica.");
+      }
+
+      if (!resp.ok) {
+        throw new Error(overviewData.detail || "Error al cargar datos institucionales.");
+      }
+
+      globalOverview = overviewData;
       gradesCatalog = globalOverview.grades_catalog || [];
 
       // Update header details
