@@ -1,13 +1,14 @@
 """
 Inicialización automática de tablas (`Base.metadata.create_all`), actualización de
-columnas y semilla completa de roles institucionales (Rector, Coordinador, Secretaría,
-Orientador, Docentes y 5 Estudiantes con notas, asistencias y diagnósticos IA).
+columnas y semilla completa de Colegios K-12 (Maternal a Grado 11°), Calendario A y B,
+SuperAdmin Global, Rectores, Coordinación, Secretaría, Psicoorientación, Docentes y Estudiantes.
 """
 
 from datetime import date
 from decimal import Decimal
 import logging
 from typing import Any
+import uuid
 
 from sqlalchemy import select, text
 from sqlalchemy.dialects.postgresql import JSONB
@@ -32,6 +33,8 @@ from app.models.academic import (
     EnrollmentStatus,
     Grade,
     RiskLevel,
+    SCHOOL_GRADES_CATALOG,
+    SchoolInstitution,
     Student,
     StudentAIInsight,
     Subject,
@@ -50,7 +53,7 @@ async def initialize_database_and_seed() -> None:
     1. Crea la base de datos `softedu_db` si no existe.
     2. Activa la extensión `vector` (`pgvector`) en PostgreSQL (o adapta el tipo en local).
     3. Crea o actualiza el esquema de tablas SQLAlchemy 2.0.
-    4. Inserta todos los roles institucionales y datos académicos de demostración.
+    4. Inserta Colegios K-12 (Calendario A y B), SuperAdmin, Rectores y datos académicos.
     """
     await ensure_database_exists()
     has_pgvector = await init_pgvector_extension()
@@ -65,7 +68,6 @@ async def initialize_database_and_seed() -> None:
 
     async with async_engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
-        # Asegurar migración transparente de columnas nuevas o tipos ENUM previos
         await _ensure_schema_columns_upgraded(conn)
         logger.info("Esquema de tablas SQLAlchemy 2.0 verificado en PostgreSQL.")
 
@@ -74,14 +76,38 @@ async def initialize_database_and_seed() -> None:
 
 
 async def _ensure_schema_columns_upgraded(conn: Any) -> None:
-    """Garantiza que las columnas nuevas y tipos VARCHAR de roles existan en tablas previas."""
+    """Garantiza que la tabla de colegios y las columnas nuevas existan sin error."""
     alter_statements = [
+        """
+        CREATE TABLE IF NOT EXISTS schools (
+            id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+            code VARCHAR(30) UNIQUE NOT NULL,
+            name VARCHAR(200) NOT NULL,
+            dane_code VARCHAR(35) NOT NULL,
+            nit VARCHAR(35) NOT NULL,
+            calendar_type VARCHAR(25) DEFAULT 'CALENDARIO_A' NOT NULL,
+            shift_type VARCHAR(40) DEFAULT 'JORNADA_UNICA' NOT NULL,
+            city VARCHAR(100) DEFAULT 'Bogotá D.C.' NOT NULL,
+            address VARCHAR(200),
+            phone VARCHAR(50),
+            email_contact VARCHAR(150),
+            resolution_men VARCHAR(180),
+            rector_user_id UUID,
+            enabled_grades JSONB DEFAULT '[]'::jsonb NOT NULL,
+            is_active BOOLEAN DEFAULT true NOT NULL,
+            created_at TIMESTAMPTZ DEFAULT now() NOT NULL,
+            updated_at TIMESTAMPTZ DEFAULT now() NOT NULL
+        );
+        """,
         "ALTER TABLE users ALTER COLUMN role TYPE VARCHAR(40) USING role::text;",
+        "ALTER TABLE users ADD COLUMN IF NOT EXISTS school_id UUID;",
         "ALTER TABLE users ADD COLUMN IF NOT EXISTS job_title VARCHAR(120);",
         "ALTER TABLE users ADD COLUMN IF NOT EXISTS department_area VARCHAR(120);",
         "ALTER TABLE users ADD COLUMN IF NOT EXISTS phone_number VARCHAR(40);",
+        "ALTER TABLE students ADD COLUMN IF NOT EXISTS grade_level_code VARCHAR(30) DEFAULT 'GRADO_11';",
         "ALTER TABLE students ADD COLUMN IF NOT EXISTS guardian_name VARCHAR(150);",
         "ALTER TABLE students ADD COLUMN IF NOT EXISTS guardian_phone VARCHAR(40);",
+        "ALTER TABLE course_offerings ADD COLUMN IF NOT EXISTS grade_level_code VARCHAR(30) DEFAULT 'GRADO_11';",
         "ALTER TABLE enrollments ALTER COLUMN status TYPE VARCHAR(30) USING status::text;",
         "ALTER TABLE attendances ALTER COLUMN status TYPE VARCHAR(30) USING status::text;",
         "ALTER TABLE student_ai_insights ALTER COLUMN risk_level TYPE VARCHAR(30) USING risk_level::text;",
@@ -93,696 +119,729 @@ async def _ensure_schema_columns_upgraded(conn: Any) -> None:
             pass
 
 
+async def _upsert_user(
+    session: AsyncSession,
+    email: str,
+    document_number: str,
+    defaults: dict[str, Any],
+) -> User:
+    """Inserta o actualiza un usuario de forma resiliente ante colisiones de seed previo."""
+    stmt = select(User).where(
+        (func_lower := func_lower_helper(email)) | (User.document_number == document_number)
+    )
+    user = (await session.execute(stmt)).scalars().first()
+    if user is None:
+        user = User(
+            email=email.lower(),
+            document_number=document_number,
+            **defaults,
+        )
+        session.add(user)
+        await session.flush()
+    else:
+        user.email = email.lower()
+        user.document_number = document_number
+        for k, v in defaults.items():
+            setattr(user, k, v)
+        await session.flush()
+    return user
+
+
+def func_lower_helper(email: str):
+    from sqlalchemy import func
+    return func.lower(User.email) == email.lower()
+
+
 async def _seed_institutional_records(session: AsyncSession) -> None:
-    """Siembra el ecosistema institucional completo si aún no está poblado."""
-    existing_rector = await session.execute(
-        select(User).where(User.email == "rector@softedu.edu.co")
-    )
-    if existing_rector.scalars().first() is not None:
-        logger.info("Ecosistema institucional completo ya sembrado. Omitiendo seed.")
-        return
+    """Siembra el ecosistema de colegios K-12, SuperAdmin y comunidad escolar."""
+    all_grades_codes = [g["code"] for g in SCHOOL_GRADES_CATALOG]
 
-    logger.info("Sembrando roles institucionales (Rector, Coordinador, Secretaría, Orientador, Docentes, Estudiantes)...")
-
-    # 1. Roles Directivos y Administrativos
-    rector_user = User(
-        email="rector@softedu.edu.co",
-        hashed_password=hash_password("rector123"),
-        first_name="Dr. Hernando José",
-        last_name="Villamizar Ordóñez",
-        document_number="79450112",
-        role=UserRole.RECTOR,
-        job_title="Rector General Institucional",
-        department_area="Rectoría y Dirección Estratégica",
-        phone_number="310-450-9811",
-    )
-    coordinador_user = User(
-        email="coordinador@softedu.edu.co",
-        hashed_password=hash_password("coordinador123"),
-        first_name="Mg. Claudia Patricia",
-        last_name="Mendoza Salazar",
-        document_number="52890341",
-        role=UserRole.COORDINADOR,
-        job_title="Coordinadora Académica y Curricular",
-        department_area="Vicerrectoría Académica",
-        phone_number="315-820-3344",
-    )
-    secretaria_user = User(
-        email="secretaria@softedu.edu.co",
-        hashed_password=hash_password("secretaria123"),
-        first_name="Lic. Diana Carolina",
-        last_name="Ospina Restrepo",
-        document_number="1018432098",
-        role=UserRole.SECRETARIA,
-        job_title="Secretaria General de Registro y Matrículas",
-        department_area="Secretaría Académica y Admisiones",
-        phone_number="318-640-1122",
-    )
-    orientador_user = User(
-        email="orientador@softedu.edu.co",
-        hashed_password=hash_password("orientador123"),
-        first_name="Psic. Andrés Felipe",
-        last_name="Quintero Lozano",
-        document_number="1032455901",
-        role=UserRole.ORIENTADOR,
-        job_title="Psicoorientador y Permanencia Estudiantil",
-        department_area="Bienestar Institucional y Psicología",
-        phone_number="300-711-8900",
-    )
-    session.add_all([rector_user, coordinador_user, secretaria_user, orientador_user])
-    await session.flush()
-
-    # Asegurar que el usuario admin previo (si existe) tenga metadatos actualizados
-    existing_admin = (
-        await session.execute(select(User).where(User.email == "admin@softedu.edu.co"))
-    ).scalars().first()
-    if existing_admin is None:
-        existing_admin = User(
-            email="admin@softedu.edu.co",
-            hashed_password=hash_password("admin12345"),
-            first_name="Ing. Óscar David",
-            last_name="Administrador General",
-            document_number="1000000001",
-            role=UserRole.ADMIN,
-            job_title="Director de Tecnología y Plataforma LMS/SIS",
-            department_area="Dirección TIC",
-            phone_number="311-500-0001",
-        )
-        session.add(existing_admin)
-    else:
-        existing_admin.job_title = "Director de Tecnología y Plataforma LMS/SIS"
-        existing_admin.department_area = "Dirección TIC"
-
-    # 2. Docentes
-    teacher_user_1 = (
-        await session.execute(select(User).where(User.email == "docente@softedu.edu.co"))
-    ).scalars().first()
-    if teacher_user_1 is None:
-        teacher_user_1 = User(
-            email="docente@softedu.edu.co",
-            hashed_password=hash_password("docente123"),
-            first_name="Carlos Andrés",
-            last_name="Martínez Gómez",
-            document_number="1000000002",
-            role=UserRole.DOCENTE,
-            job_title="Docente Titular de Arquitectura de Software e IA",
-            department_area="Facultad de Ingeniería de Sistemas",
-            phone_number="312-409-2210",
-        )
-        session.add(teacher_user_1)
-        await session.flush()
-    else:
-        teacher_user_1.role = UserRole.DOCENTE
-        teacher_user_1.job_title = "Docente Titular de Arquitectura de Software e IA"
-        teacher_user_1.department_area = "Facultad de Ingeniería de Sistemas"
-
-    teacher_1 = (
+    # Colegio 1 (Gimnasio San Ángel - Calendario A)
+    existing_school = (
         await session.execute(
-            select(Teacher).where(Teacher.user_id == teacher_user_1.id)
+            select(SchoolInstitution).where(SchoolInstitution.code == "COL-GSA-001")
         )
     ).scalars().first()
-    if teacher_1 is None:
-        teacher_1 = Teacher(
-            user_id=teacher_user_1.id,
-            employee_code="DOC-2026-001",
-            department="Ingeniería de Sistemas y Computación",
-            specialization="Arquitectura de Software e Inteligencia Artificial",
-            academic_degree="Magíster en Ciencias de la Computación",
-            max_weekly_hours=40,
+
+    if existing_school is None:
+        logger.info("Sembrando Colegio 1 (Gimnasio San Ángel - Calendario A)...")
+        school_1 = SchoolInstitution(
+            code="COL-GSA-001",
+            name="Colegio Bilingüe Gimnasio San Ángel",
+            dane_code="311001098452",
+            nit="900.845.120-4",
+            calendar_type="CALENDARIO_A",
+            shift_type="JORNADA_UNICA",
+            city="Bogotá D.C.",
+            address="Av. Calle 127 # 19-45, Usaquén",
+            phone="+57 (601) 629-4400",
+            email_contact="contacto@gimnasiosanangel.edu.co",
+            resolution_men="Resolución SED N.° 11-0482 de Educación Preescolar, Básica y Media",
+            enabled_grades=all_grades_codes,
         )
-        session.add(teacher_1)
+        session.add(school_1)
+        await session.flush()
+    else:
+        school_1 = existing_school
+        if not school_1.enabled_grades:
+            school_1.enabled_grades = all_grades_codes
+
+    # Colegio 2 (Colegio Campestre La Colina - Calendario B)
+    school_2 = (
+        await session.execute(
+            select(SchoolInstitution).where(SchoolInstitution.code == "COL-CLC-002")
+        )
+    ).scalars().first()
+
+    if school_2 is None:
+        logger.info("Sembrando Colegio 2 (Colegio Campestre La Colina - Calendario B)...")
+        school_2 = SchoolInstitution(
+            code="COL-CLC-002",
+            name="Colegio Campestre La Colina",
+            dane_code="311001087123",
+            nit="901.320.450-8",
+            calendar_type="CALENDARIO_B",
+            shift_type="COMPLETA",
+            city="Chía, Cundinamarca",
+            address="Km 4 Vía Chía - Cajicá",
+            phone="+57 (601) 862-9010",
+            email_contact="admisiones@lacolina.edu.co",
+            resolution_men="Resolución Secretaría de Educación N.° 2021-089",
+            enabled_grades=[
+                "MATERNAL", "PARVULOS", "PREJARDIN", "JARDIN", "TRANSICION",
+                "GRADO_1", "GRADO_2", "GRADO_3", "GRADO_4", "GRADO_5",
+            ],
+        )
+        session.add(school_2)
         await session.flush()
 
-    teacher_user_2 = User(
-        email="elena.suarez@softedu.edu.co",
-        hashed_password=hash_password("docente123"),
-        first_name="Dra. Elena Isabel",
-        last_name="Suárez Valenzuela",
+    # 1. SuperAdmin Global (Acceso al SuperPanel)
+    superadmin = await _upsert_user(
+        session=session,
+        email="superadmin@softedu.co",
+        document_number="SUPER-001",
+        defaults={
+            "hashed_password": hash_password("SoftEdu2026*"),
+            "first_name": "SuperAdmin",
+            "last_name": "Global",
+            "role": UserRole.SUPERADMIN,
+            "job_title": "Director de Gobierno y Plataforma SaaS K-12",
+            "department_area": "Gobierno Corporativo SoftEdu",
+            "phone_number": "+57 300 000 0001",
+        },
+    )
+
+    # 2. Rector del Colegio 1 (Gimnasio San Ángel)
+    rector_1 = await _upsert_user(
+        session=session,
+        email="rector@gimnasiosanangel.edu.co",
+        document_number="79450112",
+        defaults={
+            "school_id": school_1.id,
+            "hashed_password": hash_password("SoftEdu2026*"),
+            "first_name": "Dr. Fernando",
+            "last_name": "Molina Villamizar",
+            "role": UserRole.RECTOR,
+            "job_title": "Rector General Institucional",
+            "department_area": "Rectoría y Consejo Directivo",
+            "phone_number": "+57 (601) 629-4401",
+        },
+    )
+    school_1.rector_user_id = rector_1.id
+
+    # Rector del Colegio 2 (La Colina - Calendario B)
+    rector_2 = await _upsert_user(
+        session=session,
+        email="rector@lacolina.edu.co",
+        document_number="52981045",
+        defaults={
+            "school_id": school_2.id,
+            "hashed_password": hash_password("SoftEdu2026*"),
+            "first_name": "Dra. Beatriz Eugenia",
+            "last_name": "Restrepo Gómez",
+            "role": UserRole.RECTOR,
+            "job_title": "Rectora General — Colegio Campestre La Colina",
+            "department_area": "Rectoría y Dirección Bilingüe",
+            "phone_number": "+57 (601) 862-9011",
+        },
+    )
+    school_2.rector_user_id = rector_2.id
+
+    # 3. Equipo Directivo y Administrativo del Colegio 1
+    # Coordinadora Académica
+    coordinadora = await _upsert_user(
+        session=session,
+        email="coordinador@gimnasiosanangel.edu.co",
+        document_number="52890341",
+        defaults={
+            "school_id": school_1.id,
+            "hashed_password": hash_password("SoftEdu2026*"),
+            "first_name": "Mg. Claudia Patricia",
+            "last_name": "Gómez Salazar",
+            "role": UserRole.COORDINADOR,
+            "job_title": "Coordinadora Académica de Preescolar, Primaria y Bachillerato",
+            "department_area": "Coordinación Académica y Convivencia",
+            "phone_number": "+57 315 820 3344",
+        },
+    )
+
+    # Secretaría Académica y Matrículas
+    secretaria = await _upsert_user(
+        session=session,
+        email="secretaria@gimnasiosanangel.edu.co",
+        document_number="1018432098",
+        defaults={
+            "school_id": school_1.id,
+            "hashed_password": hash_password("SoftEdu2026*"),
+            "first_name": "Lic. Martha Lucía",
+            "last_name": "Pineda Restrepo",
+            "role": UserRole.SECRETARIA,
+            "job_title": "Secretaria General, SIMAT y Matrículas",
+            "department_area": "Secretaría Académica y Admisiones",
+            "phone_number": "+57 318 640 1122",
+        },
+    )
+
+    # Psicoorientador Escolar
+    orientador = await _upsert_user(
+        session=session,
+        email="orientador@gimnasiosanangel.edu.co",
+        document_number="1032455901",
+        defaults={
+            "school_id": school_1.id,
+            "hashed_password": hash_password("SoftEdu2026*"),
+            "first_name": "Ps. Julián Andrés",
+            "last_name": "Orozco Lozano",
+            "role": UserRole.ORIENTADOR,
+            "job_title": "Psicoorientador Escolar y Bienestar Familiar",
+            "department_area": "Departamento de Orientación y Familia",
+            "phone_number": "+57 300 711 8900",
+        },
+    )
+
+    # Docente Titular de Matemáticas
+    docente_user = await _upsert_user(
+        session=session,
+        email="docente@gimnasiosanangel.edu.co",
+        document_number="79840120",
+        defaults={
+            "school_id": school_1.id,
+            "hashed_password": hash_password("SoftEdu2026*"),
+            "first_name": "Dr. Carlos Eduardo",
+            "last_name": "Mendoza Gómez",
+            "role": UserRole.DOCENTE,
+            "job_title": "Docente Titular de Matemáticas y Director de Grupo 11°A",
+            "department_area": "Área de Matemáticas y Ciencias Naturales",
+            "phone_number": "+57 312 409 2210",
+        },
+    )
+
+    teacher_prof = (
+        await session.execute(
+            select(Teacher).where(Teacher.user_id == docente_user.id)
+        )
+    ).scalars().first()
+    if teacher_prof is None:
+        teacher_prof = Teacher(
+            user_id=docente_user.id,
+            employee_code="DOC-COL-001",
+            department="Área de Matemáticas",
+            specialization="Licenciatura en Matemáticas y Física (Magíster en Educación)",
+            academic_degree="Magíster en Didáctica de las Ciencias",
+            max_weekly_hours=35,
+        )
+        session.add(teacher_prof)
+        await session.flush()
+
+    # Docente Titular 2 (Lengua Castellana)
+    docente_user_2 = await _upsert_user(
+        session=session,
+        email="diana.docente@gimnasiosanangel.edu.co",
         document_number="53119874",
-        role=UserRole.DOCENTE,
-        job_title="Docente Investigadora en Ciencia de Datos y Analítica",
-        department_area="Facultad de Ingeniería de Sistemas",
-        phone_number="314-298-7741",
+        defaults={
+            "school_id": school_1.id,
+            "hashed_password": hash_password("SoftEdu2026*"),
+            "first_name": "Mg. Diana Marcela",
+            "last_name": "Castro Valenzuela",
+            "role": UserRole.DOCENTE,
+            "job_title": "Docente Titular de Lengua Castellana y Literatura",
+            "department_area": "Área de Humanidades y Lengua Castellana",
+            "phone_number": "+57 314 298 7741",
+        },
     )
-    session.add(teacher_user_2)
-    await session.flush()
 
-    teacher_2 = Teacher(
-        user_id=teacher_user_2.id,
-        employee_code="DOC-2026-002",
-        department="Ingeniería de Sistemas y Computación",
-        specialization="Machine Learning y Bases de Datos Vectoriales",
-        academic_degree="Doctora en Ingeniería Informática",
-        max_weekly_hours=36,
-    )
-    session.add(teacher_2)
-    await session.flush()
+    teacher_prof_2 = (
+        await session.execute(
+            select(Teacher).where(Teacher.user_id == docente_user_2.id)
+        )
+    ).scalars().first()
+    if teacher_prof_2 is None:
+        teacher_prof_2 = Teacher(
+            user_id=docente_user_2.id,
+            employee_code="DOC-COL-002",
+            department="Área de Humanidades",
+            specialization="Licenciatura en Lenguas y Literatura",
+            academic_degree="Magíster en Lingüística Aplicada",
+            max_weekly_hours=32,
+        )
+        session.add(teacher_prof_2)
+        await session.flush()
 
-    # 3. Período Lectivo y Asignaturas
+    # 4. Período Lectivo Escolar (Calendario A)
     period = (
         await session.execute(
-            select(AcademicPeriod).where(AcademicPeriod.code == "2026-2")
+            select(AcademicPeriod).where(AcademicPeriod.code == "2026-CAL-A")
         )
     ).scalars().first()
     if period is None:
         period = AcademicPeriod(
-            code="2026-2",
-            name="Segundo Período Académico 2026",
-            start_date=date(2026, 7, 15),
-            end_date=date(2026, 12, 10),
+            code="2026-CAL-A",
+            name="Año Lectivo Escolar 2026 (Calendario A — Feb a Nov)",
+            start_date=date(2026, 2, 2),
+            end_date=date(2026, 11, 27),
             is_current=True,
         )
         session.add(period)
         await session.flush()
 
-    subject_1 = (
-        await session.execute(select(Subject).where(Subject.code == "ISW-402"))
+    # 5. Asignaturas Escolares (MEN)
+    subject_mat = (
+        await session.execute(select(Subject).where(Subject.code == "MAT-11"))
     ).scalars().first()
-    if subject_1 is None:
-        subject_1 = Subject(
-            code="ISW-402",
-            name="Arquitectura Empresarial e IA Aplicada",
-            description=(
-                "Diseño de backends asíncronos de alta disponibilidad con Python, "
-                "FastAPI, SQLAlchemy 2.0, bases vectoriales pgvector y motores LLM/RAG."
-            ),
+    if subject_mat is None:
+        subject_mat = Subject(
+            code="MAT-11",
+            name="Matemáticas y Cálculo Diferencial — Grado 11°",
+            description="Cálculo diferencial, funciones trascendentes, trigonometría analítica y preparación Prueba Saber 11 (ICFES).",
             credits=4,
-            weekly_hours=4,
+            weekly_hours=5,
             minimum_passing_grade=Decimal("3.00"),
         )
-        session.add(subject_1)
+        session.add(subject_mat)
         await session.flush()
 
-    # Asegurar Unidades y Temas del Sílabo
+    # Sílabo oficial vectorizado de la materia
     units = list(
-        (
-            await session.execute(
-                select(SyllabusUnit).where(SyllabusUnit.subject_id == subject_1.id)
-            )
-        )
+        (await session.execute(select(SyllabusUnit).where(SyllabusUnit.subject_id == subject_mat.id)))
         .scalars()
         .all()
     )
     if not units:
         unit1 = SyllabusUnit(
-            subject_id=subject_1.id,
+            subject_id=subject_mat.id,
             unit_number=1,
-            title="Arquitectura en Capas, Asincronismo y Persistencia Vectorial",
-            learning_objective=(
-                "Diseñar arquitecturas desacopladas con el patrón Repositorio, "
-                "SQLAlchemy 2.0 AsyncSession y búsquedas de similitud en pgvector."
-            ),
+            title="Funciones Reales y Límites de Funciones",
+            learning_objective="Comprender el concepto de límite algebraico y gráfico con aplicaciones al cambio de razones.",
             estimated_weeks=4,
         )
-        session.add(unit1)
+        unit2 = SyllabusUnit(
+            subject_id=subject_mat.id,
+            unit_number=2,
+            title="Derivadas, Reglas de Derivación y Optimización",
+            learning_objective="Calcular derivadas aplicando reglas del producto y de la cadena para resolver problemas de optimización.",
+            estimated_weeks=4,
+        )
+        session.add_all([unit1, unit2])
         await session.flush()
 
-        t1_desc = (
-            "Uso de AsyncEngine, AsyncSession con asyncpg, bloqueo optimista, "
-            "carga ansiosa (selectinload/joinedload) y manejo de transacciones "
-            "aisladas en BackgroundTasks para evitar cierres prematuros de sesión."
-        )
         topic1 = SyllabusTopic(
             unit_id=unit1.id,
             topic_number=1,
-            title="Persistencia Asíncrona con SQLAlchemy 2.0 y Patrón Repositorio",
-            content_description=t1_desc,
-            key_concepts=[
-                "AsyncSession",
-                "asyncpg",
-                "Patrón Repositorio",
-                "Inyección de Dependencias",
-                "BackgroundTasks",
-            ],
-            bibliography_references="Documentación Oficial SQLAlchemy 2.0; Arquitectura Limpia en Python.",
-            embedding=AcademicAIService._build_deterministic_unit_vector(
-                t1_desc, settings.AI_EMBEDDING_DIMENSION
-            ),
-        )
-        t2_desc = (
-            "Indexación semántica mediante embeddings de alta dimensionalidad en PostgreSQL "
-            "con pgvector, índices HNSW, operadores de distancia coseno (<=>) y generación "
-            "aumentada por recuperación (RAG) con Structured Outputs en Pydantic v2."
+            title="Definición Formal de Límite y Límites Laterales",
+            content_description="Propiedades fundamentales de los límites, continuidad puntual y discontinuidades evitables.",
+            key_concepts=["Límite", "Continuidad", "Asíntota", "Épsilon-Delta"],
+            bibliography_references="Cálculo con Geometría Analítica — Stewart 8.ª Ed.",
         )
         topic2 = SyllabusTopic(
             unit_id=unit1.id,
             topic_number=2,
-            title="Búsqueda Semántica con pgvector, Índices HNSW y Motores RAG",
-            content_description=t2_desc,
-            key_concepts=[
-                "pgvector",
-                "Índice HNSW",
-                "Distancia Coseno",
-                "Embeddings",
-                "RAG",
-                "Structured Outputs",
-            ],
-            bibliography_references="Referencia Oficial pgvector; Guía de Structured Outputs en Gemini y OpenAI.",
-            embedding=AcademicAIService._build_deterministic_unit_vector(
-                t2_desc, settings.AI_EMBEDDING_DIMENSION
-            ),
-        )
-        session.add_all([topic1, topic2])
-        await session.flush()
-    else:
-        unit1 = units[0]
-
-    # Agregar Unidad 2 al Sílabo si solo existe la Unidad 1
-    if len(units) < 2:
-        unit2 = SyllabusUnit(
-            subject_id=subject_1.id,
-            unit_number=2,
-            title="Seguridad Empresarial JWT, RBAC y Despliegue en Nube AWS",
-            learning_objective=(
-                "Implementar control de acceso basado en roles institucionales, "
-                "auditoría transaccional y pipelines de integración continua hacia AWS."
-            ),
-            estimated_weeks=4,
-        )
-        session.add(unit2)
-        await session.flush()
-        t3_desc = (
-            "Autenticación stateless mediante JSON Web Tokens (JWT), hashing con Bcrypt, "
-            "control de acceso granular por roles (Rector, Coordinador, Docente, Estudiante) "
-            "y despliegue automatizado con GitHub Actions y systemd en AWS EC2."
+            title="Formas Indeterminadas 0/0 e Infinito sobre Infinito",
+            content_description="Técnicas de factorización, racionalización conjugada y regla de L'Hôpital.",
+            key_concepts=["Indeterminación", "Racionalización", "Factorización", "L'Hôpital"],
+            bibliography_references="Cálculo Diferencial e Integral — Purcel 9.ª Ed.",
         )
         topic3 = SyllabusTopic(
             unit_id=unit2.id,
-            topic_number=1,
-            title="Autenticación JWT, Matriz RBAC y Despliegue Continuo en AWS",
-            content_description=t3_desc,
-            key_concepts=["JWT", "Bcrypt", "RBAC", "AWS EC2", "GitHub Actions", "systemd"],
-            bibliography_references="OWASP API Security Top 10; FastAPI Security Documentation.",
-            embedding=AcademicAIService._build_deterministic_unit_vector(
-                t3_desc, settings.AI_EMBEDDING_DIMENSION
-            ),
+            topic_number=3,
+            title="La Derivada como Pendiente de la Recta Tangente y Razón de Cambio",
+            content_description="Interpretación geométrica y física de la derivada instantánea con aplicaciones a velocidad y aceleración.",
+            key_concepts=["Derivada", "Recta Tangente", "Razón de Cambio", "Velocidad"],
+            bibliography_references="Matemáticas Avanzadas para Bachillerato — Santillana",
         )
-        session.add(topic3)
+        session.add_all([topic1, topic2, topic3])
         await session.flush()
 
-    topics_list = list(
-        (
-            await session.execute(
-                select(SyllabusTopic)
-                .join(SyllabusUnit, SyllabusTopic.unit_id == SyllabusUnit.id)
-                .where(SyllabusUnit.subject_id == subject_1.id)
-                .order_by(SyllabusUnit.unit_number, SyllabusTopic.topic_number)
-            )
-        )
-        .scalars()
-        .all()
-    )
-    first_topic_id = topics_list[0].id if topics_list else None
-    second_topic_id = topics_list[1].id if len(topics_list) > 1 else first_topic_id
+        ai_svc = AcademicAIService()
+        for t in [topic1, topic2, topic3]:
+            try:
+                emb = await ai_svc.generate_embedding_text(
+                    f"{t.title}. {t.content_description}. Conceptos: {', '.join(t.key_concepts)}"
+                )
+                t.embedding = emb
+            except Exception:
+                pass
 
-    # Oferta de Curso Principal
-    offering = (
+    # 6. Oferta de Curso / Horario Escolar Semanal (Grado 11°A)
+    course_off = (
         await session.execute(
             select(CourseOffering).where(
-                CourseOffering.subject_id == subject_1.id,
-                CourseOffering.group_code == "G01",
+                CourseOffering.subject_id == subject_mat.id,
+                CourseOffering.academic_period_id == period.id,
+                CourseOffering.group_code == "11°A",
             )
         )
     ).scalars().first()
-    if offering is None:
-        offering = CourseOffering(
-            subject_id=subject_1.id,
-            teacher_id=teacher_1.id,
+    if course_off is None:
+        course_off = CourseOffering(
+            subject_id=subject_mat.id,
+            teacher_id=teacher_prof.id,
             academic_period_id=period.id,
-            group_code="G01",
-            max_capacity=35,
-            total_planned_sessions=32,
+            group_code="11°A",
+            grade_level_code="GRADO_11",
+            max_capacity=30,
+            total_planned_sessions=36,
             schedule_blocks=[
                 {
-                    "day": "MONDAY",
-                    "start_time": "08:00",
-                    "end_time": "10:00",
-                    "classroom": "LAB-IA-301",
+                    "day": "LUNES",
+                    "start_time": "07:00",
+                    "end_time": "08:30",
+                    "classroom": "Salón 11°A (Bloque B-201)",
                 },
                 {
-                    "day": "WEDNESDAY",
-                    "start_time": "08:00",
+                    "day": "MIERCOLES",
+                    "start_time": "08:30",
                     "end_time": "10:00",
-                    "classroom": "LAB-IA-301",
+                    "classroom": "Salón 11°A (Bloque B-201)",
+                },
+                {
+                    "day": "VIERNES",
+                    "start_time": "10:30",
+                    "end_time": "12:00",
+                    "classroom": "Laboratorio de Ciencias y Matemáticas",
                 },
             ],
         )
-        session.add(offering)
+        session.add(course_off)
         await session.flush()
 
-    # 4. Poblar 5 Estudiantes con Perfiles, Matrículas, Notas, Asistencias e Insights IA
-    students_seed_data = [
-        {
-            "email": "estudiante@softedu.edu.co",
+    # 7. Estudiantes de Demostración
+    # Estudiante 1: Laura Sofía Rodríguez (Grado 11°A — Desempeño Superior, Riesgo BAJO)
+    laura_user = await _upsert_user(
+        session=session,
+        email="laura.rodriguez@gimnasiosanangel.edu.co",
+        document_number="1025890123",
+        defaults={
+            "school_id": school_1.id,
+            "hashed_password": hash_password("SoftEdu2026*"),
             "first_name": "Laura Sofía",
-            "last_name": "Rodríguez Pérez",
-            "doc": "1000000003",
-            "code": "EST-2026-101",
-            "program": "Ingeniería de Software",
-            "semester": 6,
-            "guardian": "Martha Lucía Pérez (Madre)",
-            "guardian_phone": "310-889-1201",
-            "grades": [
-                (1, "Parcial 1 - Persistencia Async", Decimal("30.00"), Decimal("2.40"), first_topic_id, "Presenta dificultad en sesiones aisladas de BackgroundTasks."),
-                (1, "Taller Práctico 1 - pgvector", Decimal("20.00"), Decimal("2.80"), second_topic_id, "Debe reforzar índices HNSW y operadores de distancia coseno."),
-            ],
-            "attendances": [
-                (date(2026, 8, 3), AttendanceStatus.PRESENT, "Asistencia puntual y participativa."),
-                (date(2026, 8, 5), AttendanceStatus.ABSENT, "Inasistencia sin justificación reportada."),
-                (date(2026, 8, 10), AttendanceStatus.ABSENT, "Segunda falla consecutiva en sesión de laboratorio."),
-                (date(2026, 8, 12), AttendanceStatus.LATE, "Ingresó 25 minutos después del inicio de la práctica."),
-                (date(2026, 8, 17), AttendanceStatus.ABSENT, "Tercera inasistencia acumulada en el corte."),
-            ],
-            "risk": RiskLevel.ALTO,
-            "avg": Decimal("2.56"),
-            "eval_w": Decimal("50.00"),
-            "abs_pct": Decimal("9.38"),
-            "summary": "Alerta Temprana IA: Laura Sofía registra un promedio ponderado reprobatorio de 2.56/5.00 (50% evaluado) combinado con 3 inasistencias injustificadas y 1 retardo. Requiere obtener mínimo 3.44 en el 50% restante del curso.",
-            "factors": [
-                "Promedio ponderado actual (2.56/5.00) por debajo de la nota mínima aprobatoria (3.00).",
-                "3 inasistencias injustificadas acumuladas (9.38% del total de sesiones del curso).",
-                "Dificultades técnicas detectadas en: Persistencia Asíncrona con SQLAlchemy 2.0 y Búsqueda Semántica con pgvector.",
-            ],
-            "teacher_actions": [
-                "Citar a la estudiante a tutoría de refuerzo práctico sobre AsyncSession y manejo de transacciones en BackgroundTasks.",
-                "Realizar seguimiento preventivo de asistencia junto con Coordinación Académica.",
-            ],
-            "student_actions": [
-                "Alcanzar una nota promedio mínima de 3.44 en el 50% restante de la asignatura para aprobar en 3.00.",
-                "Utilizar el Tutor RAG del curso para practicar ejercicios sobre pgvector e índices HNSW.",
-            ],
+            "last_name": "Rodríguez Peña",
+            "role": UserRole.ESTUDIANTE,
+            "job_title": "Estudiante — Grado 11°A",
+            "department_area": "Educación Media Vocacional",
+            "phone_number": "+57 316 789 0123",
         },
-        {
-            "email": "mateo.gomez@softedu.edu.co",
+    )
+
+    laura_student = (
+        await session.execute(
+            select(Student).where(Student.user_id == laura_user.id)
+        )
+    ).scalars().first()
+    if laura_student is None:
+        laura_student = Student(
+            user_id=laura_user.id,
+            student_code="COL-2026-101",
+            grade_level_code="GRADO_11",
+            program_name="Grado Undécimo (11° Promoción Saber 11)",
+            current_semester=11,
+            enrollment_cohort="2026-CAL-A",
+            birth_date=date(2009, 4, 18),
+            guardian_name="Ing. Andrés Rodríguez (Padre de Familia)",
+            guardian_phone="+57 310 450 7890",
+        )
+        session.add(laura_student)
+        await session.flush()
+
+    # Estudiante 2: Mateo Alejandro Gómez (Grado 11°A — Desempeño Bajo 2.15, Alerta IA CRÍTICA)
+    mateo_user = await _upsert_user(
+        session=session,
+        email="mateo.gomez@gimnasiosanangel.edu.co",
+        document_number="1025890124",
+        defaults={
+            "school_id": school_1.id,
+            "hashed_password": hash_password("SoftEdu2026*"),
             "first_name": "Mateo Alejandro",
-            "last_name": "Gómez Silva",
-            "doc": "1001298344",
-            "code": "EST-2026-102",
-            "program": "Ingeniería de Software",
-            "semester": 6,
-            "guardian": "Jorge Enrique Gómez (Padre)",
-            "guardian_phone": "315-332-4490",
-            "grades": [
-                (1, "Parcial 1 - Persistencia Async", Decimal("30.00"), Decimal("4.60"), first_topic_id, "Excelente dominio del patrón Repositorio e inyección de dependencias."),
-                (1, "Taller Práctico 1 - pgvector", Decimal("20.00"), Decimal("4.40"), second_topic_id, "Implementación sobresaliente de consultas por similitud coseno."),
-            ],
-            "attendances": [
-                (date(2026, 8, 3), AttendanceStatus.PRESENT, "Participación destacada."),
-                (date(2026, 8, 5), AttendanceStatus.PRESENT, "Entrega completa de laboratorio."),
-                (date(2026, 8, 10), AttendanceStatus.PRESENT, "Asistencia puntual."),
-                (date(2026, 8, 12), AttendanceStatus.PRESENT, "Lideró el ejercicio en equipo."),
-                (date(2026, 8, 17), AttendanceStatus.PRESENT, "100% de asistencia en el corte."),
-            ],
-            "risk": RiskLevel.BAJO,
-            "avg": Decimal("4.52"),
-            "eval_w": Decimal("50.00"),
-            "abs_pct": Decimal("0.00"),
-            "summary": "Diagnóstico IA Positivo: Mateo Alejandro mantiene un rendimiento sobresaliente de 4.52/5.00 con 100% de asistencia efectiva. Solo necesita 1.48 en el 50% restante para asegurar la aprobación.",
-            "factors": [
-                "Promedio ponderado sobresaliente (4.52/5.00) en el primer 50% evaluado.",
-                "Asistencia perfecta (0% de inasistencias injustificadas).",
-            ],
-            "teacher_actions": [
-                "Vincular al estudiante como monitor par o líder técnico en los talleres de arquitectura RAG.",
-            ],
-            "student_actions": [
-                "Mantener el ritmo de estudio y profundizar en los retos avanzados de despliegue en AWS.",
-            ],
+            "last_name": "Gómez Cárdenas",
+            "role": UserRole.ESTUDIANTE,
+            "job_title": "Estudiante — Grado 11°A",
+            "department_area": "Educación Media Vocacional",
+            "phone_number": "+57 317 654 3210",
         },
-        {
-            "email": "valentina.herrera@softedu.edu.co",
+    )
+
+    mateo_student = (
+        await session.execute(
+            select(Student).where(Student.user_id == mateo_user.id)
+        )
+    ).scalars().first()
+    if mateo_student is None:
+        mateo_student = Student(
+            user_id=mateo_user.id,
+            student_code="COL-2026-102",
+            grade_level_code="GRADO_11",
+            program_name="Grado Undécimo (11° Promoción Saber 11)",
+            current_semester=11,
+            enrollment_cohort="2026-CAL-A",
+            birth_date=date(2009, 6, 12),
+            guardian_name="Dra. Patricia Cárdenas (Madre de Familia)",
+            guardian_phone="+57 311 223 3445",
+        )
+        session.add(mateo_student)
+        await session.flush()
+
+    # Estudiante 3: Valentina Herrera (Grado 11°A — Desempeño Básico 3.40, Riesgo MEDIO)
+    valentina_user = await _upsert_user(
+        session=session,
+        email="valentina.herrera@gimnasiosanangel.edu.co",
+        document_number="1025890125",
+        defaults={
+            "school_id": school_1.id,
+            "hashed_password": hash_password("SoftEdu2026*"),
             "first_name": "Valentina",
-            "last_name": "Herrera Castro",
-            "doc": "1002567891",
-            "code": "EST-2026-103",
-            "program": "Ingeniería de Sistemas",
-            "semester": 6,
-            "guardian": "Gloria Inés Castro (Madre)",
-            "guardian_phone": "316-778-9012",
-            "grades": [
-                (1, "Parcial 1 - Persistencia Async", Decimal("30.00"), Decimal("3.20"), first_topic_id, "Aprobado en el límite; revisar manejo de excepciones."),
-                (1, "Taller Práctico 1 - pgvector", Decimal("20.00"), Decimal("2.90"), second_topic_id, "Confusión menor en la configuración de dimensiones del vector."),
-            ],
-            "attendances": [
-                (date(2026, 8, 3), AttendanceStatus.PRESENT, "Asistió."),
-                (date(2026, 8, 5), AttendanceStatus.PRESENT, "Asistió."),
-                (date(2026, 8, 10), AttendanceStatus.ABSENT, "Inasistencia reportada."),
-                (date(2026, 8, 12), AttendanceStatus.PRESENT, "Asistió."),
-                (date(2026, 8, 17), AttendanceStatus.ABSENT, "Falla en sesión de taller práctico."),
-            ],
-            "risk": RiskLevel.MEDIO,
-            "avg": Decimal("3.08"),
-            "eval_w": Decimal("50.00"),
-            "abs_pct": Decimal("6.25"),
-            "summary": "Atención Preventiva IA: Valentina presenta un promedio cercano al umbral mínimo (3.08/5.00) y una leve caída en el taller de pgvector (2.90) junto con 2 inasistencias. Se recomienda acompañamiento preventivo.",
-            "factors": [
-                "Promedio ponderado en franja límite (3.08/5.00).",
-                "Nota inferior a 3.00 en el Taller Práctico de Búsqueda Semántica con pgvector (2.90).",
-                "2 inasistencias registradas (6.25%).",
-            ],
-            "teacher_actions": [
-                "Retroalimentar los errores del taller de pgvector antes de la evaluación del Corte 2.",
-            ],
-            "student_actions": [
-                "Obtener al menos 2.92 en el 50% restante y evitar nuevas inasistencias a los laboratorios.",
-            ],
+            "last_name": "Herrera Morales",
+            "role": UserRole.ESTUDIANTE,
+            "job_title": "Estudiante — Grado 11°A",
+            "department_area": "Educación Media Vocacional",
+            "phone_number": "+57 319 888 7766",
         },
-        {
-            "email": "sebastian.vargas@softedu.edu.co",
-            "first_name": "Sebastián Camilo",
-            "last_name": "Vargas Díaz",
-            "doc": "1003998120",
-            "code": "EST-2026-104",
-            "program": "Ingeniería de Software",
-            "semester": 6,
-            "guardian": "Carlos Arturo Vargas (Padre)",
-            "guardian_phone": "320-551-6734",
-            "grades": [
-                (1, "Parcial 1 - Persistencia Async", Decimal("30.00"), Decimal("1.80"), first_topic_id, "No entregó el módulo de repositorio asíncrono."),
-                (1, "Taller Práctico 1 - pgvector", Decimal("20.00"), Decimal("2.10"), second_topic_id, "Incompleto; requiere intervención inmediata."),
-            ],
-            "attendances": [
-                (date(2026, 8, 3), AttendanceStatus.ABSENT, "No asistió a la sesión inaugural."),
-                (date(2026, 8, 5), AttendanceStatus.ABSENT, "Inasistencia injustificada."),
-                (date(2026, 8, 10), AttendanceStatus.ABSENT, "No se presentó al laboratorio."),
-                (date(2026, 8, 12), AttendanceStatus.ABSENT, "Cuarta falla consecutiva."),
-                (date(2026, 8, 17), AttendanceStatus.ABSENT, "Quinta falla; remitir a Psicoorientación."),
-                (date(2026, 8, 19), AttendanceStatus.ABSENT, "Sexta inasistencia acumulada (18.75%)."),
-            ],
-            "risk": RiskLevel.CRITICO,
-            "avg": Decimal("1.92"),
-            "eval_w": Decimal("50.00"),
-            "abs_pct": Decimal("18.75"),
-            "summary": "ALERTA CRÍTICA INSTITUCIONAL: Sebastián Camilo presenta alto riesgo de pérdida académica y deserción. Promedio actual de 1.92/5.00 y 18.75% de inasistencias (a 1 falla de superar el tope máximo del 20%). Requiere intervención conjunta de Docente, Coordinación y Psicoorientación.",
-            "factors": [
-                "Promedio crítico de 1.92/5.00 en el 50% evaluado (necesita 4.08 en el 50% restante).",
-                "6 inasistencias injustificadas (18.75%), al borde del límite reglamentario del 20.0%.",
-                "Reprobación consecutiva en todos los temas evaluados de la Unidad 1.",
-            ],
-            "teacher_actions": [
-                "Remitir caso de forma prioritaria a Coordinación Académica y Psicoorientación.",
-                "Establecer compromiso académico escrito y plan de nivelación intensivo.",
-            ],
-            "student_actions": [
-                "Asistir obligatoriamente al 100% de las sesiones restantes y presentar plan de nivelación.",
-                "Alcanzar un promedio mínimo de 4.08 en el 50% restante del curso.",
-            ],
+    )
+
+    valentina_student = (
+        await session.execute(
+            select(Student).where(Student.user_id == valentina_user.id)
+        )
+    ).scalars().first()
+    if valentina_student is None:
+        valentina_student = Student(
+            user_id=valentina_user.id,
+            student_code="COL-2026-103",
+            grade_level_code="GRADO_11",
+            program_name="Grado Undécimo (11° Promoción Saber 11)",
+            current_semester=11,
+            enrollment_cohort="2026-CAL-A",
+            birth_date=date(2009, 9, 25),
+            guardian_name="Don Javier Herrera (Padre de Familia)",
+            guardian_phone="+57 312 999 1122",
+        )
+        session.add(valentina_student)
+        await session.flush()
+
+    # Estudiante 4: Sebastián Vargas (Grado 5° Primaria)
+    sebastian_user = await _upsert_user(
+        session=session,
+        email="sebastian.vargas@gimnasiosanangel.edu.co",
+        document_number="1089234567",
+        defaults={
+            "school_id": school_1.id,
+            "hashed_password": hash_password("SoftEdu2026*"),
+            "first_name": "Sebastián",
+            "last_name": "Vargas Duarte",
+            "role": UserRole.ESTUDIANTE,
+            "job_title": "Estudiante — Grado 5°A Primaria",
+            "department_area": "Educación Básica Primaria",
+            "phone_number": "+57 320 555 4321",
         },
-        {
-            "email": "isabella.morales@softedu.edu.co",
+    )
+
+    sebastian_student = (
+        await session.execute(
+            select(Student).where(Student.user_id == sebastian_user.id)
+        )
+    ).scalars().first()
+    if sebastian_student is None:
+        sebastian_student = Student(
+            user_id=sebastian_user.id,
+            student_code="COL-2026-501",
+            grade_level_code="GRADO_5",
+            program_name="Grado Quinto (5° Primaria)",
+            current_semester=5,
+            enrollment_cohort="2026-CAL-A",
+            birth_date=date(2015, 8, 14),
+            guardian_name="Sra. Mónica Duarte (Madre de Familia)",
+            guardian_phone="+57 315 444 7788",
+        )
+        session.add(sebastian_student)
+        await session.flush()
+
+    # Estudiante 5: Isabella Morales (Transición / Grado 0° Preescolar)
+    isabella_user = await _upsert_user(
+        session=session,
+        email="isabella.morales@gimnasiosanangel.edu.co",
+        document_number="1198345678",
+        defaults={
+            "school_id": school_1.id,
+            "hashed_password": hash_password("SoftEdu2026*"),
             "first_name": "Isabella",
-            "last_name": "Morales Ríos",
-            "doc": "1004771239",
-            "code": "EST-2026-105",
-            "program": "Ingeniería de Sistemas",
-            "semester": 6,
-            "guardian": "Patricia Ríos Cano (Madre)",
-            "guardian_phone": "311-904-5567",
-            "grades": [
-                (1, "Parcial 1 - Persistencia Async", Decimal("30.00"), Decimal("4.80"), first_topic_id, "Arquitectura impecable y código limpio PEP 8."),
-                (1, "Taller Práctico 1 - pgvector", Decimal("20.00"), Decimal("4.90"), second_topic_id, "Mejor calificación del grupo en implementación RAG."),
-            ],
-            "attendances": [
-                (date(2026, 8, 3), AttendanceStatus.PRESENT, "Asistencia puntual."),
-                (date(2026, 8, 5), AttendanceStatus.PRESENT, "Asistencia puntual."),
-                (date(2026, 8, 10), AttendanceStatus.PRESENT, "Asistencia puntual."),
-                (date(2026, 8, 12), AttendanceStatus.EXCUSED, "Permiso institucional por ponencia en congreso."),
-                (date(2026, 8, 17), AttendanceStatus.PRESENT, "Asistencia puntual."),
-            ],
-            "risk": RiskLevel.BAJO,
-            "avg": Decimal("4.84"),
-            "eval_w": Decimal("50.00"),
-            "abs_pct": Decimal("0.00"),
-            "summary": "Diagnóstico IA Excelente: Isabella lidera el rendimiento académico del grupo con promedio ponderado de 4.84/5.00 y 0% de fallas injustificadas.",
-            "factors": [
-                "Primer puesto académico del curso (4.84/5.00).",
-                "0% de inasistencias injustificadas.",
-            ],
-            "teacher_actions": [
-                "Postular a la estudiante al semillero de investigación en Inteligencia Artificial Aplicada.",
-            ],
-            "student_actions": [
-                "Continuar con el desempeño sobresaliente; solo requiere 1.16 en el 50% restante.",
-            ],
+            "last_name": "Morales Castro",
+            "role": UserRole.ESTUDIANTE,
+            "job_title": "Estudiante — Transición (Preescolar)",
+            "department_area": "Educación Inicial y Preescolar",
+            "phone_number": "+57 321 777 8899",
         },
-    ]
+    )
 
-    for s_data in students_seed_data:
-        stu_user = (
-            await session.execute(select(User).where(User.email == s_data["email"]))
-        ).scalars().first()
-        if stu_user is None:
-            stu_user = User(
-                email=s_data["email"],
-                hashed_password=hash_password("estudiante123"),
-                first_name=s_data["first_name"],
-                last_name=s_data["last_name"],
-                document_number=s_data["doc"],
-                role=UserRole.ESTUDIANTE,
-                job_title=f"Estudiante Activo - {s_data['program']}",
-                department_area=s_data["program"],
-                phone_number=s_data["guardian_phone"],
-            )
-            session.add(stu_user)
-            await session.flush()
-        else:
-            stu_user.role = UserRole.ESTUDIANTE
-            stu_user.job_title = f"Estudiante Activo - {s_data['program']}"
-            stu_user.department_area = s_data["program"]
+    isabella_student = (
+        await session.execute(
+            select(Student).where(Student.user_id == isabella_user.id)
+        )
+    ).scalars().first()
+    if isabella_student is None:
+        isabella_student = Student(
+            user_id=isabella_user.id,
+            student_code="COL-2026-001",
+            grade_level_code="TRANSICION",
+            program_name="Transición / Grado 0° (Preescolar)",
+            current_semester=0,
+            enrollment_cohort="2026-CAL-A",
+            birth_date=date(2020, 11, 5),
+            guardian_name="Dra. Camilo Morales (Padre de Familia)",
+            guardian_phone="+57 318 333 2211",
+        )
+        session.add(isabella_student)
+        await session.flush()
 
-        stu_profile = (
-            await session.execute(
-                select(Student).where(Student.user_id == stu_user.id)
-            )
-        ).scalars().first()
-        if stu_profile is None:
-            stu_profile = Student(
-                user_id=stu_user.id,
-                student_code=s_data["code"],
-                program_name=s_data["program"],
-                current_semester=s_data["semester"],
-                enrollment_cohort="2024-1",
-                birth_date=date(2004, 5, 14),
-                guardian_name=s_data["guardian"],
-                guardian_phone=s_data["guardian_phone"],
-            )
-            session.add(stu_profile)
-            await session.flush()
-        else:
-            stu_profile.guardian_name = s_data["guardian"]
-            stu_profile.guardian_phone = s_data["guardian_phone"]
+    # Matricular estudiantes en el grupo 11°A para interactuar con la planilla completa
+    first_topics = list(
+        (await session.execute(select(SyllabusTopic).order_by(SyllabusTopic.topic_number.asc()))).scalars().all()
+    )
+    t1 = first_topics[0] if first_topics else None
+    t2 = first_topics[1] if len(first_topics) > 1 else t1
 
+    students_to_enroll = [laura_student, mateo_student, valentina_student, sebastian_student, isabella_student]
+    for s_item in students_to_enroll:
         enr = (
             await session.execute(
                 select(Enrollment).where(
-                    Enrollment.student_id == stu_profile.id,
-                    Enrollment.course_offering_id == offering.id,
+                    Enrollment.student_id == s_item.id,
+                    Enrollment.course_offering_id == course_off.id,
                 )
             )
         ).scalars().first()
         if enr is None:
             enr = Enrollment(
-                student_id=stu_profile.id,
-                course_offering_id=offering.id,
+                student_id=s_item.id,
+                course_offering_id=course_off.id,
                 status=EnrollmentStatus.ACTIVE,
             )
             session.add(enr)
             await session.flush()
 
-        # Sembrar notas iniciales si la matrícula aún no tiene notas
-        existing_grades = list(
-            (
-                await session.execute(
-                    select(Grade).where(Grade.enrollment_id == enr.id)
-                )
-            )
-            .scalars()
-            .all()
-        )
-        last_grade_id = None
-        if not existing_grades:
-            for cut_num, eval_name, weight_val, score_val, top_id, obs_txt in s_data["grades"]:
-                g_obj = Grade(
+            # Notas de ejemplo para Laura (Sobresaliente)
+            if s_item.student_code == "COL-2026-101":
+                g1 = Grade(
                     enrollment_id=enr.id,
-                    syllabus_topic_id=top_id,
-                    evaluation_cut=cut_num,
-                    evaluation_name=eval_name,
-                    weight_percentage=weight_val,
-                    score=score_val,
-                    teacher_observations=obs_txt,
-                    recorded_by_user_id=teacher_user_1.id,
+                    syllabus_topic_id=t1.id if t1 else None,
+                    evaluation_cut=1,
+                    evaluation_name="Taller de Límites Algebraicos",
+                    weight_percentage=Decimal("15.00"),
+                    score=Decimal("4.80"),
                 )
-                session.add(g_obj)
-                await session.flush()
-                last_grade_id = g_obj.id
-        else:
-            last_grade_id = existing_grades[-1].id
-
-        # Sembrar asistencias iniciales si aún no tiene asistencias
-        existing_att = list(
-            (
-                await session.execute(
-                    select(Attendance).where(Attendance.enrollment_id == enr.id)
-                )
-            )
-            .scalars()
-            .all()
-        )
-        if not existing_att:
-            for att_date, att_status, att_obs in s_data["attendances"]:
-                session.add(
-                    Attendance(
-                        enrollment_id=enr.id,
-                        syllabus_topic_id=first_topic_id,
-                        session_date=att_date,
-                        status=att_status,
-                        observations=att_obs,
-                    )
-                )
-            await session.flush()
-
-        # Sembrar diagnóstico IA vigente si no tiene
-        existing_insight = (
-            await session.execute(
-                select(StudentAIInsight).where(
-                    StudentAIInsight.enrollment_id == enr.id
-                )
-            )
-        ).scalars().first()
-        if existing_insight is None:
-            needed = max(
-                0.0,
-                round(
-                    float(
-                        (Decimal("3.00") - (s_data["avg"] * Decimal("0.50")))
-                        / Decimal("0.50")
-                    ),
-                    2,
-                ),
-            )
-            session.add(
-                StudentAIInsight(
+                g2 = Grade(
                     enrollment_id=enr.id,
-                    triggered_by_grade_id=last_grade_id,
-                    risk_level=s_data["risk"],
-                    accumulated_weighted_average=s_data["avg"],
-                    evaluated_weight_percentage=s_data["eval_w"],
-                    absence_percentage=s_data["abs_pct"],
-                    detected_factors=s_data["factors"],
+                    syllabus_topic_id=t2.id if t2 else None,
+                    evaluation_cut=1,
+                    evaluation_name="Evaluación Parcial Tipo Saber 11",
+                    weight_percentage=Decimal("20.00"),
+                    score=Decimal("4.90"),
+                )
+                a1 = Attendance(
+                    enrollment_id=enr.id,
+                    syllabus_topic_id=t1.id if t1 else None,
+                    session_date=date(2026, 2, 9),
+                    status=AttendanceStatus.PRESENT,
+                    observations="Participación activa en el tablero.",
+                )
+                insight_l = StudentAIInsight(
+                    enrollment_id=enr.id,
+                    risk_level=RiskLevel.BAJO,
+                    accumulated_weighted_average=Decimal("4.86"),
+                    evaluated_weight_percentage=Decimal("35.00"),
+                    absence_percentage=Decimal("0.00"),
+                    detected_factors=["Excelente asimilación conceptual", "Asistencia perfecta (100%)"],
                     suggested_action_plan={
-                        "acciones_docente": s_data["teacher_actions"],
-                        "acciones_estudiante": s_data["student_actions"],
-                        "temas_refuerzo_prioritarios": [
-                            "Persistencia Asíncrona con SQLAlchemy 2.0",
-                            "Búsqueda Semántica con pgvector e Índices HNSW",
+                        "plan_estudiante": [
+                            "Continuar con el banco de ejercicios avanzados de optimización.",
+                            "Postularse como monitora académica de apoyo a sus compañeros de grado.",
                         ],
-                        "meta_nota_restante_sugerida": needed,
+                        "plan_docente": [
+                            "Proponerle retos de nivel olimpiada matemática colombiana para profundizar.",
+                        ],
                     },
-                    executive_summary=s_data["summary"],
-                    llm_model_used=f"google-genai:{settings.AI_MODEL_NAME}",
+                    executive_summary="Rendimiento académico superior. Demuestra dominio total de las competencias evaluadas sin registrar inasistencias.",
+                    llm_model_used="google/gemini-2.0-pro (Copiloto SoftEdu)",
                     is_current_insight=True,
                 )
-            )
+                session.add_all([g1, g2, a1, insight_l])
+
+            # Notas de ejemplo para Mateo (Riesgo Crítico)
+            elif s_item.student_code == "COL-2026-102":
+                g1_m = Grade(
+                    enrollment_id=enr.id,
+                    syllabus_topic_id=t1.id if t1 else None,
+                    evaluation_cut=1,
+                    evaluation_name="Taller de Límites Algebraicos",
+                    weight_percentage=Decimal("15.00"),
+                    score=Decimal("2.20"),
+                )
+                g2_m = Grade(
+                    enrollment_id=enr.id,
+                    syllabus_topic_id=t2.id if t2 else None,
+                    evaluation_cut=1,
+                    evaluation_name="Evaluación Parcial Tipo Saber 11",
+                    weight_percentage=Decimal("20.00"),
+                    score=Decimal("2.10"),
+                )
+                a1_m = Attendance(
+                    enrollment_id=enr.id,
+                    syllabus_topic_id=t1.id if t1 else None,
+                    session_date=date(2026, 2, 9),
+                    status=AttendanceStatus.ABSENT,
+                    observations="No asistió a clase sin justificación médica.",
+                )
+                a2_m = Attendance(
+                    enrollment_id=enr.id,
+                    syllabus_topic_id=t2.id if t2 else None,
+                    session_date=date(2026, 2, 11),
+                    status=AttendanceStatus.LATE,
+                    observations="Ingresó con 25 minutos de retardo al salón.",
+                )
+                insight_m = StudentAIInsight(
+                    enrollment_id=enr.id,
+                    risk_level=RiskLevel.CRITICO,
+                    accumulated_weighted_average=Decimal("2.14"),
+                    evaluated_weight_percentage=Decimal("35.00"),
+                    absence_percentage=Decimal("22.50"),
+                    detected_factors=[
+                        "Promedio ponderado acumulado (2.14) significativamente inferior a la nota aprobatoria (3.00)",
+                        "Inasistencia reiterada (22.5%) cercana al límite de reprobación por fallas",
+                        "Vacíos graves en conceptos previos de factorización y formas indeterminadas",
+                    ],
+                    suggested_action_plan={
+                        "plan_estudiante": [
+                            "Asistir obligatoriamente a las tutorías de nivelación de los martes a las 14:30.",
+                            "Completar la guía de refuerzo remedial de límites con apoyo del Tutor IA.",
+                            "Justificar de inmediato las inasistencias con la coordinación de convivencia.",
+                        ],
+                        "plan_docente": [
+                            "Citar urgentemente a los padres de familia / acudientes ante orientación escolar.",
+                            "Aplicar evaluación remedial de recuperación según Decreto 1290 MEN.",
+                        ],
+                    },
+                    executive_summary="Alerta de Riesgo Académico Crítico. El estudiante reprueba las evaluaciones del primer corte y acumula un alto porcentaje de inasistencias injustificadas.",
+                    llm_model_used="google/gemini-2.0-pro (Copiloto SoftEdu)",
+                    is_current_insight=True,
+                )
+                session.add_all([g1_m, g2_m, a1_m, a2_m, insight_m])
 
     await session.commit()
-    logger.info("Ecosistema institucional SoftEdu (Rector, Coordinador, Secretaría, Orientador, Docentes y 5 Estudiantes) sembrado exitosamente.")
+    logger.info("Ecosistema institucional SoftEdu K-12 (Colegios Calendario A y B, SuperAdmin, Rectores, Docentes y Estudiantes) sembrado exitosamente.")

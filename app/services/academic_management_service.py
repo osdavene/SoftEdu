@@ -1,6 +1,7 @@
 """
-Servicio de Dominio para Autenticación Institucional, Rectoría, Coordinación,
-Secretaría, Docentes, Horarios, Alumnos, Matrículas y Planilla de Asistencia (100% Español).
+Servicio de Dominio para Autenticación Institucional, SuperPanel Multi-Colegio (Maternal a Grado 11°),
+Gobierno Escolar (SuperAdmin, Rector, Coordinación, Secretaría, Psicoorientación, Docentes y Estudiantes),
+Horarios Semanales, Matrículas y Planilla de Asistencia (100% Español).
 """
 
 from decimal import Decimal, ROUND_HALF_UP
@@ -26,6 +27,8 @@ from app.models.academic import (
     Enrollment,
     EnrollmentStatus,
     Grade,
+    SCHOOL_GRADES_CATALOG,
+    SchoolInstitution,
     Student,
     Subject,
     Teacher,
@@ -48,6 +51,12 @@ from app.schemas.management import (
     InstitutionalOverviewResponse,
     LoginRequest,
     ScheduleBlockSchema,
+    SchoolAssignRectorRequest,
+    SchoolCreateWithRectorRequest,
+    SchoolGradeCatalogItem,
+    SchoolInstitutionResponse,
+    SchoolStaffCreateRequest,
+    SchoolUpdateGradesRequest,
     StudentCreateRequest,
     StudentResponse,
     SubjectCreateRequest,
@@ -63,119 +72,426 @@ TWO_PLACES = Decimal("0.01")
 HUNDRED = Decimal("100.00")
 MIN_PASSING = Decimal(str(settings.MIN_PASSING_GRADE)).quantize(TWO_PLACES)
 
+GRADES_MAP_BY_CODE: dict[str, dict[str, Any]] = {
+    item["code"]: item for item in SCHOOL_GRADES_CATALOG
+}
+
+CALENDAR_LABELS_ES: dict[str, str] = {
+    "CALENDARIO_A": "Calendario A (Febrero a Noviembre)",
+    "CALENDARIO_B": "Calendario B (Septiembre a Junio)",
+}
+
+SHIFT_LABELS_ES: dict[str, str] = {
+    "JORNADA_UNICA": "Jornada Única / Completa (07:00 - 15:00)",
+    "COMPLETA": "Jornada Completa Bilingüe (07:00 - 15:30)",
+    "MANANA": "Jornada Mañana (06:30 - 12:30)",
+    "TARDE": "Jornada Tarde (12:45 - 18:30)",
+}
+
 ROLE_METADATA_ES: dict[UserRole, dict[str, Any]] = {
-    UserRole.RECTOR: {
-        "label": "Rectoría General",
-        "default_title": "Rector General Institucional",
-        "default_area": "Rectoría y Dirección Estratégica",
+    UserRole.SUPERADMIN: {
+        "label": "SuperAdmin Global (Gobierno de Colegios)",
+        "default_title": "Director(a) de Plataforma SaaS Multi-Colegio",
+        "default_area": "Gobierno Corporativo SoftEdu Cloud K-12",
         "permissions": [
-            "Tablero Ejecutivo Institucional e Indicadores Globales",
-            "Supervisión de Tasas de Aprobación, Permanencia y Riesgo IA",
-            "Auditoría de Planta Docente, Coordinación y Secretaría",
-            "Acceso Total a Boletines, Sílabos y Copiloto IA",
+            "Creación y Alta de Colegios en Calendario A y Calendario B",
+            "Habilitación y Activación de Grados Escolares (Maternal a Grado 11°)",
+            "Designación y Nombramiento de Rectores por Institución Educativa",
+            "Auditoría Global de Colegios, Matrículas, Horarios y Copiloto IA",
+        ],
+    },
+    UserRole.RECTOR: {
+        "label": "Rectoría Institucional del Colegio",
+        "default_title": "Rector(a) General del Colegio",
+        "default_area": "Rectoría y Consejo Directivo Escolar",
+        "permissions": [
+            "Dirección General del Colegio (Calendario Escolar, PEI y Decreto 1290)",
+            "Vinculación de Secretaría Académica, Coordinadores y Psicoorientadores",
+            "Supervisión de Grados (Maternal a 11°), Planta Docente y Horarios",
+            "Tablero Ejecutivo de Promoción Escolar y Alertas Tempranas IA",
         ],
     },
     UserRole.COORDINADOR: {
-        "label": "Coordinación Académica",
-        "default_title": "Coordinador(a) Académico(a) y Curricular",
-        "default_area": "Vicerrectoría / Coordinación Académica",
+        "label": "Coordinación Académica y Convivencia",
+        "default_title": "Coordinador(a) Académico(a) de Preescolar, Primaria y Bachillerato",
+        "default_area": "Coordinación Académica y Curricular",
         "permissions": [
-            "Gestión de Períodos Lectivos, Asignaturas y Sílabos Vectorizados",
-            "Asignación de Carga Académica y Control de Choques de Horario",
-            "Monitoreo de Alertas Tempranas de Riesgo Académico e Inasistencia",
-            "Supervisión de Planillas de Notas y Asistente Curricular IA",
+            "Diseño de Horarios Semanales por Grado (Maternal a 11°) sin Cruces",
+            "Gestión de Áreas, Asignaturas MEN y Planes de Estudio Vectorizados",
+            "Monitoreo de Alertas Tempranas de Riesgo Escolar e Inasistencia",
+            "Supervisión de Planillas Docentes y Asistente Curricular IA",
         ],
     },
     UserRole.SECRETARIA: {
-        "label": "Secretaría Académica y Admisiones",
-        "default_title": "Secretario(a) General y de Matrículas",
-        "default_area": "Registro, Control y Admisiones",
+        "label": "Secretaría Académica y Matrículas",
+        "default_title": "Secretario(a) Académico(a) y de Admisiones",
+        "default_area": "Secretaría General, SIMAT y Registro Escolar",
         "permissions": [
-            "Inscripción y Ficha Oficial de Estudiantes y Acudientes",
-            "Vinculación Administrativa de Planta Docente",
-            "Formalización de Matrículas por Período y Control de Cupos",
-            "Expedición de Boletines Académicos y Certificados",
+            "Matrícula de Estudiantes en Grados Activos del Colegio (Maternal a 11°)",
+            "Registro de Padres de Familia / Acudientes y Documentos de Identidad",
+            "Vinculación Administrativa de Docentes Titulares y Directores de Grupo",
+            "Expedición de Boletines Escolares Oficiales y Constancias de Estudio",
         ],
     },
     UserRole.ORIENTADOR: {
-        "label": "Psicoorientación y Bienestar",
-        "default_title": "Psicoorientador(a) y Permanencia Estudiantil",
-        "default_area": "Bienestar Institucional y Psicología",
+        "label": "Psicoorientación Escolar",
+        "default_title": "Psicoorientador(a) y Bienestar Estudiantil",
+        "default_area": "Departamento de Orientación y Familia",
         "permissions": [
-            "Seguimiento de Casos en Riesgo Alto y Crítico (Copiloto IA)",
-            "Control de Alertas por Inasistencia y Contacto a Acudientes",
-            "Diseño de Planes de Intervención Psicopedagógica",
-            "Consulta de Boletines e Historial de Asistencia",
+            "Seguimiento de Estudiantes en Riesgo Alto y Crítico (Copiloto IA)",
+            "Control de Inasistencias Reiteradas y Citación a Acudientes",
+            "Planes de Acompañamiento Psicopedagógico por Grado",
+            "Consulta de Boletines Escolares y Observador del Alumno",
         ],
     },
     UserRole.DOCENTE: {
-        "label": "Docente Titular",
-        "default_title": "Docente Titular de Cátedra / Planta",
-        "default_area": "Facultad de Ingeniería y Ciencias Aplicadas",
+        "label": "Docente Titular / Director de Grupo",
+        "default_title": "Docente Titular de Área Escolar",
+        "default_area": "Cuerpo Docente K-12 (Preescolar, Primaria y Bachillerato)",
         "permissions": [
-            "Llamado a Lista y Toma de Asistencia Masiva / Individual por Sesión",
-            "Registro de Calificaciones Ponderadas por Cortes (Escala 0.0 a 5.0)",
-            "Asistente Curricular IA (Planeación de Clase, Rúbricas y Exámenes Test)",
-            "Consulta de Diagnósticos IA y Planes de Acción de sus Estudiantes",
+            "Planilla de Llamado a Lista / Toma de Asistencia por Grado y Hora",
+            "Registro de Calificaciones Decreto 1290 (Escala 0.0 a 5.0 por Periodo)",
+            "Planeador de Clases IA, Rúbricas MEN y Evaluaciones Tipo Saber",
+            "Consulta de Horario Semanal y Diagnósticos IA de sus Alumnos",
         ],
     },
     UserRole.TEACHER: {
-        "label": "Docente Titular",
-        "default_title": "Docente Titular de Cátedra / Planta",
-        "default_area": "Facultad de Ingeniería y Ciencias Aplicadas",
+        "label": "Docente Titular / Director de Grupo",
+        "default_title": "Docente Titular de Área Escolar",
+        "default_area": "Cuerpo Docente K-12",
         "permissions": [
-            "Llamado a Lista y Toma de Asistencia por Sesión",
-            "Registro de Calificaciones Ponderadas por Cortes",
-            "Asistente Curricular IA y Diagnósticos de Riesgo",
+            "Planilla de Llamado a Lista y Toma de Asistencia por Grado",
+            "Registro de Calificaciones Decreto 1290 y Planeador IA",
         ],
     },
     UserRole.ESTUDIANTE: {
-        "label": "Estudiante Activo",
-        "default_title": "Estudiante de Pregrado / Formación",
-        "default_area": "Comunidad Estudiantil",
+        "label": "Estudiante Matriculado",
+        "default_title": "Estudiante Escolar Activo",
+        "default_area": "Comunidad Estudiantil y Familias",
         "permissions": [
-            "Consulta de Boletín Académico Ponderado y Simulador de Notas",
-            "Revisión de Historial Personal de Asistencia e Inasistencias",
-            "Plan de Estudio Personalizado sugerido por el Copiloto IA",
-            "Consultorio Académico 24/7 con el Tutor Inteligente RAG (pgvector)",
+            "Consulta de Boletín Escolar Oficial por Periodo y Desempeño MEN",
+            "Visualización de Horario Semanal de Clases y Récord de Asistencia",
+            "Plan de Refuerzo Escolar Personalizado por el Copiloto IA",
+            "Tutor Escolar Inteligente 24/7 basado en los Temas de Clase (RAG)",
         ],
     },
     UserRole.STUDENT: {
-        "label": "Estudiante Activo",
-        "default_title": "Estudiante de Pregrado / Formación",
-        "default_area": "Comunidad Estudiantil",
+        "label": "Estudiante Matriculado",
+        "default_title": "Estudiante Escolar Activo",
+        "default_area": "Comunidad Estudiantil y Familias",
         "permissions": [
-            "Consulta de Boletín Académico Personal y Asistencia",
-            "Plan de Estudio IA y Tutor Inteligente RAG (pgvector)",
+            "Consulta de Boletín Escolar Oficial, Horario y Tutor IA RAG",
         ],
     },
     UserRole.ADMIN: {
-        "label": "Administrador General del Sistema",
-        "default_title": "Administrador de Plataforma ERP/LMS",
-        "default_area": "Dirección de Tecnología y Sistemas",
+        "label": "Administrador Institucional",
+        "default_title": "Administrador de Plataforma Educativa",
+        "default_area": "Dirección de Sistemas y Gestión Escolar",
         "permissions": [
-            "Control Total de Usuarios, Roles RBAC y Parámetros del Sistema",
+            "Control de Usuarios, Roles RBAC y Configuración Escolar",
             "Gestión Académica, Curricular, Matrículas, Notas y Motores IA",
         ],
     },
 }
 
 ATTENDANCE_LABELS_ES: dict[AttendanceStatus, str] = {
-    AttendanceStatus.PRESENT: "Presente (Asistió)",
-    AttendanceStatus.ABSENT: "Inasistencia (Falla Injustificada)",
-    AttendanceStatus.LATE: "Llegada Tarde (Retardo)",
-    AttendanceStatus.EXCUSED: "Excusa Médica / Justificada",
+    AttendanceStatus.PRESENT: "Presente (Asistió a clase)",
+    AttendanceStatus.ABSENT: "Inasistencia (Falla injustificada)",
+    AttendanceStatus.LATE: "Llegada Tarde (Retardo al salón)",
+    AttendanceStatus.EXCUSED: "Excusa Médica / Familiar Justificada",
 }
 
 
 class AcademicManagementService:
     """
-    Orquesta la lógica de negocio de todos los roles y módulos institucionales.
+    Orquesta la lógica de negocio del SuperPanel Multi-Colegio (Maternal a Grado 11°),
+    Gobierno Escolar (Rector, Secretaría, Coordinación, Docentes y Alumnos),
+    Horarios Semanales, Planilla de Asistencia y Calificaciones.
     """
 
     def __init__(self, session: AsyncSession) -> None:
         self._session = session
         self._grades_repo = GradesRepository(session)
+
+    # =================================================================
+    # 0. GESTIÓN DE COLEGIOS (SUPERADMIN) Y GOBIERNO ESCOLAR (RECTOR)
+    # =================================================================
+    @staticmethod
+    def get_grades_catalog() -> list[SchoolGradeCatalogItem]:
+        """Devuelve el catálogo oficial de los 16 grados escolares (Maternal a Grado 11°)."""
+        return [SchoolGradeCatalogItem(**item) for item in SCHOOL_GRADES_CATALOG]
+
+    @staticmethod
+    def _normalize_enabled_grades(codes: list[str]) -> list[str]:
+        valid_ordered: list[str] = []
+        requested_set = {c.strip().upper() for c in codes if c.strip()}
+        for item in SCHOOL_GRADES_CATALOG:
+            if item["code"] in requested_set:
+                valid_ordered.append(item["code"])
+        if not valid_ordered:
+            raise BusinessRuleViolationError(
+                message="Debe seleccionar y activar al menos un grado válido (desde Maternal hasta Grado 11°).",
+                rule_code="INVALID_SCHOOL_GRADES_SELECTION",
+            )
+        return valid_ordered
+
+    def _map_school_to_dto(
+        self,
+        school: SchoolInstitution,
+        rector_user: User | None = None,
+    ) -> SchoolInstitutionResponse:
+        enabled_details = [
+            SchoolGradeCatalogItem(**GRADES_MAP_BY_CODE[c])
+            for c in (school.enabled_grades or [])
+            if c in GRADES_MAP_BY_CODE
+        ]
+        return SchoolInstitutionResponse(
+            id=school.id,
+            code=school.code,
+            name=school.name,
+            dane_code=school.dane_code,
+            nit=school.nit,
+            calendar_type=school.calendar_type,
+            calendar_label_es=CALENDAR_LABELS_ES.get(
+                school.calendar_type, school.calendar_type
+            ),
+            shift_type=school.shift_type,
+            shift_label_es=SHIFT_LABELS_ES.get(school.shift_type, school.shift_type),
+            city=school.city,
+            address=school.address,
+            phone=school.phone,
+            email_contact=school.email_contact,
+            resolution_men=school.resolution_men,
+            rector_user_id=school.rector_user_id,
+            rector_full_name=rector_user.full_name if rector_user else None,
+            rector_email=rector_user.email if rector_user else None,
+            enabled_grades=list(school.enabled_grades or []),
+            enabled_grades_details=enabled_details,
+            is_active=school.is_active,
+        )
+
+    async def list_schools(self) -> list[SchoolInstitutionResponse]:
+        """Lista todos los colegios registrados en la plataforma junto con su Rector y grados activos."""
+        stmt = (
+            select(SchoolInstitution)
+            .where(SchoolInstitution.is_active.is_(True))
+            .order_by(SchoolInstitution.created_at.asc())
+        )
+        schools = list((await self._session.execute(stmt)).scalars().all())
+
+        rector_ids = [s.rector_user_id for s in schools if s.rector_user_id is not None]
+        rectors_by_id: dict[uuid.UUID, User] = {}
+        if rector_ids:
+            r_stmt = select(User).where(User.id.in_(rector_ids))
+            for u in (await self._session.execute(r_stmt)).scalars().all():
+                rectors_by_id[u.id] = u
+
+        return [
+            self._map_school_to_dto(s, rectors_by_id.get(s.rector_user_id))
+            for s in schools
+        ]
+
+    async def create_school_with_rector(
+        self, payload: SchoolCreateWithRectorRequest
+    ) -> SchoolInstitutionResponse:
+        """
+        Caso de Uso SuperPanel (SUPERADMIN):
+        Crea un nuevo Colegio (Calendario A o B), activa los grados seleccionados (Maternal a 11°)
+        y crea/asigna la cuenta del Rector(a) para que pueda administrar su institución.
+        """
+        existing_school = await self._session.execute(
+            select(SchoolInstitution.id).where(
+                func.upper(SchoolInstitution.code) == payload.code.upper()
+            )
+        )
+        if existing_school.scalars().first() is not None:
+            raise BusinessRuleViolationError(
+                message=f"Ya existe un colegio registrado con el código '{payload.code}'.",
+                rule_code="DUPLICATE_SCHOOL_CODE",
+            )
+
+        normalized_grades = self._normalize_enabled_grades(payload.enabled_grades)
+
+        school = SchoolInstitution(
+            code=payload.code.upper(),
+            name=payload.name,
+            dane_code=payload.dane_code,
+            nit=payload.nit,
+            calendar_type=payload.calendar_type,
+            shift_type=payload.shift_type,
+            city=payload.city,
+            address=payload.address,
+            phone=payload.phone,
+            email_contact=payload.email_contact,
+            resolution_men=payload.resolution_men
+            or "Resolución MEN / SED Educación Preescolar, Básica y Media",
+            enabled_grades=normalized_grades,
+        )
+        self._session.add(school)
+        await self._session.flush()
+
+        rector_user: User | None = None
+        if payload.rector_email and payload.rector_first_name and payload.rector_last_name:
+            dup_user = await self._session.execute(
+                select(User.id).where(
+                    (func.lower(User.email) == payload.rector_email.lower())
+                    | (
+                        User.document_number
+                        == (payload.rector_document_number or f"REC-{school.code}")
+                    )
+                )
+            )
+            if dup_user.scalars().first() is not None:
+                raise BusinessRuleViolationError(
+                    message=(
+                        f"El correo '{payload.rector_email}' o documento del Rector "
+                        f"ya se encuentra registrado en otra cuenta."
+                    ),
+                    rule_code="DUPLICATE_RECTOR_USER",
+                )
+
+            rector_user = User(
+                school_id=school.id,
+                email=payload.rector_email.lower(),
+                hashed_password=hash_password(payload.rector_password or "SoftEdu2026*"),
+                first_name=payload.rector_first_name,
+                last_name=payload.rector_last_name,
+                document_number=payload.rector_document_number or f"REC-{school.code}",
+                role=UserRole.RECTOR,
+                job_title=f"Rector(a) General — {school.name}",
+                department_area="Rectoría y Consejo Directivo",
+                phone_number=payload.rector_phone or payload.phone,
+            )
+            self._session.add(rector_user)
+            await self._session.flush()
+            school.rector_user_id = rector_user.id
+
+        await self._session.commit()
+        await self._session.refresh(school)
+        return self._map_school_to_dto(school, rector_user)
+
+    async def update_school_grades(
+        self, school_id: uuid.UUID, payload: SchoolUpdateGradesRequest
+    ) -> SchoolInstitutionResponse:
+        """
+        Activa o desactiva los grados escolares (Maternal a Grado 11°) y el Calendario (A o B)
+        de un colegio específico desde el SuperPanel o la Rectoría.
+        """
+        school = await self._session.get(SchoolInstitution, school_id)
+        if school is None or not school.is_active:
+            raise EntityNotFoundError("SchoolInstitution", school_id)
+
+        school.enabled_grades = self._normalize_enabled_grades(payload.enabled_grades)
+        if payload.calendar_type is not None:
+            school.calendar_type = payload.calendar_type
+        if payload.shift_type is not None:
+            school.shift_type = payload.shift_type
+
+        await self._session.commit()
+        await self._session.refresh(school)
+
+        rector_user = (
+            await self._session.get(User, school.rector_user_id)
+            if school.rector_user_id
+            else None
+        )
+        return self._map_school_to_dto(school, rector_user)
+
+    async def assign_school_rector(
+        self, school_id: uuid.UUID, payload: SchoolAssignRectorRequest
+    ) -> SchoolInstitutionResponse:
+        """Crea y designa un nuevo Rector(a) para un colegio desde el SuperPanel."""
+        school = await self._session.get(SchoolInstitution, school_id)
+        if school is None or not school.is_active:
+            raise EntityNotFoundError("SchoolInstitution", school_id)
+
+        existing = await self._session.execute(
+            select(User.id).where(
+                (func.lower(User.email) == payload.email.lower())
+                | (User.document_number == payload.document_number)
+            )
+        )
+        if existing.scalars().first() is not None:
+            raise BusinessRuleViolationError(
+                message="Ya existe un usuario con el correo o documento especificado para el Rector.",
+                rule_code="DUPLICATE_RECTOR_EMAIL_OR_DOC",
+            )
+
+        rector_user = User(
+            school_id=school.id,
+            email=payload.email.lower(),
+            hashed_password=hash_password(payload.password),
+            first_name=payload.first_name,
+            last_name=payload.last_name,
+            document_number=payload.document_number,
+            role=UserRole.RECTOR,
+            job_title=f"Rector(a) General — {school.name}",
+            department_area="Rectoría y Consejo Directivo",
+            phone_number=payload.phone_number,
+        )
+        self._session.add(rector_user)
+        await self._session.flush()
+
+        school.rector_user_id = rector_user.id
+        await self._session.commit()
+        await self._session.refresh(school)
+        return self._map_school_to_dto(school, rector_user)
+
+    async def create_school_staff(
+        self, payload: SchoolStaffCreateRequest, current_user: User
+    ) -> UserProfileResponse:
+        """
+        Permite al Rector(a) (o al SuperAdmin) vincular a su Secretaria Académica,
+        Coordinador(a) Académico / de Convivencia o Psicoorientador(a) Escolar.
+        """
+        existing = await self._session.execute(
+            select(User.id).where(
+                (func.lower(User.email) == payload.email.lower())
+                | (User.document_number == payload.document_number)
+            )
+        )
+        if existing.scalars().first() is not None:
+            raise BusinessRuleViolationError(
+                message="Ya existe un funcionario registrado con ese correo o documento de identidad.",
+                rule_code="DUPLICATE_STAFF_USER",
+            )
+
+        target_school_id = payload.school_id or current_user.school_id
+        if target_school_id is None:
+            first_school = (
+                await self._session.execute(
+                    select(SchoolInstitution)
+                    .where(SchoolInstitution.is_active.is_(True))
+                    .order_by(SchoolInstitution.created_at.asc())
+                    .limit(1)
+                )
+            ).scalars().first()
+            if first_school:
+                target_school_id = first_school.id
+
+        role_enum = UserRole(payload.role)
+        staff_user = User(
+            school_id=target_school_id,
+            email=payload.email.lower(),
+            hashed_password=hash_password(payload.password),
+            first_name=payload.first_name,
+            last_name=payload.last_name,
+            document_number=payload.document_number,
+            role=role_enum,
+            job_title=payload.job_title,
+            department_area=payload.department_area,
+            phone_number=payload.phone_number,
+        )
+        self._session.add(staff_user)
+        await self._session.commit()
+        await self._session.refresh(staff_user)
+
+        school = (
+            await self._session.get(SchoolInstitution, target_school_id)
+            if target_school_id
+            else None
+        )
+        return self.map_user_to_profile_dto(staff_user, school=school)
 
     # =================================================================
     # 1. AUTENTICACIÓN JWT E IDENTIDAD INSTITUCIONAL
@@ -198,19 +514,35 @@ class AcademicManagementService:
 
         if user is None or not verify_password(payload.password, user.hashed_password):
             raise UnauthorizedAccessError(
-                message="Correo institucional o contraseña incorrectos."
+                message="Correo institucional o contraseña incorrectos. Verifique sus credenciales."
             )
 
+        school = await self._resolve_user_school(user)
         access_token = create_access_token(user_id=user.id, role=user.role)
         return TokenResponse(
             access_token=access_token,
             token_type="bearer",
             expires_in_minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES,
-            user=self.map_user_to_profile_dto(user),
+            user=self.map_user_to_profile_dto(user, school=school),
         )
 
+    async def _resolve_user_school(self, user: User) -> SchoolInstitution | None:
+        if user.school_id is not None:
+            school = await self._session.get(SchoolInstitution, user.school_id)
+            if school is not None:
+                return school
+        stmt = (
+            select(SchoolInstitution)
+            .where(SchoolInstitution.is_active.is_(True))
+            .order_by(SchoolInstitution.created_at.asc())
+            .limit(1)
+        )
+        return (await self._session.execute(stmt)).scalars().first()
+
     @staticmethod
-    def map_user_to_profile_dto(user: User) -> UserProfileResponse:
+    def map_user_to_profile_dto(
+        user: User, school: SchoolInstitution | None = None
+    ) -> UserProfileResponse:
         meta = ROLE_METADATA_ES.get(
             user.role, ROLE_METADATA_ES[UserRole.ESTUDIANTE]
         )
@@ -226,6 +558,9 @@ class AcademicManagementService:
 
         return UserProfileResponse(
             id=user.id,
+            school_id=school.id if school else user.school_id,
+            school_name=school.name if school else "Consola Global Multi-Colegio SoftEdu",
+            school_calendar_type=school.calendar_type if school else "CALENDARIO_A",
             email=user.email,
             first_name=user.first_name,
             last_name=user.last_name,
@@ -248,6 +583,9 @@ class AcademicManagementService:
             program_name=(
                 user.student_profile.program_name if user.student_profile else None
             ),
+            grade_level_code=(
+                user.student_profile.grade_level_code if user.student_profile else None
+            ),
             current_semester=(
                 user.student_profile.current_semester if user.student_profile else None
             ),
@@ -256,23 +594,34 @@ class AcademicManagementService:
         )
 
     # =================================================================
-    # 2. TABLERO EJECUTIVO INSTITUCIONAL (RECTORÍA / COORDINACIÓN)
+    # 2. TABLERO EJECUTIVO INSTITUCIONAL (SUPERPANEL / RECTORÍA / COORDINACIÓN)
     # =================================================================
-    async def get_institutional_overview(self) -> InstitutionalOverviewResponse:
+    async def get_institutional_overview(
+        self, school_id: uuid.UUID | None = None
+    ) -> InstitutionalOverviewResponse:
         """
-        Consolida todas las métricas académicas, de asistencia, distribución de
-        riesgo IA, directorio de usuarios y planilla general de matriculados.
+        Consolida los colegios registrados, el catálogo de grados (Maternal a 11°),
+        las métricas académicas, la asistencia, las alertas IA y el directorio escolar.
         """
+        all_schools = await self.list_schools()
+        active_school: SchoolInstitutionResponse | None = None
+        if school_id is not None:
+            active_school = next(
+                (s for s in all_schools if s.id == school_id), None
+            )
+        if active_school is None and all_schools:
+            active_school = all_schools[0]
+
         period_stmt = select(AcademicPeriod).where(
             AcademicPeriod.is_active.is_(True),
             AcademicPeriod.is_current.is_(True),
         )
         current_period = (await self._session.execute(period_stmt)).scalars().first()
-        period_code = current_period.code if current_period else "2026-2"
+        period_code = current_period.code if current_period else "2026-CAL-A"
         period_name = (
             current_period.name
             if current_period
-            else "Segundo Período Académico 2026"
+            else "Año Lectivo Escolar 2026 — Calendario A"
         )
 
         total_students = (
@@ -322,7 +671,6 @@ class AcademicManagementService:
         enrollments = list(
             (await self._session.execute(enrollments_stmt)).scalars().unique().all()
         )
-        # Ordenar por código de estudiante
         enrollments.sort(key=lambda e: e.student.student_code)
 
         roster: list[EnrolledStudentSummaryItem] = []
@@ -391,6 +739,7 @@ class AcademicManagementService:
                     student_full_name=enr.student.user.full_name,
                     student_email=enr.student.user.email,
                     document_number=enr.student.user.document_number,
+                    grade_level_code=enr.student.grade_level_code or "GRADO_11",
                     program_name=enr.student.program_name,
                     current_semester=enr.student.current_semester,
                     guardian_name=enr.student.guardian_name,
@@ -456,7 +805,15 @@ class AcademicManagementService:
             key=lambda x: (x.session_date, x.created_at), reverse=True
         )
 
-        # Directorio institucional completo
+        # Directorio institucional completo con colegio asociado
+        schools_by_id: dict[uuid.UUID, SchoolInstitution] = {}
+        raw_schools_stmt = select(SchoolInstitution).where(
+            SchoolInstitution.is_active.is_(True)
+        )
+        for s_obj in (await self._session.execute(raw_schools_stmt)).scalars().all():
+            schools_by_id[s_obj.id] = s_obj
+        default_school_obj = next(iter(schools_by_id.values()), None)
+
         users_stmt = (
             select(User)
             .options(
@@ -469,9 +826,20 @@ class AcademicManagementService:
         all_users = list(
             (await self._session.execute(users_stmt)).scalars().unique().all()
         )
-        directory = [self.map_user_to_profile_dto(u) for u in all_users]
+        directory = [
+            self.map_user_to_profile_dto(
+                u,
+                school=schools_by_id.get(u.school_id, default_school_obj)
+                if u.role != UserRole.SUPERADMIN
+                else None,
+            )
+            for u in all_users
+        ]
 
         return InstitutionalOverviewResponse(
+            active_school=active_school,
+            schools=all_schools,
+            grades_catalog=self.get_grades_catalog(),
             active_period_code=period_code,
             active_period_name=period_name,
             total_students=total_students,
@@ -486,12 +854,12 @@ class AcademicManagementService:
             global_attendance_percentage=global_att,
             risk_distribution=risk_counts,
             enrolled_students=roster,
-            recent_attendances=all_attendance_logs[:35],
+            recent_attendances=all_attendance_logs[:40],
             institutional_directory=directory,
         )
 
     # =================================================================
-    # 3. DOCENTES, MATERIAS, PERÍODOS Y OFERTAS CON HORARIOS
+    # 3. DOCENTES, MATERIAS, PERÍODOS Y OFERTAS CON HORARIOS ESCOLARES
     # =================================================================
     async def create_teacher(self, payload: TeacherCreateRequest) -> TeacherResponse:
         existing = await self._session.execute(
@@ -515,14 +883,24 @@ class AcademicManagementService:
                 rule_code="DUPLICATE_TEACHER_CODE",
             )
 
+        first_school = (
+            await self._session.execute(
+                select(SchoolInstitution)
+                .where(SchoolInstitution.is_active.is_(True))
+                .order_by(SchoolInstitution.created_at.asc())
+                .limit(1)
+            )
+        ).scalars().first()
+
         user = User(
+            school_id=first_school.id if first_school else None,
             email=payload.email.lower(),
             hashed_password=hash_password(payload.password),
             first_name=payload.first_name,
             last_name=payload.last_name,
             document_number=payload.document_number,
             role=UserRole.DOCENTE,
-            job_title=f"Docente Titular - {payload.specialization}",
+            job_title=f"Docente Titular — {payload.specialization}",
             department_area=payload.department,
         )
         self._session.add(user)
@@ -665,6 +1043,11 @@ class AcademicManagementService:
         if period is None or not period.is_active:
             raise EntityNotFoundError("AcademicPeriod", payload.academic_period_id)
 
+        grade_code = (payload.grade_level_code or "GRADO_11").upper()
+        grade_meta = GRADES_MAP_BY_CODE.get(
+            grade_code, GRADES_MAP_BY_CODE["GRADO_11"]
+        )
+
         teacher_offerings_stmt = (
             select(CourseOffering)
             .options(joinedload(CourseOffering.subject))
@@ -686,7 +1069,7 @@ class AcademicManagementService:
             ):
                 raise BusinessRuleViolationError(
                     message=(
-                        f"Ya existe el grupo '{payload.group_code}' para la materia "
+                        f"Ya existe el curso/salón '{payload.group_code}' para la asignatura "
                         f"'{subject.name}' en el período '{period.code}'."
                     ),
                     rule_code="DUPLICATE_COURSE_OFFERING_GROUP",
@@ -698,7 +1081,7 @@ class AcademicManagementService:
             if conflict is not None:
                 raise BusinessRuleViolationError(
                     message=(
-                        f"Choque de horario para el docente {teacher.user.full_name} con la "
+                        f"Choque de horario escolar para el docente {teacher.user.full_name} con la "
                         f"asignatura '{existing_off.subject.name}' ({existing_off.group_code}) "
                         f"el día {conflict['day']} ({conflict['start_time']} - {conflict['end_time']})."
                     ),
@@ -711,6 +1094,7 @@ class AcademicManagementService:
             teacher_id=teacher.id,
             academic_period_id=period.id,
             group_code=payload.group_code.upper(),
+            grade_level_code=grade_code,
             max_capacity=payload.max_capacity,
             total_planned_sessions=payload.total_planned_sessions,
             schedule_blocks=new_blocks_raw,
@@ -729,6 +1113,8 @@ class AcademicManagementService:
             academic_period_id=period.id,
             academic_period_code=period.code,
             group_code=offering.group_code,
+            grade_level_code=grade_code,
+            grade_level_label=grade_meta["short_name"],
             max_capacity=offering.max_capacity,
             enrolled_count=0,
             total_planned_sessions=offering.total_planned_sessions,
@@ -748,33 +1134,40 @@ class AcademicManagementService:
         )
         result = await self._session.execute(stmt)
         offerings = result.scalars().unique().all()
-        return [
-            CourseOfferingResponse(
-                id=off.id,
-                subject_id=off.subject.id,
-                subject_code=off.subject.code,
-                subject_name=off.subject.name,
-                teacher_id=off.teacher.id,
-                teacher_full_name=off.teacher.user.full_name,
-                academic_period_id=off.academic_period.id,
-                academic_period_code=off.academic_period.code,
-                group_code=off.group_code,
-                max_capacity=off.max_capacity,
-                enrolled_count=sum(
-                    1
-                    for e in off.enrollments
-                    if e.is_active and e.status == EnrollmentStatus.ACTIVE
-                ),
-                total_planned_sessions=off.total_planned_sessions,
-                schedule_blocks=[
-                    ScheduleBlockSchema.model_validate(b) for b in off.schedule_blocks
-                ],
+        items: list[CourseOfferingResponse] = []
+        for off in offerings:
+            g_code = off.grade_level_code or "GRADO_11"
+            g_meta = GRADES_MAP_BY_CODE.get(g_code, GRADES_MAP_BY_CODE["GRADO_11"])
+            items.append(
+                CourseOfferingResponse(
+                    id=off.id,
+                    subject_id=off.subject.id,
+                    subject_code=off.subject.code,
+                    subject_name=off.subject.name,
+                    teacher_id=off.teacher.id,
+                    teacher_full_name=off.teacher.user.full_name,
+                    academic_period_id=off.academic_period.id,
+                    academic_period_code=off.academic_period.code,
+                    group_code=off.group_code,
+                    grade_level_code=g_code,
+                    grade_level_label=g_meta["short_name"],
+                    max_capacity=off.max_capacity,
+                    enrolled_count=sum(
+                        1
+                        for e in off.enrollments
+                        if e.is_active and e.status == EnrollmentStatus.ACTIVE
+                    ),
+                    total_planned_sessions=off.total_planned_sessions,
+                    schedule_blocks=[
+                        ScheduleBlockSchema.model_validate(b)
+                        for b in off.schedule_blocks
+                    ],
+                )
             )
-            for off in offerings
-        ]
+        return items
 
     # =================================================================
-    # 4. ALUMNOS, MATRÍCULAS Y PLANILLAS DE ASISTENCIA CON ALERTA IA
+    # 4. ALUMNOS POR GRADO (MATERNAL A 11°), MATRÍCULAS Y ASISTENCIA
     # =================================================================
     async def create_student(self, payload: StudentCreateRequest) -> StudentResponse:
         existing = await self._session.execute(
@@ -785,7 +1178,7 @@ class AcademicManagementService:
         )
         if existing.scalars().first() is not None:
             raise BusinessRuleViolationError(
-                message="Ya existe un usuario con el correo o documento especificado.",
+                message="Ya existe un estudiante o usuario con el correo o documento especificado.",
                 rule_code="DUPLICATE_USER_EMAIL_OR_DOCUMENT",
             )
 
@@ -798,15 +1191,46 @@ class AcademicManagementService:
                 rule_code="DUPLICATE_STUDENT_CODE",
             )
 
+        first_school = (
+            await self._session.execute(
+                select(SchoolInstitution)
+                .where(SchoolInstitution.is_active.is_(True))
+                .order_by(SchoolInstitution.created_at.asc())
+                .limit(1)
+            )
+        ).scalars().first()
+
+        grade_code = (payload.grade_level_code or "GRADO_11").upper()
+        if grade_code not in GRADES_MAP_BY_CODE:
+            raise BusinessRuleViolationError(
+                message=f"El grado '{grade_code}' no pertenece al catálogo oficial (Maternal a Grado 11°).",
+                rule_code="INVALID_GRADE_LEVEL_CODE",
+            )
+
+        if first_school and first_school.enabled_grades:
+            if grade_code not in first_school.enabled_grades:
+                raise BusinessRuleViolationError(
+                    message=(
+                        f"El grado '{GRADES_MAP_BY_CODE[grade_code]['name']}' no está habilitado "
+                        f"actualmente en '{first_school.name}'. Solicite al SuperAdmin activarlo."
+                    ),
+                    rule_code="GRADE_NOT_ENABLED_IN_SCHOOL",
+                )
+
+        grade_info = GRADES_MAP_BY_CODE[grade_code]
+        resolved_program_name = payload.program_name or grade_info["name"]
+        resolved_order = max(1, int(grade_info["order"]))
+
         user = User(
+            school_id=first_school.id if first_school else None,
             email=payload.email.lower(),
             hashed_password=hash_password(payload.password),
             first_name=payload.first_name,
             last_name=payload.last_name,
             document_number=payload.document_number,
             role=UserRole.ESTUDIANTE,
-            job_title=f"Estudiante - {payload.program_name}",
-            department_area=payload.program_name,
+            job_title=f"Estudiante — {grade_info['short_name']}",
+            department_area=grade_info["stage"],
         )
         self._session.add(user)
         await self._session.flush()
@@ -814,8 +1238,9 @@ class AcademicManagementService:
         student = Student(
             user_id=user.id,
             student_code=payload.student_code,
-            program_name=payload.program_name,
-            current_semester=payload.current_semester,
+            grade_level_code=grade_code,
+            program_name=resolved_program_name,
+            current_semester=resolved_order,
             enrollment_cohort=payload.enrollment_cohort,
             birth_date=payload.birth_date,
             guardian_name=payload.guardian_name,
@@ -824,10 +1249,13 @@ class AcademicManagementService:
         self._session.add(student)
         await self._session.flush()
 
-        # Matricular automáticamente en el curso principal activo si existe para agilizar demostraciones
+        # Matricular automáticamente en el curso principal activo
         default_off = (
             await self._session.execute(
-                select(CourseOffering).where(CourseOffering.is_active.is_(True)).limit(1)
+                select(CourseOffering)
+                .where(CourseOffering.is_active.is_(True))
+                .order_by(CourseOffering.created_at.asc())
+                .limit(1)
             )
         ).scalars().first()
         if default_off is not None:
@@ -848,6 +1276,7 @@ class AcademicManagementService:
             email=user.email,
             document_number=user.document_number,
             student_code=student.student_code,
+            grade_level_code=student.grade_level_code,
             program_name=student.program_name,
             current_semester=student.current_semester,
             enrollment_cohort=student.enrollment_cohort,
@@ -874,6 +1303,7 @@ class AcademicManagementService:
                 email=s.user.email,
                 document_number=s.user.document_number,
                 student_code=s.student_code,
+                grade_level_code=s.grade_level_code or "GRADO_11",
                 program_name=s.program_name,
                 current_semester=s.current_semester,
                 enrollment_cohort=s.enrollment_cohort,
@@ -916,7 +1346,7 @@ class AcademicManagementService:
         if active_enrolled_count >= offering.max_capacity:
             raise BusinessRuleViolationError(
                 message=(
-                    f"El curso '{offering.subject.name}' ({offering.group_code}) "
+                    f"El salón '{offering.subject.name}' ({offering.group_code}) "
                     f"ha alcanzado su capacidad máxima ({offering.max_capacity} cupos)."
                 ),
                 rule_code="COURSE_OFFERING_FULL",
@@ -941,14 +1371,14 @@ class AcademicManagementService:
         for existing_enr in student_active_enrollments:
             if existing_enr.course_offering_id == offering.id:
                 raise BusinessRuleViolationError(
-                    message="El estudiante ya se encuentra matriculado en este grupo.",
+                    message="El estudiante ya se encuentra matriculado en este curso/salón.",
                     rule_code="DUPLICATE_ENROLLMENT",
                 )
             if existing_enr.course_offering.subject_id == offering.subject_id:
                 raise BusinessRuleViolationError(
                     message=(
                         f"El estudiante ya tiene matriculada la asignatura "
-                        f"'{offering.subject.name}' en otro grupo del período actual."
+                        f"'{offering.subject.name}' en otro grupo del año lectivo actual."
                     ),
                     rule_code="SUBJECT_ALREADY_ENROLLED_IN_PERIOD",
                 )
@@ -1104,7 +1534,7 @@ class AcademicManagementService:
         self, payload: BulkAttendanceCreateRequest
     ) -> tuple[list[AttendanceRegistrationResponse], list[StudentAcademicContextDTO]]:
         """
-        Registra la planilla de llamado a lista de todo un curso para una fecha de sesión
+        Registra la planilla de llamado a lista de todo un salón para una fecha de sesión
         y recopila los contextos de IA para todos los alumnos con falla o retardo.
         """
         results: list[AttendanceRegistrationResponse] = []

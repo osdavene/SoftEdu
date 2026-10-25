@@ -35,6 +35,7 @@ from app.core.database import Base
 class UserRole(str, enum.Enum):
     """Roles institucionales del sistema para control de acceso (RBAC)."""
 
+    SUPERADMIN = "SUPERADMIN"
     ADMIN = "ADMIN"
     RECTOR = "RECTOR"
     COORDINADOR = "COORDINADOR"
@@ -45,6 +46,35 @@ class UserRole(str, enum.Enum):
     # Alias técnicos retrocompatibles
     TEACHER = "TEACHER"
     STUDENT = "STUDENT"
+
+
+class SchoolCalendarType(str, enum.Enum):
+    """Calendario escolar reglamentario MEN (Colombia)."""
+
+    CALENDARIO_A = "CALENDARIO_A"
+    CALENDARIO_B = "CALENDARIO_B"
+
+
+# Catálogo oficial de Grados Escolares (Desde Maternal hasta Grado 11°)
+SCHOOL_GRADES_CATALOG: list[dict[str, Any]] = [
+    {"code": "MATERNAL", "name": "Maternal (1-2 años)", "short_name": "Maternal", "stage": "Educación Inicial y Preescolar", "order": 0},
+    {"code": "PARVULOS", "name": "Párvulos (2-3 años)", "short_name": "Párvulos", "stage": "Educación Inicial y Preescolar", "order": 0},
+    {"code": "PREJARDIN", "name": "Pre-Jardín (3-4 años)", "short_name": "Pre-Jardín", "stage": "Educación Inicial y Preescolar", "order": 0},
+    {"code": "JARDIN", "name": "Jardín (4-5 años)", "short_name": "Jardín", "stage": "Educación Inicial y Preescolar", "order": 0},
+    {"code": "TRANSICION", "name": "Transición / Grado 0° (5-6 años)", "short_name": "Transición (0°)", "stage": "Educación Inicial y Preescolar", "order": 0},
+    {"code": "GRADO_1", "name": "Grado Primero (1° Primaria)", "short_name": "Grado 1°", "stage": "Educación Básica Primaria", "order": 1},
+    {"code": "GRADO_2", "name": "Grado Segundo (2° Primaria)", "short_name": "Grado 2°", "stage": "Educación Básica Primaria", "order": 2},
+    {"code": "GRADO_3", "name": "Grado Tercero (3° Primaria)", "short_name": "Grado 3°", "stage": "Educación Básica Primaria", "order": 3},
+    {"code": "GRADO_4", "name": "Grado Cuarto (4° Primaria)", "short_name": "Grado 4°", "stage": "Educación Básica Primaria", "order": 4},
+    {"code": "GRADO_5", "name": "Grado Quinto (5° Primaria)", "short_name": "Grado 5°", "stage": "Educación Básica Primaria", "order": 5},
+    {"code": "GRADO_6", "name": "Grado Sexto (6° Bachillerato)", "short_name": "Grado 6°", "stage": "Educación Básica Secundaria", "order": 6},
+    {"code": "GRADO_7", "name": "Grado Séptimo (7° Bachillerato)", "short_name": "Grado 7°", "stage": "Educación Básica Secundaria", "order": 7},
+    {"code": "GRADO_8", "name": "Grado Octavo (8° Bachillerato)", "short_name": "Grado 8°", "stage": "Educación Básica Secundaria", "order": 8},
+    {"code": "GRADO_9", "name": "Grado Noveno (9° Bachillerato)", "short_name": "Grado 9°", "stage": "Educación Básica Secundaria", "order": 9},
+    {"code": "GRADO_10", "name": "Grado Décimo (10° Media Vocacional)", "short_name": "Grado 10°", "stage": "Educación Media Vocacional", "order": 10},
+    {"code": "GRADO_11", "name": "Grado Undécimo (11° Promoción Saber 11)", "short_name": "Grado 11°", "stage": "Educación Media Vocacional", "order": 11},
+]
+
 
 
 class EnrollmentStatus(str, enum.Enum):
@@ -101,6 +131,61 @@ class AuditMixin:
 
 
 # =====================================================================
+# 0. ENTIDAD MULTI-COLEGIO (INSTITUCIÓN EDUCATIVA K-12: MATERNAL A 11°)
+# =====================================================================
+class SchoolInstitution(Base, AuditMixin):
+    """
+    Institución Educativa (Colegio de Maternal a Grado 11°) administrada desde el SuperPanel.
+    Controla el Calendario Escolar (A o B), Jornada, Código DANE, Grados Habilitados y Rector.
+    """
+
+    __tablename__ = "schools"
+
+    id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
+    )
+    code: Mapped[str] = mapped_column(
+        String(30), unique=True, index=True, nullable=False
+    )
+    name: Mapped[str] = mapped_column(String(200), nullable=False, index=True)
+    dane_code: Mapped[str] = mapped_column(String(35), nullable=False)
+    nit: Mapped[str] = mapped_column(String(35), nullable=False)
+    calendar_type: Mapped[str] = mapped_column(
+        String(25),
+        default="CALENDARIO_A",
+        server_default="CALENDARIO_A",
+        nullable=False,
+        comment="CALENDARIO_A (Feb-Nov) o CALENDARIO_B (Sep-Jun)",
+    )
+    shift_type: Mapped[str] = mapped_column(
+        String(40),
+        default="JORNADA_UNICA",
+        server_default="JORNADA_UNICA",
+        nullable=False,
+        comment="JORNADA_UNICA, MANANA, TARDE, COMPLETA",
+    )
+    city: Mapped[str] = mapped_column(
+        String(100), default="Bogotá D.C.", nullable=False
+    )
+    address: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    phone: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    email_contact: Mapped[str | None] = mapped_column(String(150), nullable=True)
+    resolution_men: Mapped[str | None] = mapped_column(String(180), nullable=True)
+    rector_user_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("users.id", ondelete="SET NULL", use_alter=True),
+        nullable=True,
+    )
+    enabled_grades: Mapped[list[str]] = mapped_column(
+        JSONB,
+        default=list,
+        server_default="[]",
+        nullable=False,
+        comment="Lista de códigos de grado habilitados por el SuperAdmin (MATERNAL .. GRADO_11)",
+    )
+
+
+# =====================================================================
 # 1. IDENTIDAD Y PERFILES (USER, TEACHER, STUDENT)
 # =====================================================================
 class User(Base, AuditMixin):
@@ -110,6 +195,12 @@ class User(Base, AuditMixin):
 
     id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
+    )
+    school_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("schools.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
     )
     email: Mapped[str] = mapped_column(
         String(255), unique=True, index=True, nullable=False
@@ -211,6 +302,12 @@ class Student(Base, AuditMixin):
         String(150), nullable=True, comment="Nombre del acudiente o contacto de emergencia"
     )
     guardian_phone: Mapped[str | None] = mapped_column(String(40), nullable=True)
+    grade_level_code: Mapped[str | None] = mapped_column(
+        String(30),
+        nullable=True,
+        default="GRADO_11",
+        comment="Código del grado escolar K-12 (MATERNAL .. GRADO_11)",
+    )
 
     # Relaciones
     user: Mapped["User"] = relationship("User", back_populates="student_profile")
@@ -397,6 +494,12 @@ class CourseOffering(Base, AuditMixin):
         index=True,
     )
     group_code: Mapped[str] = mapped_column(String(20), nullable=False)
+    grade_level_code: Mapped[str | None] = mapped_column(
+        String(30),
+        nullable=True,
+        default="GRADO_11",
+        comment="Grado escolar K-12 del salón/grupo (MATERNAL .. GRADO_11)",
+    )
     max_capacity: Mapped[int] = mapped_column(Integer, default=35, nullable=False)
     total_planned_sessions: Mapped[int] = mapped_column(
         Integer, default=32, nullable=False

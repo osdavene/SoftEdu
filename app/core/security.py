@@ -120,6 +120,7 @@ async def get_current_active_user(
 def _expand_equivalent_roles(allowed_roles: tuple[UserRole, ...]) -> set[UserRole]:
     """Expande los grupos jerárquicos de roles institucionales."""
     expanded: set[UserRole] = set(allowed_roles)
+    expanded.add(UserRole.SUPERADMIN)
     if UserRole.ADMIN in expanded:
         expanded.update(
             {

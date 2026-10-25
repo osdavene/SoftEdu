@@ -1,7 +1,7 @@
 """
-Esquemas Pydantic v2 para Autenticación JWT, Roles Institucionales (Rector,
-Coordinador, Secretaría, Orientador, Docente, Estudiante), Horarios, Matrículas,
-Planillas de Llamado a Lista y Tablero Institucional (100% Español).
+Esquemas Pydantic v2 para Autenticación JWT, SuperPanel Multi-Colegio (Maternal a Grado 11°),
+Calendario Escolar A y B, Gobierno Escolar (SuperAdmin, Rector, Coordinador, Secretaría,
+Orientador, Docente, Estudiante), Horarios Semanales, Matrículas y Planillas (100% Español).
 """
 
 from datetime import date, datetime
@@ -12,6 +12,132 @@ import uuid
 from pydantic import BaseModel, ConfigDict, EmailStr, Field, model_validator
 
 from app.models.academic import AttendanceStatus, RiskLevel, UserRole
+
+
+# =====================================================================
+# 0. DTOS DE COLEGIOS (MATERNAL A GRADO 11°, CALENDARIO A/B, SUPERPANEL)
+# =====================================================================
+class SchoolGradeCatalogItem(BaseModel):
+    """Definición oficial de un Grado Escolar (desde Maternal hasta Grado 11°)."""
+
+    code: str
+    name: str
+    short_name: str
+    stage: str
+    order: int
+
+
+class SchoolInstitutionResponse(BaseModel):
+    """Información completa de un Colegio registrado en el SuperPanel."""
+
+    id: uuid.UUID
+    code: str
+    name: str
+    dane_code: str
+    nit: str
+    calendar_type: str
+    calendar_label_es: str
+    shift_type: str
+    shift_label_es: str
+    city: str
+    address: str | None = None
+    phone: str | None = None
+    email_contact: str | None = None
+    resolution_men: str | None = None
+    rector_user_id: uuid.UUID | None = None
+    rector_full_name: str | None = None
+    rector_email: str | None = None
+    enabled_grades: list[str]
+    enabled_grades_details: list[SchoolGradeCatalogItem] = Field(default_factory=list)
+    is_active: bool
+
+
+class SchoolCreateWithRectorRequest(BaseModel):
+    """
+    DTO exclusivo de SUPERADMIN para dar de alta un Colegio (Calendario A o B),
+    activar los grados que maneja (desde Maternal hasta Grado 11°) y crear/asignar a su Rector(a).
+    """
+
+    model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
+
+    code: str = Field(..., min_length=3, max_length=30, description="Ej. 'COL-SFA-002'")
+    name: str = Field(..., min_length=4, max_length=200)
+    dane_code: str = Field(..., min_length=5, max_length=35)
+    nit: str = Field(..., min_length=5, max_length=35)
+    calendar_type: Literal["CALENDARIO_A", "CALENDARIO_B"] = Field(
+        default="CALENDARIO_A",
+        description="Calendario A (Febrero a Noviembre) o Calendario B (Septiembre a Junio)",
+    )
+    shift_type: Literal["JORNADA_UNICA", "MANANA", "TARDE", "COMPLETA"] = Field(
+        default="JORNADA_UNICA"
+    )
+    city: str = Field(default="Bogotá D.C.", min_length=2, max_length=100)
+    address: str | None = Field(default=None, max_length=200)
+    phone: str | None = Field(default=None, max_length=50)
+    email_contact: str | None = Field(default=None, max_length=150)
+    resolution_men: str | None = Field(default=None, max_length=180)
+    enabled_grades: list[str] = Field(
+        ...,
+        min_length=1,
+        description="Lista de códigos de grado activos en el colegio (MATERNAL .. GRADO_11)",
+    )
+
+    # Datos opcionales para crear y asignar al Rector inmediatamente desde el SuperPanel
+    rector_first_name: str | None = Field(default=None, max_length=100)
+    rector_last_name: str | None = Field(default=None, max_length=100)
+    rector_document_number: str | None = Field(default=None, max_length=40)
+    rector_email: EmailStr | None = None
+    rector_password: str | None = Field(default="SoftEdu2026*", min_length=6)
+    rector_phone: str | None = Field(default=None, max_length=40)
+
+
+class SchoolUpdateGradesRequest(BaseModel):
+    """DTO para activar o desactivar grados escolares (Maternal a 11°) en un colegio."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    enabled_grades: list[str] = Field(
+        ...,
+        min_length=1,
+        description="Códigos de grados que el colegio tiene habilitados.",
+    )
+    calendar_type: Literal["CALENDARIO_A", "CALENDARIO_B"] | None = None
+    shift_type: Literal["JORNADA_UNICA", "MANANA", "TARDE", "COMPLETA"] | None = None
+
+
+class SchoolAssignRectorRequest(BaseModel):
+    """DTO para crear y nombrar al Rector(a) de un colegio desde el SuperPanel."""
+
+    model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
+
+    first_name: str = Field(..., min_length=2, max_length=100)
+    last_name: str = Field(..., min_length=2, max_length=100)
+    document_number: str = Field(..., min_length=5, max_length=40)
+    email: EmailStr
+    password: str = Field(default="SoftEdu2026*", min_length=6)
+    phone_number: str | None = Field(default=None, max_length=40)
+
+
+class SchoolStaffCreateRequest(BaseModel):
+    """
+    DTO para que el Rector(a) (o SuperAdmin) agregue a su equipo directivo y administrativo:
+    Secretaria Académica, Coordinador(a) Académico / Convivencia o Psicoorientador(a) Escolar.
+    """
+
+    model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
+
+    role: Literal["SECRETARIA", "COORDINADOR", "ORIENTADOR", "RECTOR"] = Field(
+        ..., description="Rol directivo/administrativo dentro del colegio."
+    )
+    first_name: str = Field(..., min_length=2, max_length=100)
+    last_name: str = Field(..., min_length=2, max_length=100)
+    document_number: str = Field(..., min_length=5, max_length=40)
+    email: EmailStr
+    password: str = Field(default="SoftEdu2026*", min_length=6)
+    job_title: str = Field(..., min_length=3, max_length=120)
+    department_area: str = Field(..., min_length=3, max_length=120)
+    phone_number: str | None = Field(default=None, max_length=40)
+    school_id: uuid.UUID | None = None
 
 
 # =====================================================================
@@ -27,11 +153,14 @@ class LoginRequest(BaseModel):
 
 
 class UserProfileResponse(BaseModel):
-    """Información completa del usuario autenticado, su cargo y permisos en español."""
+    """Información completa del usuario autenticado, su colegio, su cargo y permisos en español."""
 
     model_config = ConfigDict(from_attributes=True)
 
     id: uuid.UUID
+    school_id: uuid.UUID | None = None
+    school_name: str | None = None
+    school_calendar_type: str | None = None
     email: str
     first_name: str
     last_name: str
@@ -48,6 +177,7 @@ class UserProfileResponse(BaseModel):
     student_id: uuid.UUID | None = None
     student_code: str | None = None
     program_name: str | None = None
+    grade_level_code: str | None = None
     current_semester: int | None = None
     enrollment_id: uuid.UUID | None = None
     is_active: bool
@@ -95,7 +225,7 @@ class ScheduleBlockSchema(BaseModel):
         description="Hora de finalización en formato 24h (ej. '10:00').",
     )
     classroom: str = Field(
-        ..., min_length=2, max_length=60, description="Aula o laboratorio asignado (ej. 'LAB-IA-301')."
+        ..., min_length=2, max_length=60, description="Aula o salón asignado (ej. 'Salón 11°A - B201')."
     )
 
     @model_validator(mode="after")
@@ -113,7 +243,7 @@ class TeacherCreateRequest(BaseModel):
     model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
 
     email: EmailStr
-    password: str = Field(default="docente123", min_length=6)
+    password: str = Field(default="SoftEdu2026*", min_length=6)
     first_name: str = Field(..., min_length=2, max_length=100)
     last_name: str = Field(..., min_length=2, max_length=100)
     document_number: str = Field(..., min_length=5, max_length=40)
@@ -175,7 +305,7 @@ class AcademicPeriodCreateRequest(BaseModel):
 
     model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
 
-    code: str = Field(..., min_length=4, max_length=20, description="Ej. '2026-2'")
+    code: str = Field(..., min_length=4, max_length=20, description="Ej. '2026-CAL-A'")
     name: str = Field(..., min_length=5, max_length=120)
     start_date: date
     end_date: date
@@ -206,7 +336,7 @@ class AcademicPeriodResponse(BaseModel):
 
 class CourseOfferingCreateRequest(BaseModel):
     """
-    DTO para asignar un Docente a una Materia en un Período Lectivo
+    DTO para asignar un Docente a una Asignatura y Grado Escolar en un Período Lectivo
     definiendo sus bloques horarios (`schedule_blocks`).
     """
 
@@ -215,19 +345,25 @@ class CourseOfferingCreateRequest(BaseModel):
     subject_id: uuid.UUID
     teacher_id: uuid.UUID
     academic_period_id: uuid.UUID
-    group_code: str = Field(..., min_length=1, max_length=20, description="Ej. 'G01'")
+    group_code: str = Field(..., min_length=1, max_length=20, description="Ej. '11°A'")
+    grade_level_code: str = Field(
+        default="GRADO_11",
+        min_length=3,
+        max_length=30,
+        description="Grado escolar K-12 al que pertenece el grupo (MATERNAL .. GRADO_11)",
+    )
     max_capacity: int = Field(default=35, ge=1, le=200)
     total_planned_sessions: int = Field(default=32, ge=1, le=120)
     schedule_blocks: list[ScheduleBlockSchema] = Field(
         ...,
         min_length=1,
-        max_length=7,
+        max_length=10,
         description="Bloques horarios semanales asignados al curso.",
     )
 
 
 class CourseOfferingResponse(BaseModel):
-    """DTO de salida de una oferta de curso con su docente y bloques horarios."""
+    """DTO de salida de una oferta de curso con su grado, docente y bloques horarios."""
 
     id: uuid.UUID
     subject_id: uuid.UUID
@@ -238,6 +374,8 @@ class CourseOfferingResponse(BaseModel):
     academic_period_id: uuid.UUID
     academic_period_code: str
     group_code: str
+    grade_level_code: str | None = "GRADO_11"
+    grade_level_label: str = "Grado 11°"
     max_capacity: int
     enrolled_count: int
     total_planned_sessions: int
@@ -248,20 +386,26 @@ class CourseOfferingResponse(BaseModel):
 # 3. DTOS DE ALUMNOS, PLANILLA DE ASISTENCIA Y TABLERO INSTITUCIONAL
 # =====================================================================
 class StudentCreateRequest(BaseModel):
-    """DTO para registrar la ficha de un Estudiante junto con su usuario RBAC."""
+    """DTO para matricular un Estudiante en un Grado activo del colegio (Maternal a 11°)."""
 
     model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
 
     email: EmailStr
-    password: str = Field(default="estudiante123", min_length=6)
+    password: str = Field(default="SoftEdu2026*", min_length=6)
     first_name: str = Field(..., min_length=2, max_length=100)
     last_name: str = Field(..., min_length=2, max_length=100)
     document_number: str = Field(..., min_length=5, max_length=40)
     student_code: str = Field(..., min_length=3, max_length=30)
-    program_name: str = Field(..., min_length=3, max_length=150)
-    current_semester: int = Field(default=1, ge=1, le=15)
+    grade_level_code: str = Field(
+        default="GRADO_11",
+        min_length=3,
+        max_length=30,
+        description="Código del grado escolar activo (ej. MATERNAL, TRANSICION, GRADO_5, GRADO_11)",
+    )
+    program_name: str | None = Field(default=None, max_length=150)
+    current_semester: int = Field(default=11, ge=0, le=15)
     enrollment_cohort: str = Field(
-        default="2026-1", min_length=4, max_length=20, description="Ej. '2026-1'"
+        default="2026-A", min_length=4, max_length=20, description="Ej. '2026-A'"
     )
     birth_date: date | None = None
     guardian_name: str | None = Field(default=None, max_length=150)
@@ -277,6 +421,7 @@ class StudentResponse(BaseModel):
     email: str
     document_number: str
     student_code: str
+    grade_level_code: str | None = "GRADO_11"
     program_name: str
     current_semester: int
     enrollment_cohort: str
@@ -357,6 +502,7 @@ class EnrolledStudentSummaryItem(BaseModel):
     student_full_name: str
     student_email: str
     document_number: str
+    grade_level_code: str | None = "GRADO_11"
     program_name: str
     current_semester: int
     guardian_name: str | None
@@ -386,8 +532,11 @@ class EnrolledStudentSummaryItem(BaseModel):
 
 
 class InstitutionalOverviewResponse(BaseModel):
-    """Tablero Ejecutivo Institucional completo para Rectoría, Coordinación y Docentes."""
+    """Tablero Ejecutivo Institucional completo para SuperAdmin, Rectoría, Coordinación y Docentes."""
 
+    active_school: SchoolInstitutionResponse | None = None
+    schools: list[SchoolInstitutionResponse] = Field(default_factory=list)
+    grades_catalog: list[SchoolGradeCatalogItem] = Field(default_factory=list)
     active_period_code: str
     active_period_name: str
     total_students: int
