@@ -204,13 +204,36 @@ python test_secretaria_e2e.py
 
 ---
 
-## ☁️ Despliegue en Servidor AWS EC2
+## ☁️ Despliegue en Servidor AWS (CloudPanel + Nginx + Gunicorn + CI/CD)
 
-El repositorio incluye automatización completa en `.github/workflows/deploy.yml` y script de aprovisionamiento en `deploy/aws_setup_softedu.sh`:
+El proyecto cuenta con la misma arquitectura y estándares de despliegue en producción que **`C:\Proyectos\FacCol`**:
 
-- **Configuración de Secrets en GitHub (`Settings -> Secrets and variables -> Actions`):**
-  - `AWS_HOST`: IP elástica o DNS público del servidor EC2.
-  - `AWS_USER`: Usuario SSH con privilegios sudo (ej. `ubuntu` o `softedu`).
-  - `AWS_SSH_KEY`: Clave privada SSH (`.pem`).
-  - `AWS_PORT`: Puerto SSH (`22`).
-- Al realizar `git push origin main`, GitHub Actions actualiza el código, migra la base de datos y reinicia el servicio `systemd` sin tiempo de inactividad.
+### 1. Componentes de Producción
+- **Reverse Proxy:** Nginx gestionado vía **CloudPanel** apuntando al puerto local `http://127.0.0.1:8005`.
+- **Servidor de Aplicación:** Gunicorn con trabajadores asíncronos `uvicorn.workers.UvicornWorker` (`gunicorn.conf.py`).
+- **Servicio del Sistema:** `softedu.service` gestionado por `systemd` con reinicio automático y recarga en caliente sin caídas (`kill -s HUP`).
+- **Despliegue Continuo (CI/CD):** Flujo automatizado en `.github/workflows/deploy.yml` mediante GitHub Actions y SSH.
+
+### 2. Configuración en CloudPanel (AWS EC2)
+1. En CloudPanel, crear un sitio de tipo **Python Site** o **Reverse Proxy** (ej: `softedu.com` o subdominio asignado) apuntando a `http://127.0.0.1:8005`.
+2. Crear la base de datos `softedu_db` en PostgreSQL (vía CloudPanel o terminal):
+   ```bash
+   sudo -u postgres psql -c "CREATE DATABASE softedu_db;"
+   sudo -u postgres psql -d softedu_db -c "CREATE EXTENSION IF NOT EXISTS vector;"
+   ```
+3. Copiar y habilitar el servicio systemd:
+   ```bash
+   sudo cp /home/softedu/htdocs/softedu.com/softedu.service /etc/systemd/system/
+   sudo systemctl daemon-reload
+   sudo systemctl enable softedu.service
+   sudo systemctl start softedu.service
+   ```
+
+### 3. Configuración de Secrets en GitHub (`Settings -> Secrets and variables -> Actions`)
+Para que cada `git push origin main` despliegue automáticamente en AWS:
+- `AWS_HOST`: IP pública o dominio de tu instancia EC2.
+- `AWS_USER`: Usuario SSH con privilegios sudo en el servidor (ej: `ubuntu` o `cloudpanel`).
+- `AWS_SSH_KEY`: Llave privada SSH (`.pem` o `id_rsa`).
+- `AWS_PORT`: Puerto SSH (por defecto `22`).
+- `AWS_SITE_DIR`: *(Opcional)* Directorio del sitio (por defecto `/home/softedu/htdocs/softedu.com`).
+- `AWS_SITE_USER`: *(Opcional)* Usuario del sitio (por defecto `softedu`).

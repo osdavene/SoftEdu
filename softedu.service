@@ -1,0 +1,20 @@
+[Unit]
+Description=SoftEdu AI-Powered LMS/SIS Web Application (FastAPI + Gunicorn/Uvicorn)
+After=network.target postgresql.service
+
+[Service]
+User=softedu
+Group=softedu
+WorkingDirectory=/home/softedu/htdocs/softedu.com
+Environment="PATH=/home/softedu/htdocs/softedu.com/venv/bin:/usr/local/bin:/usr/bin:/bin"
+EnvironmentFile=/home/softedu/htdocs/softedu.com/.env
+ExecStart=/home/softedu/htdocs/softedu.com/venv/bin/gunicorn --config /home/softedu/htdocs/softedu.com/gunicorn.conf.py main:app
+ExecReload=/bin/kill -s HUP $MAINPID
+Restart=always
+RestartSec=3
+KillMode=mixed
+TimeoutStopSec=5
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target
