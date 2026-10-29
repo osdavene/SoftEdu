@@ -1,10 +1,10 @@
 #!/bin/bash
 set -e
 
-echo "🚀 Iniciando despliegue de SoftEdu (FastAPI + pgvector) en CloudPanel AWS..."
+echo "🚀 Iniciando despliegue de SoftEdu en softedu.servigest.online (AWS CloudPanel)..."
 
 SITE_USER="${SITE_USER:-softedu}"
-APP_DIR="${SITE_DIR:-/home/$SITE_USER/htdocs/softedu.com}"
+APP_DIR="${SITE_DIR:-/home/$SITE_USER/htdocs/softedu.servigest.online}"
 
 if [ ! -d "$APP_DIR" ]; then
     echo "⚠️ Directorio $APP_DIR no existe aún. Creándolo..."
@@ -45,4 +45,4 @@ else
     pkill -HUP gunicorn || true
 fi
 
-echo "✅ ¡Despliegue de SoftEdu completado exitosamente con 0 downtime!"
+echo "✅ ¡Despliegue de SoftEdu en softedu.servigest.online completado exitosamente con 0 downtime!"

@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
 # ==============================================================================
 # Script de Aprovisionamiento Inicial en AWS EC2 (CloudPanel / Ubuntu)
-# Configurado con el mismo estándar de producción que C:\Proyectos\FacCol
+# Dominio: softedu.servigest.online
 # ==============================================================================
 set -e
 
 SITE_USER="${SITE_USER:-softedu}"
-SITE_DIR="${SITE_DIR:-/home/softedu/htdocs/softedu.com}"
+SITE_DIR="${SITE_DIR:-/home/softedu/htdocs/softedu.servigest.online}"
 DB_NAME="${DB_NAME:-softedu_db}"
 DB_USER="${DB_USER:-postgres}"
 SERVICE_PORT="${SERVICE_PORT:-8005}"
@@ -75,5 +75,5 @@ sudo systemctl daemon-reload
 sudo systemctl enable softedu.service
 sudo systemctl restart softedu.service
 
-echo "✅ [5/5] Servicio SoftEdu activo en http://127.0.0.1:$SERVICE_PORT"
+echo "✅ [5/5] Servicio SoftEdu activo en http://127.0.0.1:$SERVICE_PORT para softedu.servigest.online"
 sudo systemctl status softedu.service --no-pager

@@ -206,16 +206,21 @@ python test_secretaria_e2e.py
 
 ## ☁️ Despliegue en Servidor AWS (CloudPanel + Nginx + Gunicorn + CI/CD)
 
-El proyecto cuenta con la misma arquitectura y estándares de despliegue en producción que **`C:\Proyectos\FacCol`**:
+El proyecto cuenta con la misma arquitectura y estándares de despliegue en producción que **`C:\Proyectos\FacCol`** para el dominio oficial **`softedu.servigest.online`**:
 
 ### 1. Componentes de Producción
+- **URL Oficial:** [https://softedu.servigest.online](https://softedu.servigest.online)
+- **Directorio en Servidor:** `/home/softedu/htdocs/softedu.servigest.online`
 - **Reverse Proxy:** Nginx gestionado vía **CloudPanel** apuntando al puerto local `http://127.0.0.1:8005`.
 - **Servidor de Aplicación:** Gunicorn con trabajadores asíncronos `uvicorn.workers.UvicornWorker` (`gunicorn.conf.py`).
 - **Servicio del Sistema:** `softedu.service` gestionado por `systemd` con reinicio automático y recarga en caliente sin caídas (`kill -s HUP`).
 - **Despliegue Continuo (CI/CD):** Flujo automatizado en `.github/workflows/deploy.yml` mediante GitHub Actions y SSH.
 
 ### 2. Configuración en CloudPanel (AWS EC2)
-1. En CloudPanel, crear un sitio de tipo **Python Site** o **Reverse Proxy** (ej: `softedu.com` o subdominio asignado) apuntando a `http://127.0.0.1:8005`.
+1. En CloudPanel, crear un sitio de tipo **Reverse Proxy** (o **Python Site**):
+   - **Domain Name:** `softedu.servigest.online`
+   - **Reverse Proxy URL:** `http://127.0.0.1:8005`
+   - **Site User:** `softedu`
 2. Crear la base de datos `softedu_db` en PostgreSQL (vía CloudPanel o terminal):
    ```bash
    sudo -u postgres psql -c "CREATE DATABASE softedu_db;"
@@ -223,7 +228,7 @@ El proyecto cuenta con la misma arquitectura y estándares de despliegue en prod
    ```
 3. Copiar y habilitar el servicio systemd:
    ```bash
-   sudo cp /home/softedu/htdocs/softedu.com/softedu.service /etc/systemd/system/
+   sudo cp /home/softedu/htdocs/softedu.servigest.online/softedu.service /etc/systemd/system/
    sudo systemctl daemon-reload
    sudo systemctl enable softedu.service
    sudo systemctl start softedu.service
@@ -235,5 +240,5 @@ Para que cada `git push origin main` despliegue automáticamente en AWS:
 - `AWS_USER`: Usuario SSH con privilegios sudo en el servidor (ej: `ubuntu` o `cloudpanel`).
 - `AWS_SSH_KEY`: Llave privada SSH (`.pem` o `id_rsa`).
 - `AWS_PORT`: Puerto SSH (por defecto `22`).
-- `AWS_SITE_DIR`: *(Opcional)* Directorio del sitio (por defecto `/home/softedu/htdocs/softedu.com`).
+- `AWS_SITE_DIR`: *(Opcional)* Directorio del sitio (por defecto `/home/softedu/htdocs/softedu.servigest.online`).
 - `AWS_SITE_USER`: *(Opcional)* Usuario del sitio (por defecto `softedu`).

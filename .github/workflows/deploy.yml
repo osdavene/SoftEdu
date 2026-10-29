@@ -1,4 +1,4 @@
-name: 🚀 Despliegue Automático a AWS (SoftEdu AI-Powered LMS/SIS)
+name: 🚀 Despliegue Automático a AWS (softedu.servigest.online)
 
 on:
   push:
@@ -7,7 +7,7 @@ on:
 
 jobs:
   deploy:
-    name: Desplegar SoftEdu (FastAPI + pgvector) en Servidor AWS
+    name: Desplegar SoftEdu en softedu.servigest.online
     runs-on: ubuntu-latest
 
     steps:
@@ -23,15 +23,15 @@ jobs:
           port: ${{ secrets.AWS_PORT || 22 }}
           script_stop: true
           script: |
-            echo "🚀 Iniciando despliegue de SoftEdu (FastAPI + pgvector) en AWS..."
-            SITE_DIR="${{ secrets.AWS_SITE_DIR || '/home/softedu/htdocs/softedu.com' }}"
+            echo "🚀 Iniciando despliegue de SoftEdu en softedu.servigest.online..."
+            SITE_DIR="${{ secrets.AWS_SITE_DIR || '/home/softedu/htdocs/softedu.servigest.online' }}"
             SITE_USER="${{ secrets.AWS_SITE_USER || 'softedu' }}"
 
             sudo git config --global --add safe.directory "$SITE_DIR"
 
             sudo -u "$SITE_USER" bash << 'EOF'
             set -e
-            SITE_DIR="${SITE_DIR:-/home/softedu/htdocs/softedu.com}"
+            SITE_DIR="${SITE_DIR:-/home/softedu/htdocs/softedu.servigest.online}"
             cd "$SITE_DIR"
             git fetch origin main
             git reset --hard origin/main
@@ -54,4 +54,4 @@ jobs:
               sudo systemctl restart softedu
             fi
 
-            echo "✅ ¡Despliegue de SoftEdu AI-Powered LMS/SIS completado con éxito en AWS!"
+            echo "✅ ¡Despliegue de SoftEdu en softedu.servigest.online completado con éxito en AWS!"
