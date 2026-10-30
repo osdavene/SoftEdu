@@ -1906,10 +1906,69 @@
          ------------------------------------------------------------- -->
     <div id="tab-calificaciones" class="tab-content">
       <div class="card">
-        <div class="card-header">
-          <div class="card-title">
-            <i class="fa-solid fa-award" style="color: #fcd34d;"></i>
-            Consolidado Escolar y Boletín Oficial (Decreto 1290 MEN)
+        <div class="card-header" style="flex-wrap: wrap; gap: 12px;">
+          <div>
+            <div class="card-title">
+              <i class="fa-solid fa-award" style="color: #fcd34d;"></i>
+              Consolidado Escolar y Boletín Oficial (Decreto 1290 MEN)
+            </div>
+            <div style="font-size: 13px; color: var(--text-muted); margin-top: 3px;">
+              Audite el rendimiento académico en tiempo real. Escriba en el buscador para filtrar letra a letra por nombre, código o salón.
+            </div>
+          </div>
+          <div id="grades-filtered-count" style="font-size: 12px; font-weight: 600; color: #94a3b8; background: #0f172a; padding: 6px 14px; border-radius: 8px; border: 1px solid var(--border-subtle); display: flex; align-items: center; gap: 6px;">
+            <i class="fa-solid fa-users" style="color: #818cf8;"></i>
+            <span>Cargando estudiantes...</span>
+          </div>
+        </div>
+
+        <!-- Barra de Búsqueda Instantánea y Filtros Dinámicos -->
+        <div style="background: rgba(15, 23, 42, 0.7); border: 1px solid var(--border-subtle); border-radius: 12px; padding: 14px 16px; margin-bottom: 16px; display: flex; flex-wrap: wrap; gap: 12px; align-items: center;">
+          <!-- Buscador letra a letra -->
+          <div style="flex: 1 1 280px; position: relative;">
+            <i class="fa-solid fa-magnifying-glass" style="position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: #64748b; font-size: 14px;"></i>
+            <input
+              type="text"
+              id="grades-search-input"
+              class="form-control"
+              placeholder="Buscar por estudiante, código (COL-2026...) o salón (11-1)..."
+              oninput="filterGradesTable()"
+              style="padding-left: 38px; font-size: 13.5px; height: 40px;"
+            />
+          </div>
+
+          <!-- Filtro por Grado Escolar -->
+          <div style="min-width: 175px;">
+            <select id="grades-filter-grade" class="form-control" onchange="filterGradesTable()" style="font-size: 13px; height: 40px;">
+              <option value="">Todos los Grados</option>
+            </select>
+          </div>
+
+          <!-- Filtro por Estado MEN -->
+          <div style="min-width: 170px;">
+            <select id="grades-filter-status" class="form-control" onchange="filterGradesTable()" style="font-size: 13px; height: 40px;">
+              <option value="">Todos los Estados MEN</option>
+              <option value="PASSING">✅ Aprobando (≥ 3.00)</option>
+              <option value="FAILING">❌ Reprobando (< 3.00)</option>
+            </select>
+          </div>
+
+          <!-- Filtro por Riesgo IA -->
+          <div style="min-width: 170px;">
+            <select id="grades-filter-risk" class="form-control" onchange="filterGradesTable()" style="font-size: 13px; height: 40px;">
+              <option value="">Todos los Riesgos IA</option>
+              <option value="CRITICO">🚨 Riesgo Crítico</option>
+              <option value="ALTO">⚠️ Riesgo Alto</option>
+              <option value="MEDIO">⚡ Riesgo Medio</option>
+              <option value="BAJO">🟢 Riesgo Bajo</option>
+            </select>
+          </div>
+
+          <!-- Botón Limpiar Filtros -->
+          <div>
+            <button class="btn-secondary" type="button" onclick="resetGradesFilters()" title="Limpiar todos los filtros" style="padding: 0 14px; height: 40px; font-size: 12.5px; display: flex; align-items: center; gap: 6px;">
+              <i class="fa-solid fa-filter-circle-xmark"></i> Limpiar
+            </button>
           </div>
         </div>
 
@@ -3765,32 +3824,9 @@
       }
 
       // 2. Consolidado de Calificaciones y Boletines
-      const gradesTable = document.getElementById('grades-roster-table-body');
-      if (gradesTable) {
-        gradesTable.innerHTML = enrolled.map(st => {
-          const isPassing = st.is_currently_passing;
-          const riskBadge = st.risk_level === 'CRITICO' ? 'badge-danger' :
-                            st.risk_level === 'ALTO' ? 'badge-warning' :
-                            st.risk_level === 'MEDIO' ? 'badge-info' : 'badge-success';
-
-          return `
-            <tr>
-              <td><code>${st.student_code}</code></td>
-              <td><strong>${st.student_full_name}</strong></td>
-              <td><span class="badge badge-info">${st.grade_level_code || 'GRADO_11'} • ${st.group_code || '11-1'}</span></td>
-              <td><span style="font-size:15px; font-weight:800; color:${isPassing ? '#6ee7b7' : '#fca5a5'};">${st.current_weighted_average}</span> / 5.00</td>
-              <td>${st.attendance_percentage}%</td>
-              <td><span class="badge ${isPassing ? 'badge-success' : 'badge-danger'}">${isPassing ? 'Aprobando (MEN)' : 'Reprobando'}</span></td>
-              <td><span class="badge ${riskBadge}">${st.risk_level || 'SIN EVALUACIÓN'}</span></td>
-              <td>
-                <button class="btn-secondary" style="padding:4px 9px; font-size:11.5px;" onclick="viewStudentBoletin('${st.enrollment_id}')">
-                  <i class="fa-solid fa-file-invoice"></i> Ver Boletín
-                </button>
-              </td>
-            </tr>
-          `;
-        }).join('');
-      }
+      allEnrolledStudents = globalOverview.enrolled_students || [];
+      populateGradesFilters(allEnrolledStudents);
+      filterGradesTable();
 
       // 3. Directorio de Personal
       const dirTable = document.getElementById('directory-table-body');
@@ -4290,6 +4326,175 @@
       } catch (err) {
         showToast(err.message, 'error');
       }
+    }
+
+    // =========================================================================
+    // FILTROS Y BÚSQUEDA INSTANTÁNEA EN RENDIMIENTO Y BOLETINES
+    // =========================================================================
+    let allEnrolledStudents = [];
+
+    function normalizeTextForSearch(str) {
+      if (!str) return '';
+      return String(str)
+        .toLowerCase()
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .trim();
+    }
+
+    function formatGradeLevelName(code) {
+      if (!code) return 'General';
+      const map = {
+        'MATERNAL': 'Maternal',
+        'PREJARDIN': 'Pre-Jardín',
+        'JARDIN': 'Jardín',
+        'TRANSICION': 'Transición (0°)',
+        'GRADO_1': 'Grado 1°',
+        'GRADO_2': 'Grado 2°',
+        'GRADO_3': 'Grado 3°',
+        'GRADO_4': 'Grado 4°',
+        'GRADO_5': 'Grado 5°',
+        'GRADO_6': 'Grado 6°',
+        'GRADO_7': 'Grado 7°',
+        'GRADO_8': 'Grado 8°',
+        'GRADO_9': 'Grado 9°',
+        'GRADO_10': 'Grado 10°',
+        'GRADO_11': 'Grado 11°'
+      };
+      return map[code] || code.replace('GRADO_', 'Grado ');
+    }
+
+    function populateGradesFilters(students) {
+      const gradeSelect = document.getElementById('grades-filter-grade');
+      if (!gradeSelect) return;
+      const currentVal = gradeSelect.value;
+      const gradeOrder = [
+        'MATERNAL', 'PREJARDIN', 'JARDIN', 'TRANSICION',
+        'GRADO_1', 'GRADO_2', 'GRADO_3', 'GRADO_4', 'GRADO_5',
+        'GRADO_6', 'GRADO_7', 'GRADO_8', 'GRADO_9', 'GRADO_10', 'GRADO_11'
+      ];
+      const availableGrades = [...new Set(students.map(s => s.grade_level_code).filter(Boolean))];
+      availableGrades.sort((a, b) => {
+        const ia = gradeOrder.indexOf(a);
+        const ib = gradeOrder.indexOf(b);
+        if (ia !== -1 && ib !== -1) return ia - ib;
+        if (ia !== -1) return -1;
+        if (ib !== -1) return 1;
+        return a.localeCompare(b);
+      });
+
+      let options = '<option value="">Todos los Grados</option>';
+      availableGrades.forEach(g => {
+        options += `<option value="${g}">${formatGradeLevelName(g)}</option>`;
+      });
+      gradeSelect.innerHTML = options;
+      if (currentVal && availableGrades.includes(currentVal)) {
+        gradeSelect.value = currentVal;
+      }
+    }
+
+    function filterGradesTable() {
+      const rawQuery = document.getElementById('grades-search-input')?.value || '';
+      const query = normalizeTextForSearch(rawQuery);
+      const gradeFilter = document.getElementById('grades-filter-grade')?.value || '';
+      const statusFilter = document.getElementById('grades-filter-status')?.value || '';
+      const riskFilter = document.getElementById('grades-filter-risk')?.value || '';
+
+      const filtered = allEnrolledStudents.filter(st => {
+        // Filtro por texto letra a letra (nombre, código, grupo o grado)
+        if (query) {
+          const nameNorm = normalizeTextForSearch(st.student_full_name);
+          const codeNorm = normalizeTextForSearch(st.student_code);
+          const groupNorm = normalizeTextForSearch(st.group_code);
+          const gradeNorm = normalizeTextForSearch(formatGradeLevelName(st.grade_level_code));
+          if (!nameNorm.includes(query) && !codeNorm.includes(query) && !groupNorm.includes(query) && !gradeNorm.includes(query)) {
+            return false;
+          }
+        }
+
+        // Filtro por grado escolar
+        if (gradeFilter && st.grade_level_code !== gradeFilter) {
+          return false;
+        }
+
+        // Filtro por Estado MEN (Aprobando / Reprobando)
+        if (statusFilter === 'PASSING' && !st.is_currently_passing) {
+          return false;
+        }
+        if (statusFilter === 'FAILING' && st.is_currently_passing) {
+          return false;
+        }
+
+        // Filtro por Nivel de Riesgo Copiloto IA
+        if (riskFilter && st.risk_level !== riskFilter) {
+          return false;
+        }
+
+        return true;
+      });
+
+      renderGradesRosterTable(filtered);
+
+      const countEl = document.getElementById('grades-filtered-count');
+      if (countEl) {
+        countEl.innerHTML = `<i class="fa-solid fa-users" style="color: #818cf8;"></i> <span>Mostrando ${filtered.length} de ${allEnrolledStudents.length} estudiantes</span>`;
+      }
+    }
+
+    function resetGradesFilters() {
+      const search = document.getElementById('grades-search-input');
+      const grade = document.getElementById('grades-filter-grade');
+      const status = document.getElementById('grades-filter-status');
+      const risk = document.getElementById('grades-filter-risk');
+      if (search) search.value = '';
+      if (grade) grade.value = '';
+      if (status) status.value = '';
+      if (risk) risk.value = '';
+      filterGradesTable();
+    }
+
+    function renderGradesRosterTable(list) {
+      const gradesTable = document.getElementById('grades-roster-table-body');
+      if (!gradesTable) return;
+      if (!list || list.length === 0) {
+        gradesTable.innerHTML = `
+          <tr>
+            <td colspan="8" style="text-align:center; padding: 36px 20px; color: var(--text-muted);">
+              <i class="fa-solid fa-user-slash" style="font-size: 26px; margin-bottom: 8px; display: block; color: #64748b;"></i>
+              <strong style="color: #e2e8f0; font-size: 14px;">No se encontraron estudiantes</strong>
+              <div style="font-size: 12.5px; margin-top: 4px;">No hay registros que coincidan con la búsqueda o filtros seleccionados.</div>
+              <button class="btn-secondary" style="margin-top: 12px; font-size: 12px; padding: 5px 14px;" onclick="resetGradesFilters()">
+                <i class="fa-solid fa-rotate-left"></i> Restablecer Filtros
+              </button>
+            </td>
+          </tr>
+        `;
+        return;
+      }
+
+      gradesTable.innerHTML = list.map(st => {
+        const isPassing = st.is_currently_passing;
+        const riskBadge = st.risk_level === 'CRITICO' ? 'badge-danger' :
+                          st.risk_level === 'ALTO' ? 'badge-warning' :
+                          st.risk_level === 'MEDIO' ? 'badge-info' : 'badge-success';
+
+        return `
+          <tr>
+            <td><code>${st.student_code}</code></td>
+            <td><strong>${st.student_full_name}</strong></td>
+            <td><span class="badge badge-info">${formatGradeLevelName(st.grade_level_code)} • ${st.group_code || '11-1'}</span></td>
+            <td><span style="font-size:15px; font-weight:800; color:${isPassing ? '#6ee7b7' : '#fca5a5'};">${st.current_weighted_average}</span> / 5.00</td>
+            <td>${st.attendance_percentage}%</td>
+            <td><span class="badge ${isPassing ? 'badge-success' : 'badge-danger'}">${isPassing ? 'Aprobando (MEN)' : 'Reprobando'}</span></td>
+            <td><span class="badge ${riskBadge}">${st.risk_level || 'SIN EVALUACIÓN'}</span></td>
+            <td>
+              <button class="btn-secondary" style="padding:4px 9px; font-size:11.5px;" onclick="viewStudentBoletin('${st.enrollment_id}')">
+                <i class="fa-solid fa-file-invoice"></i> Ver Boletín
+              </button>
+            </td>
+          </tr>
+        `;
+      }).join('');
     }
 
     function viewStudentBoletin(enrollmentId) {
