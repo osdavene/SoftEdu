@@ -391,7 +391,7 @@ async def _seed_institutional_records(session: AsyncSession) -> None:
         await _upsert_user(
             session=session,
             email=r_alias,
-            document_number=f"REC-{r_alias.split('@')[0]}",
+            document_number=f"REC-{r_alias.replace('@', '-').replace('.', '-')[:18]}",
             defaults={
                 "school_id": school_1.id,
                 "hashed_password": hash_password("SoftEdu2026*"),
