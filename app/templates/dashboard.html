@@ -1684,71 +1684,131 @@
         </div>
       </div>
 
-      <!-- Vincular Secretaría, Coordinación o Psicoorientación -->
-      <div class="card">
+      <!-- Supervisión y Auditoría Directiva -->
+      <div class="card" style="margin-bottom: 24px;">
         <div class="card-header">
           <div>
             <div class="card-title">
-              <i class="fa-solid fa-user-plus" style="color: #6ee7b7;"></i>
-              Vincular Equipo Directivo y Administrativo (Rectoría)
+              <i class="fa-solid fa-chart-line" style="color: #818cf8;"></i>
+              Módulos de Supervisión y Auditoría Escolar (Rectoría)
             </div>
             <div style="font-size: 13px; color: var(--text-muted); margin-top: 3px;">
-              El Rector puede crear y otorgar acceso a la Secretaría Académica, Coordinación de Convivencia y Psicoorientación.
+              Acceso directo a la supervisión académica, consolidado de calificaciones, horarios del colegio y alertas preventivas con IA.
             </div>
           </div>
         </div>
 
-        <form onsubmit="handleCreateStaff(event)">
-          <div class="form-grid-3">
-            <div class="form-group">
-              <label class="form-label">Rol Institucional a Asignar</label>
-              <select id="stf-role" class="form-control" required>
-                <option value="SECRETARIA">Secretaría Académica y Matrículas</option>
-                <option value="COORDINADOR">Coordinación Académica y Convivencia</option>
-                <option value="ORIENTADOR">Psicoorientación y Bienestar Escolar</option>
-                <option value="RECTOR">Rectoría Delegada</option>
-              </select>
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px; margin-top: 10px;">
+          <div class="kpi-card" style="cursor: pointer; transition: transform 0.2s, border-color 0.2s;" onclick="switchTab('calificaciones')">
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
+              <span style="font-size: 13px; font-weight: 700; color: #f8fafc;">Rendimiento y Boletines</span>
+              <i class="fa-solid fa-file-signature" style="color: #6ee7b7; font-size: 18px;"></i>
             </div>
-            <div class="form-group">
-              <label class="form-label">Nombres</label>
-              <input type="text" id="stf-first-name" class="form-control" placeholder="Martha Lucía" required />
-            </div>
-            <div class="form-group">
-              <label class="form-label">Apellidos</label>
-              <input type="text" id="stf-last-name" class="form-control" placeholder="Pineda Restrepo" required />
-            </div>
-            <div class="form-group">
-              <label class="form-label">Cédula / Documento</label>
-              <input type="text" id="stf-doc" class="form-control" placeholder="1018432098" required />
-            </div>
-            <div class="form-group">
-              <label class="form-label">Correo Electrónico Institucional</label>
-              <input type="email" id="stf-email" class="form-control" placeholder="secretaria@gimnasiosanangel.edu.co" required />
-            </div>
-            <div class="form-group">
-              <label class="form-label">Contraseña Inicial</label>
-              <input type="text" id="stf-pass" class="form-control" value="SoftEdu2026*" required />
-            </div>
-            <div class="form-group">
-              <label class="form-label">Cargo Institucional</label>
-              <input type="text" id="stf-job-title" class="form-control" placeholder="Secretaria General y de Admisiones" required />
-            </div>
-            <div class="form-group">
-              <label class="form-label">Dependencia / Área</label>
-              <input type="text" id="stf-dept" class="form-control" placeholder="Secretaría Académica y SIMAT" required />
-            </div>
-            <div class="form-group">
-              <label class="form-label">Teléfono Móvil</label>
-              <input type="text" id="stf-phone" class="form-control" placeholder="+57 318 640 1122" />
-            </div>
+            <div style="font-size: 12px; color: var(--text-muted);">Auditar notas, boletines periódicos y aprobación/reprobación MEN.</div>
+            <div style="margin-top: 10px; font-size: 12px; font-weight: 600; color: #6366f1;">Supervisar Calificaciones →</div>
           </div>
 
-          <div style="display: flex; justify-content: flex-end; margin-top: 10px;">
-            <button type="submit" class="btn-primary">
-              <i class="fa-solid fa-user-check"></i> Registrar Funcionario Institucional
-            </button>
+          <div class="kpi-card" style="cursor: pointer; transition: transform 0.2s, border-color 0.2s;" onclick="switchTab('horarios')">
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
+              <span style="font-size: 13px; font-weight: 700; color: #f8fafc;">Horarios y Malla Curricular</span>
+              <i class="fa-solid fa-calendar-days" style="color: #38bdf8; font-size: 18px;"></i>
+            </div>
+            <div style="font-size: 12px; color: var(--text-muted);">Supervisar distribución de salones, aulas y asignación de carga docente.</div>
+            <div style="margin-top: 10px; font-size: 12px; font-weight: 600; color: #38bdf8;">Supervisar Horarios →</div>
           </div>
-        </form>
+
+          <div class="kpi-card" style="cursor: pointer; transition: transform 0.2s, border-color 0.2s;" onclick="switchTab('asistencia')">
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
+              <span style="font-size: 13px; font-weight: 700; color: #f8fafc;">Control de Asistencia</span>
+              <i class="fa-solid fa-clipboard-user" style="color: #f59e0b; font-size: 18px;"></i>
+            </div>
+            <div style="font-size: 12px; color: var(--text-muted);">Monitorear asistencia acumulada y tasas de ausentismo institucional.</div>
+            <div style="margin-top: 10px; font-size: 12px; font-weight: 600; color: #f59e0b;">Supervisar Asistencia →</div>
+          </div>
+
+          <div class="kpi-card" style="cursor: pointer; transition: transform 0.2s, border-color 0.2s;" onclick="switchTab('copiloto')">
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
+              <span style="font-size: 13px; font-weight: 700; color: #f8fafc;">Copiloto IA y Deserción</span>
+              <i class="fa-solid fa-brain" style="color: #c084fc; font-size: 18px;"></i>
+            </div>
+            <div style="font-size: 12px; color: var(--text-muted);">Alertas tempranas de riesgo de reprobación y planes de apoyo escolar.</div>
+            <div style="margin-top: 10px; font-size: 12px; font-weight: 600; color: #c084fc;">Abrir Copiloto IA →</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Vincular Secretaría, Coordinación o Psicoorientación -->
+      <div class="card" style="margin-bottom: 24px;">
+        <div class="card-header" style="cursor: pointer;" onclick="toggleElement('form-rector-staff-container')">
+          <div>
+            <div class="card-title">
+              <i class="fa-solid fa-user-tie" style="color: #6ee7b7;"></i>
+              Nombramiento y Formalización de Equipo Directivo
+            </div>
+            <div style="font-size: 13px; color: var(--text-muted); margin-top: 3px;">
+              Facultad exclusiva del Rector(a) para expedir credenciales y nombrar Coordinación, Orientación o Secretaría.
+            </div>
+          </div>
+          <button class="btn-secondary" type="button" style="font-size: 12px; padding: 6px 14px;" onclick="event.stopPropagation(); toggleElement('form-rector-staff-container');">
+            <i class="fa-solid fa-user-plus"></i> + Nombrar Directivo
+          </button>
+        </div>
+
+        <div id="form-rector-staff-container" style="display: none; margin-top: 15px; padding-top: 15px; border-top: 1px solid var(--border-subtle);">
+          <form onsubmit="handleCreateStaff(event)">
+            <div class="form-grid-3">
+              <div class="form-group">
+                <label class="form-label">Cargo / Rol Directivo a Nombrar *</label>
+                <select id="stf-role" class="form-control" required>
+                  <option value="" disabled selected>-- Seleccione cargo directivo a nombrar --</option>
+                  <option value="COORDINADOR">Coordinación Académica y de Convivencia</option>
+                  <option value="ORIENTADOR">Psicoorientación y Bienestar Escolar</option>
+                  <option value="SECRETARIA">Secretaría General y Matrículas</option>
+                  <option value="RECTOR">Rectoría Delegada / Vicerrectoría</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Nombres del Funcionario *</label>
+                <input type="text" id="stf-first-name" class="form-control" placeholder="Ej: Claudia Patricia" required />
+              </div>
+              <div class="form-group">
+                <label class="form-label">Apellidos del Funcionario *</label>
+                <input type="text" id="stf-last-name" class="form-control" placeholder="Ej: Gómez Salazar" required />
+              </div>
+              <div class="form-group">
+                <label class="form-label">Cédula / Documento de Identidad *</label>
+                <input type="text" id="stf-doc" class="form-control" placeholder="Ej: 52890341" required />
+              </div>
+              <div class="form-group">
+                <label class="form-label">Correo Electrónico Institucional *</label>
+                <input type="email" id="stf-email" class="form-control" placeholder="Ej: c.gomez@gimnasiosanangel.edu.co" required />
+              </div>
+              <div class="form-group">
+                <label class="form-label">Contraseña Temporal de Acceso *</label>
+                <input type="text" id="stf-pass" class="form-control" value="SoftEdu2026*" required />
+              </div>
+              <div class="form-group">
+                <label class="form-label">Denominación del Cargo *</label>
+                <input type="text" id="stf-job-title" class="form-control" placeholder="Ej: Coordinadora Académica y de Convivencia" required />
+              </div>
+              <div class="form-group">
+                <label class="form-label">Área / Dependencia *</label>
+                <input type="text" id="stf-dept" class="form-control" placeholder="Ej: Dirección Académica y Convivencia" required />
+              </div>
+              <div class="form-group">
+                <label class="form-label">Teléfono Móvil Institucional</label>
+                <input type="text" id="stf-phone" class="form-control" placeholder="Ej: +57 310 987 6543" />
+              </div>
+            </div>
+
+            <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 15px;">
+              <button type="button" class="btn-secondary" onclick="toggleElement('form-rector-staff-container')">Cancelar</button>
+              <button type="submit" class="btn-primary">
+                <i class="fa-solid fa-check"></i> Formalizar Nombramiento
+              </button>
+            </div>
+          </form>
+        </div>
       </div>
 
       <!-- Directorio de la Comunidad Escolar -->
@@ -2926,7 +2986,7 @@
         if (asistenciaBtn) asistenciaBtn.style.display = 'flex';
         if (calificacionesBtn) calificacionesBtn.style.display = 'flex';
         if (horariosBtn) horariosBtn.style.display = 'flex';
-        if (secretariaBtn) secretariaBtn.style.display = 'flex';
+        if (secretariaBtn) secretariaBtn.style.display = 'none';
         if (copilotoBtn) copilotoBtn.style.display = 'flex';
 
         if (saasTitle) saasTitle.style.display = 'none';
