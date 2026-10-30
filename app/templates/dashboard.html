@@ -2938,7 +2938,7 @@
         defaultTab = 'rectoria';
       } else if (role === 'COORDINADOR' || role === 'ORIENTADOR') {
         if (superpanelBtn) superpanelBtn.style.display = 'none';
-        if (rectoriaBtn) rectoriaBtn.style.display = 'flex';
+        if (rectoriaBtn) rectoriaBtn.style.display = 'none';
         if (asistenciaBtn) asistenciaBtn.style.display = 'flex';
         if (calificacionesBtn) calificacionesBtn.style.display = 'flex';
         if (horariosBtn) horariosBtn.style.display = 'flex';
@@ -2946,15 +2946,15 @@
         if (copilotoBtn) copilotoBtn.style.display = 'flex';
 
         if (saasTitle) saasTitle.style.display = 'none';
-        if (govTitle) govTitle.style.display = 'block';
+        if (govTitle) govTitle.style.display = 'none';
         if (acadTitle) acadTitle.style.display = 'block';
         if (pedagTitle) pedagTitle.style.display = 'block';
         if (iaTitle) iaTitle.style.display = 'block';
 
-        defaultTab = 'rectoria';
+        defaultTab = 'secretaria';
       } else if (role === 'SECRETARIA') {
         if (superpanelBtn) superpanelBtn.style.display = 'none';
-        if (rectoriaBtn) rectoriaBtn.style.display = 'flex';
+        if (rectoriaBtn) rectoriaBtn.style.display = 'none';
         if (asistenciaBtn) asistenciaBtn.style.display = 'flex';
         if (calificacionesBtn) calificacionesBtn.style.display = 'flex';
         if (horariosBtn) horariosBtn.style.display = 'flex';
@@ -2962,7 +2962,7 @@
         if (copilotoBtn) copilotoBtn.style.display = 'flex';
 
         if (saasTitle) saasTitle.style.display = 'none';
-        if (govTitle) govTitle.style.display = 'block';
+        if (govTitle) govTitle.style.display = 'none';
         if (acadTitle) acadTitle.style.display = 'block';
         if (pedagTitle) pedagTitle.style.display = 'block';
         if (iaTitle) iaTitle.style.display = 'block';
@@ -4295,12 +4295,15 @@
     }
 
     function switchTab(tabName) {
+      const btn = document.getElementById(`tab-btn-${tabName}`);
+      if (btn && btn.style.display === 'none') {
+        return;
+      }
       sessionStorage.setItem('softedu_active_tab', tabName);
       document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
       document.querySelectorAll('.nav-tab').forEach(el => el.classList.remove('active'));
 
       const target = document.getElementById(`tab-${tabName}`);
-      const btn = document.getElementById(`tab-btn-${tabName}`);
 
       if (target) target.classList.add('active');
       if (btn) btn.classList.add('active');

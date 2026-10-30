@@ -386,6 +386,24 @@ async def _seed_institutional_records(session: AsyncSession) -> None:
     )
     school_1.rector_user_id = rector_1.id
 
+    # Aliases de Rectoría
+    for r_alias in ["rectoria@gimnasiosanangel.edu.co", "rector@softedu.co", "rector@softedu.io", "rector@servigest.online", "rectoria@servigest.online"]:
+        await _upsert_user(
+            session=session,
+            email=r_alias,
+            document_number=f"REC-{r_alias.split('@')[0]}",
+            defaults={
+                "school_id": school_1.id,
+                "hashed_password": hash_password("SoftEdu2026*"),
+                "first_name": "Dr. Fernando",
+                "last_name": "Molina Villamizar",
+                "role": UserRole.RECTOR,
+                "job_title": "Rector General Institucional",
+                "department_area": "Rectoría y Consejo Directivo",
+                "phone_number": "+57 (601) 629-4401",
+            },
+        )
+
     # Rector del Colegio 2 (La Colina - Calendario B)
     rector_2 = await _upsert_user(
         session=session,
