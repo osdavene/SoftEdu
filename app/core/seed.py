@@ -1157,10 +1157,10 @@ async def _seed_institutional_records(session: AsyncSession) -> None:
             select(GradingWindow).where(GradingWindow.school_id == school_1.id)
         )
     ).scalars().first()
-    if existing_window is None and period_1:
+    if existing_window is None and period:
         win_1 = GradingWindow(
             school_id=school_1.id,
-            academic_period_id=period_1.id,
+            academic_period_id=period.id,
             period_label="Período 1 - Primer Semestre 2026",
             is_open=True,
             closing_date=datetime(2026, 4, 15, 23, 59, 59, tzinfo=timezone.utc),
