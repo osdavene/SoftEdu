@@ -1844,59 +1844,179 @@
          PESTAÑA 2: PLANILLA DE LLAMADO A LISTA / ASISTENCIA
          ------------------------------------------------------------- -->
     <div id="tab-asistencia" class="tab-content">
-      <div class="card">
-        <div class="card-header">
-          <div>
-            <div class="card-title">
-              <i class="fa-solid fa-clipboard-user" style="color: #6ee7b7;"></i>
-              Planilla de Llamado a Lista (Toma Masiva de Asistencia)
-            </div>
-            <div style="font-size: 13px; color: var(--text-muted); margin-top: 3px;">
-              Llamado a lista por sesión de clase. Las inasistencias o retardos disparan automáticamente la evaluación preventiva del Copiloto IA.
-            </div>
+      <!-- VISTA EJECUTIVA: SUPERVISIÓN Y CONTROL DE AUSENTISMO (RECTORÍA / COORDINACIÓN) -->
+      <div id="asistencia-supervision-view">
+        <!-- KPIs de Asistencia del Día -->
+        <div class="kpi-grid" style="margin-bottom: 20px;">
+          <div class="kpi-card">
+            <div class="kpi-label">Matrícula Escolar</div>
+            <div class="kpi-value" id="att-kpi-total">0</div>
+            <div class="kpi-sub">Alumnos en el colegio</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-label">Presentes Hoy</div>
+            <div class="kpi-value" id="att-kpi-present" style="color: #6ee7b7;">0</div>
+            <div class="kpi-sub" id="att-kpi-present-pct">0% en aulas</div>
+          </div>
+          <div class="kpi-card" style="cursor: pointer;" onclick="quickFilterAttendance('ABSENT')">
+            <div class="kpi-label">Ausentes Hoy (No Llegaron)</div>
+            <div class="kpi-value" id="att-kpi-absent" style="color: #fca5a5;">0</div>
+            <div class="kpi-sub" style="color: #f87171;">Ver quiénes no vinieron →</div>
+          </div>
+          <div class="kpi-card" style="cursor: pointer;" onclick="quickFilterAttendance('LATE')">
+            <div class="kpi-label">Retardos de Hoy</div>
+            <div class="kpi-value" id="att-kpi-late" style="color: #fcd34d;">0</div>
+            <div class="kpi-sub">Llegadas tarde registradas</div>
+          </div>
+          <div class="kpi-card" style="cursor: pointer;" onclick="quickFilterAttendance('RISK')">
+            <div class="kpi-label">Riesgo por Fallas (>20%)</div>
+            <div class="kpi-value" id="att-kpi-risk" style="color: #f43f5e;">0</div>
+            <div class="kpi-sub" style="color: #fda4af;">Límite de reprobación MEN</div>
           </div>
         </div>
 
-        <div class="form-grid-3" style="margin-bottom: 20px;">
-          <div class="form-group">
-            <label class="form-label">Fecha de la Sesión Escolar</label>
-            <input type="date" id="att-session-date" class="form-control" />
+        <div class="card">
+          <div class="card-header" style="flex-wrap: wrap; gap: 12px;">
+            <div>
+              <div class="card-title">
+                <i class="fa-solid fa-building-columns" style="color: #818cf8;"></i>
+                Monitoreo y Control de Asistencia por Salones y Aulas
+              </div>
+              <div style="font-size: 13px; color: var(--text-muted); margin-top: 3px;">
+                Auditoría en tiempo real para el Rector. Escriba para buscar o filtre por aula/salón para ver quiénes están en clase y quiénes faltaron.
+              </div>
+            </div>
+            <div style="display: flex; gap: 8px; align-items: center;">
+              <button class="btn-secondary" type="button" onclick="toggleAsistenciaMode(true)" style="font-size: 12px; padding: 6px 12px;" id="btn-switch-teacher-mode">
+                <i class="fa-solid fa-pen-to-square"></i> Modo Llamado a Lista
+              </button>
+            </div>
           </div>
-          <div class="form-group">
-            <label class="form-label">Tema Dictado del Plan de Estudios</label>
-            <select id="att-topic-select" class="form-control">
-              <option value="">-- Sesión Regular de Clase --</option>
-            </select>
+
+          <!-- Barra de Búsqueda Instantánea y Filtros de Asistencia -->
+          <div style="background: rgba(15, 23, 42, 0.7); border: 1px solid var(--border-subtle); border-radius: 12px; padding: 14px 16px; margin-bottom: 16px; display: flex; flex-wrap: wrap; gap: 12px; align-items: center;">
+            <!-- Buscador letra a letra -->
+            <div style="flex: 1 1 260px; position: relative;">
+              <i class="fa-solid fa-magnifying-glass" style="position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: #64748b; font-size: 14px;"></i>
+              <input
+                type="text"
+                id="att-search-input"
+                class="form-control"
+                placeholder="Buscar por estudiante, aula (ej: 204), salón (11-1) o acudiente..."
+                oninput="filterAttendanceSupervisionTable()"
+                style="padding-left: 38px; font-size: 13.5px; height: 40px;"
+              />
+            </div>
+
+            <!-- Filtro por Salón / Aula Física -->
+            <div style="min-width: 200px;">
+              <select id="att-filter-group" class="form-control" onchange="filterAttendanceSupervisionTable()" style="font-size: 13px; height: 40px;">
+                <option value="">Todas las Aulas y Salones</option>
+              </select>
+            </div>
+
+            <!-- Filtro por Estado / Novedad de Asistencia -->
+            <div style="min-width: 190px;">
+              <select id="att-filter-status" class="form-control" onchange="filterAttendanceSupervisionTable()" style="font-size: 13px; height: 40px;">
+                <option value="">Todas las Novedades</option>
+                <option value="ABSENT">🔴 No Llegaron Hoy (Fallas)</option>
+                <option value="LATE">🟡 Llegaron Tarde Hoy</option>
+                <option value="PRESENT">🟢 Presentes en el Aula</option>
+                <option value="EXCUSED">⚪ Excusas Justificadas</option>
+                <option value="RISK">🚨 En Riesgo de Perder por Fallas (>20%)</option>
+              </select>
+            </div>
+
+            <!-- Botón Limpiar Filtros -->
+            <div>
+              <button class="btn-secondary" type="button" onclick="resetAttendanceFilters()" title="Limpiar todos los filtros" style="padding: 0 14px; height: 40px; font-size: 12.5px; display: flex; align-items: center; gap: 6px;">
+                <i class="fa-solid fa-filter-circle-xmark"></i> Limpiar
+              </button>
+            </div>
           </div>
-          <div class="form-group" style="display: flex; align-items: flex-end;">
-            <button class="btn-secondary" type="button" onclick="setAllAttendance('PRESENT')" style="width: 100%;">
-              <i class="fa-solid fa-check-double"></i> Marcar Todos Presentes
+
+          <!-- Tabla de Auditoría Directiva de Asistencia -->
+          <div class="table-container">
+            <table>
+              <thead>
+                <tr>
+                  <th>Código</th>
+                  <th>Estudiante</th>
+                  <th>Salón / Aula Asignada</th>
+                  <th>Director(a) de Grupo</th>
+                  <th>Presencialidad Acumulada</th>
+                  <th>Fallas Injustificadas</th>
+                  <th>Estado Hoy</th>
+                  <th>Acudiente / Contacto</th>
+                </tr>
+              </thead>
+              <tbody id="att-supervision-table-body">
+                <tr><td colspan="8" style="text-align:center; padding: 25px;">Cargando supervisión de asistencia...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- VISTA OPERATIVA DE DOCENTE (LLAMADO A LISTA EN EL AULA) -->
+      <div id="asistencia-teacher-view" style="display: none;">
+        <div class="card">
+          <div class="card-header" style="flex-wrap: wrap; gap: 12px;">
+            <div>
+              <div class="card-title">
+                <i class="fa-solid fa-clipboard-user" style="color: #6ee7b7;"></i>
+                Planilla de Llamado a Lista (Docente en Aula)
+              </div>
+              <div style="font-size: 13px; color: var(--text-muted); margin-top: 3px;">
+                Llamado a lista por sesión de clase. Las inasistencias o retardos disparan automáticamente la evaluación preventiva del Copiloto IA.
+              </div>
+            </div>
+            <button class="btn-secondary" type="button" onclick="toggleAsistenciaMode(false)" style="font-size: 12px; padding: 6px 12px;" id="btn-back-supervision-mode">
+              <i class="fa-solid fa-arrow-left"></i> Volver a Supervisión
             </button>
           </div>
-        </div>
 
-        <div class="table-container">
-          <table>
-            <thead>
-              <tr>
-                <th>Código</th>
-                <th>Estudiante</th>
-                <th>Grado Escolar</th>
-                <th>Acudiente / Contacto</th>
-                <th style="min-width: 250px;">Estado de Asistencia</th>
-                <th>Observaciones / Novedad</th>
-              </tr>
-            </thead>
-            <tbody id="bulk-attendance-table-body">
-              <tr><td colspan="6" style="text-align:center; padding: 20px;">Cargando alumnos matriculados...</td></tr>
-            </tbody>
-          </table>
-        </div>
+          <div class="form-grid-3" style="margin-bottom: 20px;">
+            <div class="form-group">
+              <label class="form-label">Fecha de la Sesión Escolar</label>
+              <input type="date" id="att-session-date" class="form-control" />
+            </div>
+            <div class="form-group">
+              <label class="form-label">Tema Dictado del Plan de Estudios</label>
+              <select id="att-topic-select" class="form-control">
+                <option value="">-- Sesión Regular de Clase --</option>
+              </select>
+            </div>
+            <div class="form-group" style="display: flex; align-items: flex-end;">
+              <button class="btn-secondary" type="button" onclick="setAllAttendance('PRESENT')" style="width: 100%;">
+                <i class="fa-solid fa-check-double"></i> Marcar Todos Presentes
+              </button>
+            </div>
+          </div>
 
-        <div style="display: flex; justify-content: flex-end; margin-top: 18px;">
-          <button class="btn-primary" onclick="submitBulkAttendance()">
-            <i class="fa-solid fa-floppy-disk"></i> Guardar Planilla Completa de Asistencia
-          </button>
+          <div class="table-container">
+            <table>
+              <thead>
+                <tr>
+                  <th>Código</th>
+                  <th>Estudiante</th>
+                  <th>Grado Escolar</th>
+                  <th>Acudiente / Contacto</th>
+                  <th style="min-width: 250px;">Estado de Asistencia</th>
+                  <th>Observaciones / Novedad</th>
+                </tr>
+              </thead>
+              <tbody id="bulk-attendance-table-body">
+                <tr><td colspan="6" style="text-align:center; padding: 20px;">Cargando alumnos matriculados...</td></tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div style="display: flex; justify-content: flex-end; margin-top: 18px;">
+            <button class="btn-primary" onclick="submitBulkAttendance()">
+              <i class="fa-solid fa-floppy-disk"></i> Guardar Planilla Completa de Asistencia
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -3786,9 +3906,15 @@
       document.getElementById('kpi-att').textContent = `${globalOverview.global_attendance_percentage}%`;
       document.getElementById('kpi-risk-critical').textContent = (globalOverview.risk_distribution && globalOverview.risk_distribution['CRITICO']) || 0;
 
-      // 1. Planilla Masiva de Asistencia (Solo institucional)
+      // 1. Asistencia Institucional (Supervisión Directiva vs Planilla de Aula)
+      allEnrolledStudents = globalOverview.enrolled_students || [];
+      setupAttendanceViews();
+      populateAttendanceFilters();
+      filterAttendanceSupervisionTable();
+
+      // Planilla de Aula para Docente
       const attTable = document.getElementById('bulk-attendance-table-body');
-      const enrolled = globalOverview.enrolled_students || [];
+      const enrolled = allEnrolledStudents;
       if (attTable) {
         if (enrolled.length === 0) {
           attTable.innerHTML = '<tr><td colspan="6" style="text-align:center; padding: 20px;">No hay alumnos matriculados en este grupo.</td></tr>';
@@ -4326,6 +4452,252 @@
       } catch (err) {
         showToast(err.message, 'error');
       }
+    }
+
+    // =========================================================================
+    // SUPERVISIÓN Y CONTROL DE AUSENTISMO ESCOLAR (RECTORÍA / COORDINACIÓN)
+    // =========================================================================
+    function setupAttendanceViews() {
+      const isDirector = currentUser && (currentUser.role === 'RECTOR' || currentUser.role === 'SUPERADMIN' || currentUser.role === 'COORDINADOR');
+      const supView = document.getElementById('asistencia-supervision-view');
+      const teachView = document.getElementById('asistencia-teacher-view');
+      const switchBtn = document.getElementById('btn-switch-teacher-mode');
+      const backBtn = document.getElementById('btn-back-supervision-mode');
+
+      if (isDirector) {
+        if (supView) supView.style.display = 'block';
+        if (teachView) teachView.style.display = 'none';
+        if (switchBtn) switchBtn.style.display = 'inline-flex';
+        if (backBtn) backBtn.style.display = 'inline-flex';
+      } else {
+        if (supView) supView.style.display = 'none';
+        if (teachView) teachView.style.display = 'block';
+        if (switchBtn) switchBtn.style.display = 'none';
+        if (backBtn) backBtn.style.display = 'none';
+      }
+
+      const attBtn = document.getElementById('tab-btn-asistencia');
+      if (attBtn) {
+        const span = attBtn.querySelector('span');
+        if (span) span.textContent = isDirector ? 'Control de Asistencia' : 'Planilla de Asistencia';
+      }
+    }
+
+    function toggleAsistenciaMode(showTeacher) {
+      const supView = document.getElementById('asistencia-supervision-view');
+      const teachView = document.getElementById('asistencia-teacher-view');
+      if (showTeacher) {
+        if (supView) supView.style.display = 'none';
+        if (teachView) teachView.style.display = 'block';
+      } else {
+        if (supView) supView.style.display = 'block';
+        if (teachView) teachView.style.display = 'none';
+      }
+    }
+
+    function populateAttendanceFilters() {
+      const groupSelect = document.getElementById('att-filter-group');
+      if (!groupSelect || !globalOverview) return;
+      const groups = globalOverview.classroom_groups || [];
+      const currentVal = groupSelect.value;
+
+      let options = '<option value="">Todas las Aulas y Salones</option>';
+      groups.forEach(g => {
+        const aula = g.classroom_location ? ` (${g.classroom_location})` : '';
+        options += `<option value="${g.group_code}">Salón ${g.group_code}${aula}</option>`;
+      });
+      groupSelect.innerHTML = options;
+      if (currentVal) groupSelect.value = currentVal;
+    }
+
+    function filterAttendanceSupervisionTable() {
+      if (!globalOverview) return;
+      const rawQuery = document.getElementById('att-search-input')?.value || '';
+      const query = normalizeTextForSearch(rawQuery);
+      const groupFilter = document.getElementById('att-filter-group')?.value || '';
+      const statusFilter = document.getElementById('att-filter-status')?.value || '';
+
+      const groups = globalOverview.classroom_groups || [];
+      const groupMap = new Map();
+      groups.forEach(g => groupMap.set(g.group_code, g));
+
+      const logs = globalOverview.recent_attendances || [];
+      const studentLatestAttMap = new Map();
+      logs.forEach(log => {
+        if (!studentLatestAttMap.has(log.student_code)) {
+          studentLatestAttMap.set(log.student_code, log);
+        }
+      });
+
+      let totalCount = allEnrolledStudents.length;
+      let presentCount = 0;
+      let absentCount = 0;
+      let lateCount = 0;
+      let riskCount = 0;
+
+      allEnrolledStudents.forEach(st => {
+        const latest = studentLatestAttMap.get(st.student_code);
+        const statusToday = latest ? latest.status : (st.unexcused_absent_count > 0 && st.attendance_percentage < 80 ? 'ABSENT' : 'PRESENT');
+        if (statusToday === 'PRESENT') presentCount++;
+        else if (statusToday === 'ABSENT') absentCount++;
+        else if (statusToday === 'LATE') lateCount++;
+        if (st.absence_percentage >= 20 || st.risk_level === 'CRITICO') riskCount++;
+      });
+
+      const kpiTotal = document.getElementById('att-kpi-total');
+      const kpiPresent = document.getElementById('att-kpi-present');
+      const kpiPresentPct = document.getElementById('att-kpi-present-pct');
+      const kpiAbsent = document.getElementById('att-kpi-absent');
+      const kpiLate = document.getElementById('att-kpi-late');
+      const kpiRisk = document.getElementById('att-kpi-risk');
+
+      if (kpiTotal) kpiTotal.textContent = totalCount;
+      if (kpiPresent) kpiPresent.textContent = presentCount;
+      if (kpiPresentPct) {
+        const pct = totalCount > 0 ? Math.round((presentCount / totalCount) * 100) : 0;
+        kpiPresentPct.textContent = `${pct}% presentes en aula`;
+      }
+      if (kpiAbsent) kpiAbsent.textContent = absentCount;
+      if (kpiLate) kpiLate.textContent = lateCount;
+      if (kpiRisk) kpiRisk.textContent = riskCount;
+
+      const filtered = allEnrolledStudents.filter(st => {
+        const latest = studentLatestAttMap.get(st.student_code);
+        const statusToday = latest ? latest.status : (st.unexcused_absent_count > 0 && st.attendance_percentage < 80 ? 'ABSENT' : 'PRESENT');
+        const isRisk = st.absence_percentage >= 20 || st.risk_level === 'CRITICO';
+
+        if (query) {
+          const name = normalizeTextForSearch(st.student_full_name);
+          const code = normalizeTextForSearch(st.student_code);
+          const group = normalizeTextForSearch(st.group_code);
+          const gInfo = groupMap.get(st.group_code);
+          const room = normalizeTextForSearch(gInfo?.classroom_location || '');
+          const guardian = normalizeTextForSearch(st.guardian_name || '');
+          if (!name.includes(query) && !code.includes(query) && !group.includes(query) && !room.includes(query) && !guardian.includes(query)) {
+            return false;
+          }
+        }
+
+        if (groupFilter && st.group_code !== groupFilter) {
+          return false;
+        }
+
+        if (statusFilter === 'ABSENT' && statusToday !== 'ABSENT') return false;
+        if (statusFilter === 'LATE' && statusToday !== 'LATE') return false;
+        if (statusFilter === 'PRESENT' && statusToday !== 'PRESENT') return false;
+        if (statusFilter === 'EXCUSED' && statusToday !== 'EXCUSED') return false;
+        if (statusFilter === 'RISK' && !isRisk) return false;
+
+        return true;
+      });
+
+      renderAttendanceSupervisionTable(filtered, groupMap, studentLatestAttMap);
+    }
+
+    function quickFilterAttendance(statusType) {
+      const select = document.getElementById('att-filter-status');
+      if (select) {
+        select.value = statusType;
+        filterAttendanceSupervisionTable();
+      }
+    }
+
+    function resetAttendanceFilters() {
+      const search = document.getElementById('att-search-input');
+      const group = document.getElementById('att-filter-group');
+      const status = document.getElementById('att-filter-status');
+      if (search) search.value = '';
+      if (group) group.value = '';
+      if (status) status.value = '';
+      filterAttendanceSupervisionTable();
+    }
+
+    function renderAttendanceSupervisionTable(list, groupMap, studentLatestAttMap) {
+      const tbody = document.getElementById('att-supervision-table-body');
+      if (!tbody) return;
+
+      if (!list || list.length === 0) {
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="8" style="text-align:center; padding: 36px 20px; color: var(--text-muted);">
+              <i class="fa-solid fa-clipboard-question" style="font-size: 26px; margin-bottom: 8px; display: block; color: #64748b;"></i>
+              <strong style="color: #e2e8f0; font-size: 14px;">No se encontraron novedades de asistencia</strong>
+              <div style="font-size: 12.5px; margin-top: 4px;">No hay alumnos que coincidan con el salón o filtro de inasistencia seleccionado.</div>
+              <button class="btn-secondary" style="margin-top: 12px; font-size: 12px; padding: 5px 14px;" onclick="resetAttendanceFilters()">
+                <i class="fa-solid fa-rotate-left"></i> Restablecer Filtros
+              </button>
+            </td>
+          </tr>
+        `;
+        return;
+      }
+
+      tbody.innerHTML = list.map(st => {
+        const latest = studentLatestAttMap.get(st.student_code);
+        const statusToday = latest ? latest.status : (st.unexcused_absent_count > 0 && st.attendance_percentage < 80 ? 'ABSENT' : 'PRESENT');
+        const gInfo = groupMap.get(st.group_code);
+        const roomName = gInfo?.classroom_location || 'Aula Principal';
+        const directorName = gInfo?.director_teacher_name || 'Docente Titular';
+
+        const isRisk = st.absence_percentage >= 20;
+        const attPct = Number(st.attendance_percentage || 100);
+        const pctColor = attPct >= 90 ? '#10b981' : attPct >= 80 ? '#f59e0b' : '#ef4444';
+
+        let badgeToday = '';
+        if (statusToday === 'ABSENT') {
+          badgeToday = '<span class="badge badge-danger" style="font-size: 11.5px; padding: 5px 10px;"><i class="fa-solid fa-user-xmark"></i> NO LLEGÓ HOY</span>';
+        } else if (statusToday === 'LATE') {
+          badgeToday = '<span class="badge badge-warning" style="font-size: 11.5px; padding: 5px 10px;"><i class="fa-solid fa-clock"></i> RETARDO</span>';
+        } else if (statusToday === 'EXCUSED') {
+          badgeToday = '<span class="badge badge-info" style="font-size: 11.5px; padding: 5px 10px;"><i class="fa-solid fa-file-medical"></i> EXCUSADO</span>';
+        } else {
+          badgeToday = '<span class="badge badge-success" style="font-size: 11.5px; padding: 5px 10px;"><i class="fa-solid fa-user-check"></i> PRESENTE</span>';
+        }
+
+        return `
+          <tr style="${statusToday === 'ABSENT' ? 'background: rgba(239, 68, 68, 0.06);' : ''}">
+            <td><code>${st.student_code}</code></td>
+            <td>
+              <strong>${st.student_full_name}</strong>
+              ${isRisk ? '<span class="badge badge-danger" style="margin-left: 6px; font-size: 10px;">¡RIESGO MEN!</span>' : ''}
+            </td>
+            <td>
+              <span class="badge badge-info">${formatGradeLevelName(st.grade_level_code)} • ${st.group_code || '11-1'}</span>
+              <div style="font-size: 11.5px; color: var(--text-muted); margin-top: 3px;">
+                <i class="fa-solid fa-door-open"></i> ${roomName}
+              </div>
+            </td>
+            <td>
+              <span style="font-size: 12.5px; color: #cbd5e1;">${directorName}</span>
+            </td>
+            <td style="min-width: 140px;">
+              <div style="display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 3px;">
+                <strong style="color: ${pctColor};">${attPct}%</strong>
+                <span style="color: ${pctColor}; font-size: 11px;">${attPct >= 80 ? 'Normal' : 'Crítico'}</span>
+              </div>
+              <div style="height: 6px; background: #1e293b; border-radius: 3px; overflow: hidden;">
+                <div style="width: ${attPct}%; height: 100%; background: ${pctColor};"></div>
+              </div>
+            </td>
+            <td>
+              <span style="font-size: 13px; font-weight: 700; color: ${st.unexcused_absent_count > 0 ? '#f87171' : '#94a3b8'};">
+                ${st.unexcused_absent_count} ${st.unexcused_absent_count === 1 ? 'falla' : 'fallas'}
+              </span>
+            </td>
+            <td>
+              ${badgeToday}
+            </td>
+            <td>
+              <div style="font-size: 12px; font-weight: 600; color: #e2e8f0;">${st.guardian_name || 'Sin acudiente'}</div>
+              ${st.guardian_phone ? `
+                <a href="tel:${st.guardian_phone}" style="color: #38bdf8; text-decoration: none; font-size: 11.5px; display: inline-flex; align-items: center; gap: 4px; margin-top: 2px;">
+                  <i class="fa-solid fa-phone"></i> ${st.guardian_phone}
+                </a>
+              ` : '<small style="color: var(--text-muted);">Sin teléfono</small>'}
+            </td>
+          </tr>
+        `;
+      }).join('');
     }
 
     // =========================================================================
