@@ -352,6 +352,21 @@ async def _seed_institutional_records(session: AsyncSession) -> None:
             "phone_number": "+57 300 000 0001",
         },
     )
+    # Alias SuperAdmin (.io)
+    await _upsert_user(
+        session=session,
+        email="superadmin@softedu.io",
+        document_number="SUPER-002",
+        defaults={
+            "hashed_password": hash_password("SoftEdu2026*"),
+            "first_name": "SuperAdmin",
+            "last_name": "Global",
+            "role": UserRole.SUPERADMIN,
+            "job_title": "Director de Gobierno y Plataforma SaaS K-12",
+            "department_area": "Gobierno Corporativo SoftEdu",
+            "phone_number": "+57 300 000 0001",
+        },
+    )
 
     # 2. Rector del Colegio 1 (Gimnasio San Ángel)
     rector_1 = await _upsert_user(
